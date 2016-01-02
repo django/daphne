@@ -15,7 +15,7 @@ class Server(object):
         self.factory = HTTPFactory(self.channel_layer)
         reactor.listenTCP(self.port, self.factory, interface=self.host)
         reactor.callInThread(self.backend_reader)
-        reactor.callLater(1, self.keepalive_sender)
+        #reactor.callLater(1, self.keepalive_sender)
         reactor.run()
 
     def backend_reader(self):
