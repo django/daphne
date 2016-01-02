@@ -69,6 +69,7 @@ class CommandLineInterface(object):
             format = "%(asctime)-15s %(levelname)-8s %(message)s" ,
         )
         # Import channel layer
+        sys.path.insert(0, ".")
         module_path, object_path = args.channel_layer.split(":", 1)
         channel_layer = importlib.import_module(module_path)
         for bit in object_path.split("."):
