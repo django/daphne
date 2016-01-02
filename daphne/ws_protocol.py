@@ -1,7 +1,8 @@
+from __future__ import unicode_literals
+
 import time
 
 from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
-
 from django.http import parse_cookie
 
 

@@ -25,7 +25,7 @@ class WebRequest(http.Request):
         # Easy factory link
         self.factory = self.channel.factory
         # Make a name for our reply channel
-        self.reply_channel = self.factory.channel_layer.new_channel(b"!http.response.?")
+        self.reply_channel = self.factory.channel_layer.new_channel("!http.response.?")
         # Tell factory we're that channel's client
         self.last_keepalive = time.time()
         self.factory.reply_protocols[self.reply_channel] = self
@@ -66,7 +66,7 @@ class WebRequest(http.Request):
         else:
             # Send request message
             logging.debug("HTTP %s request for %s", self.method, self.reply_channel)
-            self.factory.channel_layer.send(b"http.request", {
+            self.factory.channel_layer.send("http.request", {
                 "reply_channel": self.reply_channel,
                 "method": self.method,
                 "get": self.get,
