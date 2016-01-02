@@ -29,7 +29,7 @@ class Server(object):
                 return
             # Don't do anything if there's no channels to listen on
             if channels:
-                channel, message = self.channel_layer.receive_many(channels)
+                channel, message = self.channel_layer.receive_many(channels, block=True)
             else:
                 time.sleep(0.1)
                 continue

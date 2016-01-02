@@ -66,16 +66,20 @@ class WebRequest(http.Request):
         else:
             # Send request message
             logging.debug("HTTP %s request for %s", self.method, self.reply_channel)
+            self.content.seek(0, 0)
+            query_string = ""
+            if "?" in self.uri:
+                query_string = self.uri.split("?", 1)[1]
             self.factory.channel_layer.send("http.request", {
                 "reply_channel": self.reply_channel,
                 "method": self.method,
-                "get": self.get,
-                "post": self.post,
-                "cookies": self.received_cookies,
+                "path": self.path,
+                "scheme": "http",
+                "query_string": query_string,
                 "headers": {k: v[0] for k, v in self.requestHeaders.getAllRawHeaders()},
+                "body": self.content.read(),
                 "client": [self.client.host, self.client.port],
                 "server": [self.host.host, self.host.port],
-                "path": self.path,
             })
 
     def connectionLost(self, reason):
@@ -96,71 +100,11 @@ class WebRequest(http.Request):
         # Write headers
         for header, value in message.get("headers", {}):
             self.setHeader(header.encode("utf8"), value.encode("utf8"))
-        # Write cookies
-        for cookie in message.get("cookies"):
-            self.cookies.append(cookie.encode("utf8"))
         # Write out body
         if "content" in message:
             http.Request.write(self, message['content'].encode("utf8"))
         self.finish()
         logging.debug("HTTP %s response for %s", message['status'], self.reply_channel)
-
-    def requestReceived(self, command, path, version):
-        """
-        Called by channel when all data has been received.
-        Overridden because Twisted merges GET and POST into one thing by default.
-        """
-        self.content.seek(0,0)
-        self.get = {}
-        self.post = {}
-
-        self.method, self.uri = command, path
-        self.clientproto = version
-        x = self.uri.split(b'?', 1)
-
-        # URI and GET args assignment
-        if len(x) == 1:
-            self.path = self.uri
-        else:
-            self.path, argstring = x
-            self.get = http.parse_qs(argstring, 1)
-
-        # cache the client and server information, we'll need this later to be
-        # serialized and sent with the request so CGIs will work remotely
-        self.client = self.channel.transport.getPeer()
-        self.host = self.channel.transport.getHost()
-
-        # Argument processing
-        ctype = self.requestHeaders.getRawHeaders(b'content-type')
-        if ctype is not None:
-            ctype = ctype[0]
-
-        # Process POST data if present
-        if self.method == b"POST" and ctype:
-            mfd = b'multipart/form-data'
-            key, pdict = http._parseHeader(ctype)
-            if key == b'application/x-www-form-urlencoded':
-                self.post.update(http.parse_qs(self.content.read(), 1))
-            elif key == mfd:
-                try:
-                    cgiArgs = cgi.parse_multipart(self.content, pdict)
-
-                    if _PY3:
-                        # parse_multipart on Python 3 decodes the header bytes
-                        # as iso-8859-1 and returns a str key -- we want bytes
-                        # so encode it back
-                        self.post.update({x.encode('iso-8859-1'): y
-                                          for x, y in cgiArgs.items()})
-                    else:
-                        self.post.update(cgiArgs)
-                except:
-                    # It was a bad request.
-                    http._respondToBadRequestAndDisconnect(self.channel.transport)
-                    return
-            self.content.seek(0, 0)
-
-        # Continue with rest of request handling
-        self.process()
 
 
 class HTTPProtocol(http.HTTPChannel):
