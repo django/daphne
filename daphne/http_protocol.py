@@ -29,6 +29,7 @@ class WebRequest(http.Request):
         # Tell factory we're that channel's client
         self.last_keepalive = time.time()
         self.factory.reply_protocols[self.reply_channel] = self
+        self._got_response_start = False
 
     def process(self):
         # Get upgrade header
@@ -104,16 +105,24 @@ class WebRequest(http.Request):
         """
         Writes a received HTTP response back out to the transport.
         """
-        # Write code
-        self.setResponseCode(message['status'])
-        # Write headers
-        for header, value in message.get("headers", {}):
-            self.setHeader(header.encode("utf8"), value.encode("utf8"))
+        if "status" in message:
+            if self._got_response_start:
+                raise ValueError("Got multiple Response messages!")
+            self._got_response_start = True
+            # Write code
+            self.setResponseCode(message['status'])
+            # Write headers
+            for header, value in message.get("headers", {}):
+                self.setHeader(header.encode("utf8"), value.encode("utf8"))
         # Write out body
         if "content" in message:
             http.Request.write(self, message['content'].encode("utf8"))
-        self.finish()
-        logging.debug("HTTP %s response for %s", message['status'], self.reply_channel)
+        # End if there's no more content
+        if not message.get("more_content", False):
+            self.finish()
+            logging.debug("HTTP %s response for %s", message['status'], self.reply_channel)
+        else:
+            logging.debug("HTTP %s response chunk for %s", message['status'], self.reply_channel)
 
 
 class HTTPProtocol(http.HTTPChannel):
