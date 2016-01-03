@@ -1,9 +1,12 @@
 from __future__ import unicode_literals
 
 import time
+import logging
 
 from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
 from django.http import parse_cookie
+
+logger = logging.getLogger(__name__)
 
 
 class WebSocketProtocol(WebSocketServerProtocol):
@@ -12,10 +15,8 @@ class WebSocketProtocol(WebSocketServerProtocol):
     the websocket channels.
     """
 
-    def __init__(self, *args, **kwargs):
-        WebSocketServerProtocol.__init__(self, *args, **kwargs)
-        # Easy parent factory/channel layer link
-        self.main_factory = self.factory.main_factory
+    def set_main_factory(self, main_factory):
+        self.main_factory = main_factory
         self.channel_layer = self.main_factory.channel_layer
 
     def onConnect(self, request):
@@ -33,9 +34,11 @@ class WebSocketProtocol(WebSocketServerProtocol):
         # Tell main factory about it
         self.main_factory.reply_protocols[self.reply_channel] = self
         # Send news that this channel is open
+        logger.debug("WebSocket open for %s", self.reply_channel)
         self.channel_layer.send("websocket.connect", self.request_info)
 
     def onMessage(self, payload, isBinary):
+        logger.debug("WebSocket incoming packet on %s", self.reply_channel)
         if isBinary:
             self.channel_layer.send("websocket.receive", {
                 "reply_channel": self.reply_channel,
@@ -51,6 +54,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
         """
         Server-side channel message to send a message.
         """
+        logger.debug("Sent WebSocket packet to client for %s", self.reply_channel)
         if binary:
             self.sendMessage(content, binary)
         else:
@@ -63,6 +67,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
         self.sendClose()
 
     def onClose(self, wasClean, code, reason):
+        logger.debug("WebSocket closed for %s", self.reply_channel)
         if hasattr(self, "reply_channel"):
             del self.factory.reply_protocols[self.reply_channel]
             self.channel_layer.send("websocket.disconnect", {

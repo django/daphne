@@ -44,6 +44,7 @@ class WebRequest(http.Request):
                 self.setResponseCode(500)
                 self.finish()
             # Port across transport
+            protocol.set_main_factory(self.factory)
             transport, self.transport = self.transport, None
             if isinstance(transport, ProtocolWrapper):
                 # i.e. TLS is a wrapping protocol
@@ -59,7 +60,7 @@ class WebRequest(http.Request):
             data += self.content.read()
             protocol.dataReceived(data)
             # Remove our HTTP reply channel association
-            logging.debug("Upgraded connection %s to WebSocket", self.reply_channel)
+            logging.debug("Upgraded connection %s to WebSocket %s", self.reply_channel, protocol.reply_channel)
             self.factory.reply_protocols[self.reply_channel] = None
             self.reply_channel = None
         # Boring old HTTP.
