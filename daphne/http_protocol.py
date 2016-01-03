@@ -65,19 +65,27 @@ class WebRequest(http.Request):
             self.reply_channel = None
         # Boring old HTTP.
         else:
-            # Send request message
             logging.debug("HTTP %s request for %s", self.method, self.reply_channel)
             self.content.seek(0, 0)
+            # Calculate query string
             query_string = ""
             if "?" in self.uri:
                 query_string = self.uri.split("?", 1)[1]
+            # Sanitize headers
+            headers = {}
+            for name, value in self.requestHeaders.getAllRawHeaders():
+                # Prevent CVE-2015-0219
+                if "_" in name:
+                    continue
+                headers[name.lower()] = value[0]
+            # Send message
             self.factory.channel_layer.send("http.request", {
                 "reply_channel": self.reply_channel,
                 "method": self.method,
                 "path": self.path,
                 "scheme": "http",
                 "query_string": query_string,
-                "headers": {k: v[0] for k, v in self.requestHeaders.getAllRawHeaders()},
+                "headers": headers,
                 "body": self.content.read(),
                 "client": [self.client.host, self.client.port],
                 "server": [self.host.host, self.host.port],
