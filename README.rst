@@ -1,4 +1,17 @@
 daphne
 ======
 
-Daphne is a HTTP, HTTP2 and WebSocket interface server for Django.
+Daphne is a HTTP, HTTP2 and WebSocket protocol server for
+`ASGI <http://channels.readthedocs.org/en/latest/asgi.html>`_, and developed
+to power Django Channels.
+
+It supports automatic negotiation of protocols; there's no need for URL
+prefixing to determine WebSocket endpoints versus HTTP endpoints.
+
+Running
+-------
+
+Simply point Daphne to your ASGI channel layer instance, and optionally
+set a bind address and port (defaults to localhost, port 8000)::
+
+    daphne -b 0.0.0.0 -p 8001 django_project.asgi.channel_layer
