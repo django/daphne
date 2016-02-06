@@ -36,6 +36,17 @@ class WebRequest(http.Request):
         upgrade_header = None
         if self.requestHeaders.hasHeader("Upgrade"):
             upgrade_header = self.requestHeaders.getRawHeaders("Upgrade")[0]
+        # Calculate query string
+        self.query_string = ""
+        if b"?" in self.uri:
+            self.query_string = self.uri.split(b"?", 1)[1]
+        # Sanitize headers
+        self.headers = {}
+        for name, value in self.requestHeaders.getAllRawHeaders():
+            # Prevent CVE-2015-0219
+            if b"_" in name:
+                continue
+            self.headers[name.lower().decode("latin1")] = value[0]
         # Is it WebSocket? IS IT?!
         if upgrade_header == "websocket":
             # Make WebSocket protocol to hand off to
@@ -68,17 +79,6 @@ class WebRequest(http.Request):
         else:
             logging.debug("HTTP %s request for %s", self.method, self.reply_channel)
             self.content.seek(0, 0)
-            # Calculate query string
-            query_string = ""
-            if b"?" in self.uri:
-                query_string = self.uri.split(b"?", 1)[1]
-            # Sanitize headers
-            headers = {}
-            for name, value in self.requestHeaders.getAllRawHeaders():
-                # Prevent CVE-2015-0219
-                if b"_" in name:
-                    continue
-                headers[name.lower().decode("latin1")] = value[0]
             # Send message
             self.factory.channel_layer.send("http.request", {
                 "reply_channel": self.reply_channel,
@@ -87,8 +87,8 @@ class WebRequest(http.Request):
                 "method": self.method.decode("ascii"),
                 "path": self.path,
                 "scheme": "http",
-                "query_string": query_string,
-                "headers": headers,
+                "query_string": self.query_string,
+                "headers": self.headers,
                 "body": self.content.read(),
                 "client": [self.client.host, self.client.port],
                 "server": [self.host.host, self.host.port],

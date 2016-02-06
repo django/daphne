@@ -4,7 +4,6 @@ import time
 import logging
 
 from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
-from django.http import parse_cookie
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +21,10 @@ class WebSocketProtocol(WebSocketServerProtocol):
     def onConnect(self, request):
         self.request_info = {
             "path": request.path,
-            "get": request.params,
-            "cookies": parse_cookie(request.headers.get('cookie', ''))
+            "headers": self.headers,
+            "query_string": request.query_string,
+            "client": [request.client.host, request.client.port],
+            "server": [request.host.host, request.host.port],
         }
 
     def onOpen(self):
