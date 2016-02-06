@@ -1,6 +1,9 @@
 daphne
 ======
 
+.. image:: https://api.travis-ci.org/andrewgodwin/daphne.svg
+    :target: https://travis-ci.org/andrewgodwin/daphne
+
 Daphne is a HTTP, HTTP2 and WebSocket protocol server for
 `ASGI <http://channels.readthedocs.org/en/latest/asgi.html>`_, and developed
 to power Django Channels.

@@ -1,0 +1,9 @@
+sudo: false
+language: python
+python:
+  - "2.7"
+  - "3.5"
+install:
+  - if [[ $TRAVIS_PYTHON_VERSION == 2.7 ]]; then pip install unittest2; fi
+  - pip install asgiref twisted autobahn
+script: if [[ $TRAVIS_PYTHON_VERSION == 2.7 ]]; then python -m unittest2; else python -m unittest; fi
