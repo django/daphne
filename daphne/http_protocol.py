@@ -41,12 +41,12 @@ class WebRequest(http.Request):
         if b"?" in self.uri:
             self.query_string = self.uri.split(b"?", 1)[1]
         # Sanitize headers
-        self.headers = {}
+        self.clean_headers = {}
         for name, value in self.requestHeaders.getAllRawHeaders():
             # Prevent CVE-2015-0219
             if b"_" in name:
                 continue
-            self.headers[name.lower().decode("latin1")] = value[0]
+            self.clean_headers[name.lower().decode("latin1")] = value[0]
         # Is it WebSocket? IS IT?!
         if upgrade_header == "websocket":
             # Make WebSocket protocol to hand off to
@@ -88,7 +88,7 @@ class WebRequest(http.Request):
                 "path": self.path,
                 "scheme": "http",
                 "query_string": self.query_string,
-                "headers": self.headers,
+                "headers": self.clean_headers,
                 "body": self.content.read(),
                 "client": [self.client.host, self.client.port],
                 "server": [self.host.host, self.host.port],

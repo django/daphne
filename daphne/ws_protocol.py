@@ -21,7 +21,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
     def onConnect(self, request):
         self.request_info = {
             "path": request.path,
-            "headers": self.headers,
+            "headers": self.clean_headers,
             "query_string": request.query_string,
             "client": [request.client.host, request.client.port],
             "server": [request.host.host, request.host.port],
