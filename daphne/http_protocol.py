@@ -70,19 +70,21 @@ class WebRequest(http.Request):
             self.content.seek(0, 0)
             # Calculate query string
             query_string = ""
-            if "?" in self.uri:
-                query_string = self.uri.split("?", 1)[1]
+            if b"?" in self.uri:
+                query_string = self.uri.split(b"?", 1)[1]
             # Sanitize headers
             headers = {}
             for name, value in self.requestHeaders.getAllRawHeaders():
                 # Prevent CVE-2015-0219
-                if "_" in name:
+                if b"_" in name:
                     continue
-                headers[name.lower()] = value[0]
+                headers[name.lower().decode("latin1")] = value[0]
             # Send message
             self.factory.channel_layer.send("http.request", {
                 "reply_channel": self.reply_channel,
-                "method": self.method,
+                # TODO: Correctly say if it's 1.1 or 1.0
+                "http_version": "1.1",
+                "method": self.method.decode("ascii"),
                 "path": self.path,
                 "scheme": "http",
                 "query_string": query_string,
@@ -110,13 +112,13 @@ class WebRequest(http.Request):
                 raise ValueError("Got multiple Response messages!")
             self._got_response_start = True
             # Write code
-            self.setResponseCode(message['status'])
+            self.setResponseCode(message['status'], message.get("status_text", None))
             # Write headers
             for header, value in message.get("headers", {}):
-                self.setHeader(header.encode("utf8"), value.encode("utf8"))
+                self.setHeader(header.encode("utf8"), value)
         # Write out body
         if "content" in message:
-            http.Request.write(self, message['content'].encode("utf8"))
+            http.Request.write(self, message['content'])
         # End if there's no more content
         if not message.get("more_content", False):
             self.finish()
