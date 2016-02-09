@@ -119,7 +119,7 @@ class WebRequest(http.Request):
             if isinstance(status_text, six.text_type):
                 logger.warn("HTTP status text for %s was text - should be bytes", self.reply_channel)
                 status_text = status_text.encode("ascii")
-            self.setResponseCode(message['status'], )
+            self.setResponseCode(message['status'], status_text)
             # Write headers
             for header, value in message.get("headers", {}):
                 self.setHeader(header.encode("utf8"), value)
