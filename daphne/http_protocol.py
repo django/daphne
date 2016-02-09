@@ -1,7 +1,9 @@
 from __future__ import unicode_literals
 
-import time
 import logging
+import six
+import time
+
 from twisted.python.compat import _PY3
 from twisted.web import http
 from twisted.protocols.policies import ProtocolWrapper
@@ -113,7 +115,11 @@ class WebRequest(http.Request):
                 raise ValueError("Got multiple Response messages!")
             self._got_response_start = True
             # Write code
-            self.setResponseCode(message['status'], message.get("status_text", None))
+            status_text = message.get("status_text", None)
+            if isinstance(status_text, six.text_type):
+                logger.warn("HTTP status text for %s was text - should be bytes", self.reply_channel)
+                status_text = status_text.encode("ascii")
+            self.setResponseCode(message['status'], )
             # Write headers
             for header, value in message.get("headers", {}):
                 self.setHeader(header.encode("utf8"), value)
