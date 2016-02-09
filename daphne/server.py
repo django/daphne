@@ -15,7 +15,6 @@ class Server(object):
         self.factory = HTTPFactory(self.channel_layer)
         reactor.listenTCP(self.port, self.factory, interface=self.host)
         reactor.callInThread(self.backend_reader)
-        #reactor.callLater(1, self.keepalive_sender)
         reactor.run()
 
     def backend_reader(self):
@@ -39,14 +38,3 @@ class Server(object):
                 continue
             # Deal with the message
             self.factory.dispatch_reply(channel, message)
-
-    def keepalive_sender(self):
-        """
-        Sends keepalive messages for open WebSockets every
-        (channel_backend expiry / 2) seconds.
-        """
-        expiry_window = int(self.channel_layer.group_expiry / 2)
-        for protocol in self.factory.reply_protocols.values():
-            if time.time() - protocol.last_keepalive > expiry_window:
-                protocol.sendKeepalive()
-        reactor.callLater(1, self.keepalive_sender)

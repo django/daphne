@@ -40,13 +40,6 @@ class WebRequest(http.Request):
         self.query_string = ""
         if b"?" in self.uri:
             self.query_string = self.uri.split(b"?", 1)[1]
-        # Sanitize headers
-        self.clean_headers = {}
-        for name, value in self.requestHeaders.getAllRawHeaders():
-            # Prevent CVE-2015-0219
-            if b"_" in name:
-                continue
-            self.clean_headers[name.lower().decode("latin1")] = value[0]
         # Is it WebSocket? IS IT?!
         if upgrade_header == "websocket":
             # Make WebSocket protocol to hand off to
@@ -54,6 +47,7 @@ class WebRequest(http.Request):
             if not protocol:
                 # If protocol creation fails, we signal "internal server error"
                 self.setResponseCode(500)
+                logger.warn("Could not make WebSocket protocol")
                 self.finish()
             # Port across transport
             protocol.set_main_factory(self.factory)
@@ -72,12 +66,19 @@ class WebRequest(http.Request):
             data += self.content.read()
             protocol.dataReceived(data)
             # Remove our HTTP reply channel association
-            logging.debug("Upgraded connection %s to WebSocket %s", self.reply_channel, protocol.reply_channel)
+            logger.debug("Upgraded connection %s to WebSocket %s", self.reply_channel, protocol.reply_channel)
             self.factory.reply_protocols[self.reply_channel] = None
             self.reply_channel = None
         # Boring old HTTP.
         else:
-            logging.debug("HTTP %s request for %s", self.method, self.reply_channel)
+            # Sanitize and decode headers
+            self.clean_headers = {}
+            for name, value in self.requestHeaders.getAllRawHeaders():
+                # Prevent CVE-2015-0219
+                if b"_" in name:
+                    continue
+                self.clean_headers[name.lower().decode("latin1")] = value[0]
+            logger.debug("HTTP %s request for %s", self.method, self.reply_channel)
             self.content.seek(0, 0)
             # Send message
             self.factory.channel_layer.send("http.request", {
@@ -100,7 +101,7 @@ class WebRequest(http.Request):
         """
         if self.reply_channel:
             del self.channel.factory.reply_protocols[self.reply_channel]
-        logging.debug("HTTP disconnect for %s", self.reply_channel)
+        logger.debug("HTTP disconnect for %s", self.reply_channel)
         http.Request.connectionLost(self, reason)
 
     def serverResponse(self, message):
@@ -122,9 +123,9 @@ class WebRequest(http.Request):
         # End if there's no more content
         if not message.get("more_content", False):
             self.finish()
-            logging.debug("HTTP %s response for %s", message['status'], self.reply_channel)
+            logger.debug("HTTP %s response for %s", message['status'], self.reply_channel)
         else:
-            logging.debug("HTTP %s response chunk for %s", message['status'], self.reply_channel)
+            logger.debug("HTTP %s response chunk for %s", message['status'], self.reply_channel)
 
 
 class HTTPProtocol(http.HTTPChannel):

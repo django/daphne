@@ -1,7 +1,9 @@
 from __future__ import unicode_literals
 
-import time
 import logging
+import time
+import traceback
+import urllib
 
 from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
 
@@ -19,21 +21,37 @@ class WebSocketProtocol(WebSocketServerProtocol):
         self.channel_layer = self.main_factory.channel_layer
 
     def onConnect(self, request):
-        self.request_info = {
-            "path": request.path,
-            "headers": self.clean_headers,
-            "query_string": request.query_string,
-            "client": [request.client.host, request.client.port],
-            "server": [request.host.host, request.host.port],
-        }
+        try:
+            # Sanitize and decode headers
+            clean_headers = {}
+            for name, value in request.headers.items():
+                # Prevent CVE-2015-0219
+                if "_" in name:
+                    continue
+                clean_headers[name.lower()] = value[0].encode("latin1")
+            # Reconstruct query string
+            # TODO: get autobahn to provide it raw
+            query_string = urllib.urlencode(request.params)
+            # Make sending channel
+            self.reply_channel = self.channel_layer.new_channel("!websocket.send.?")
+            # Tell main factory about it
+            self.main_factory.reply_protocols[self.reply_channel] = self
+            # Make initial request info dict from request (we only have it here)
+            self.request_info = {
+                "path": request.path,
+                "headers": clean_headers,
+                "query_string": query_string,
+                "client": [self.transport.getPeer().host, self.transport.getPeer().port],
+                "server": [self.transport.getHost().host, self.transport.getHost().port],
+                "reply_channel": self.reply_channel,
+            }
+        except:
+            # Exceptions here are not displayed right, just 500.
+            # Turn them into an ERROR log.
+            logger.error(traceback.format_exc())
+            raise
 
     def onOpen(self):
-        # Make sending channel
-        self.reply_channel = self.channel_layer.new_channel("!websocket.send.?")
-        self.request_info["reply_channel"] = self.reply_channel
-        self.last_keepalive = time.time()
-        # Tell main factory about it
-        self.main_factory.reply_protocols[self.reply_channel] = self
         # Send news that this channel is open
         logger.debug("WebSocket open for %s", self.reply_channel)
         self.channel_layer.send("websocket.connect", self.request_info)
@@ -68,21 +86,14 @@ class WebSocketProtocol(WebSocketServerProtocol):
         self.sendClose()
 
     def onClose(self, wasClean, code, reason):
-        logger.debug("WebSocket closed for %s", self.reply_channel)
         if hasattr(self, "reply_channel"):
+            logger.debug("WebSocket closed for %s", self.reply_channel)
             del self.factory.reply_protocols[self.reply_channel]
             self.channel_layer.send("websocket.disconnect", {
                 "reply_channel": self.reply_channel,
             })
-
-    def sendKeepalive(self):
-        """
-        Sends a keepalive packet on the keepalive channel.
-        """
-        self.channel_layer.send("websocket.keepalive", {
-            "reply_channel": self.reply_channel,
-        })
-        self.last_keepalive = time.time()
+        else:
+            logger.debug("WebSocket closed before handshake established")
 
 
 class WebSocketFactory(WebSocketServerFactory):
