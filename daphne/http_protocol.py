@@ -36,14 +36,14 @@ class WebRequest(http.Request):
     def process(self):
         # Get upgrade header
         upgrade_header = None
-        if self.requestHeaders.hasHeader("Upgrade"):
-            upgrade_header = self.requestHeaders.getRawHeaders("Upgrade")[0]
+        if self.requestHeaders.hasHeader(b"Upgrade"):
+            upgrade_header = self.requestHeaders.getRawHeaders(b"Upgrade")[0]
         # Calculate query string
         self.query_string = ""
         if b"?" in self.uri:
             self.query_string = self.uri.split(b"?", 1)[1]
         # Is it WebSocket? IS IT?!
-        if upgrade_header == "websocket":
+        if upgrade_header == b"websocket":
             # Make WebSocket protocol to hand off to
             protocol = self.factory.ws_factory.buildProtocol(self.transport.getPeer())
             if not protocol:

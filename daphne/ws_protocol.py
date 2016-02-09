@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import logging
 import time
 import traceback
-import urllib
+from six.moves.urllib.parse import urlencode
 
 from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
 
@@ -31,7 +31,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
                 clean_headers[name.lower()] = value[0].encode("latin1")
             # Reconstruct query string
             # TODO: get autobahn to provide it raw
-            query_string = urllib.urlencode(request.params)
+            query_string = urlencode(request.params).encode("ascii")
             # Make sending channel
             self.reply_channel = self.channel_layer.new_channel("!websocket.send.?")
             # Tell main factory about it
