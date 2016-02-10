@@ -39,7 +39,7 @@ class WebRequest(http.Request):
         if self.requestHeaders.hasHeader(b"Upgrade"):
             upgrade_header = self.requestHeaders.getRawHeaders(b"Upgrade")[0]
         # Calculate query string
-        self.query_string = ""
+        self.query_string = b""
         if b"?" in self.uri:
             self.query_string = self.uri.split(b"?", 1)[1]
         # Is it WebSocket? IS IT?!
