@@ -14,7 +14,7 @@ class Server(object):
         self.action_logger = action_logger
 
     def run(self):
-        self.factory = HTTPFactory(self)
+        self.factory = HTTPFactory(self.channel_layer, self.action_logger)
         reactor.listenTCP(self.port, self.factory, interface=self.host)
         reactor.callInThread(self.backend_reader)
         reactor.run(installSignalHandlers=self.signal_handlers)
