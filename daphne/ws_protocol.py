@@ -21,6 +21,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
         self.channel_layer = self.main_factory.channel_layer
 
     def onConnect(self, request):
+        self.request = request
         try:
             # Sanitize and decode headers
             clean_headers = {}
@@ -55,6 +56,10 @@ class WebSocketProtocol(WebSocketServerProtocol):
         # Send news that this channel is open
         logger.debug("WebSocket open for %s", self.reply_channel)
         self.channel_layer.send("websocket.connect", self.request_info)
+        self.factory.log_action("websocket", "connected", {
+            "path": self.request.path,
+            "client": "%s:%s" % (self.transport.getPeer().host, self.transport.getPeer().port),
+        })
 
     def onMessage(self, payload, isBinary):
         logger.debug("WebSocket incoming packet on %s", self.reply_channel)
@@ -92,6 +97,10 @@ class WebSocketProtocol(WebSocketServerProtocol):
             self.channel_layer.send("websocket.disconnect", {
                 "reply_channel": self.reply_channel,
             })
+            self.factory.log_action("websocket", "disconnected", {
+                "path": self.request.path,
+                "client": "%s:%s" % (self.transport.getPeer().host, self.transport.getPeer().port),
+            })
         else:
             logger.debug("WebSocket closed before handshake established")
 
@@ -106,3 +115,6 @@ class WebSocketFactory(WebSocketServerFactory):
     def __init__(self, main_factory, *args, **kwargs):
         self.main_factory = main_factory
         WebSocketServerFactory.__init__(self, *args, **kwargs)
+
+    def log_action(self, *args, **kwargs):
+        self.main_factory.log_action(*args, **kwargs)

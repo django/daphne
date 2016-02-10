@@ -132,6 +132,12 @@ class WebRequest(http.Request):
             logger.debug("HTTP %s response for %s", message['status'], self.reply_channel)
         else:
             logger.debug("HTTP %s response chunk for %s", message['status'], self.reply_channel)
+        self.factory.log_action("http", "complete", {
+            "path": self.path.decode("ascii"),
+            "status": message['status'],
+            "method": self.method.decode("ascii"),
+            "client": "%s:%s" % (self.client.host, self.client.port),
+        })
 
 
 class HTTPProtocol(http.HTTPChannel):
@@ -149,9 +155,10 @@ class HTTPFactory(http.HTTPFactory):
 
     protocol = HTTPProtocol
 
-    def __init__(self, channel_layer):
+    def __init__(self, server):
         http.HTTPFactory.__init__(self)
-        self.channel_layer = channel_layer
+        self.channel_layer = server.channel_layer
+        self.action_logger = server.action_logger
         # We track all sub-protocols for response channel mapping
         self.reply_protocols = {}
         # Make a factory for WebSocket protocols
@@ -174,3 +181,10 @@ class HTTPFactory(http.HTTPFactory):
                 self.reply_protocols[channel].serverClose()
         else:
             raise ValueError("Cannot dispatch message on channel %r" % channel)
+
+    def log_action(self, protocol, action, details):
+        """
+        Dispatches to any registered action logger, if there is one.
+        """
+        if self.action_logger:
+            self.action_logger(protocol, action, details)
