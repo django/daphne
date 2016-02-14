@@ -69,7 +69,7 @@ class WebRequest(http.Request):
             protocol.dataReceived(data)
             # Remove our HTTP reply channel association
             logger.debug("Upgraded connection %s to WebSocket %s", self.reply_channel, protocol.reply_channel)
-            self.factory.reply_protocols[self.reply_channel] = None
+            del self.factory.reply_protocols[self.reply_channel]
             self.reply_channel = None
         # Boring old HTTP.
         else:
@@ -101,10 +101,19 @@ class WebRequest(http.Request):
         """
         Cleans up reply channel on close.
         """
-        if self.reply_channel:
+        if self.reply_channel and self.reply_channel in self.channel.factory.reply_protocols:
             del self.channel.factory.reply_protocols[self.reply_channel]
         logger.debug("HTTP disconnect for %s", self.reply_channel)
         http.Request.connectionLost(self, reason)
+
+    def finish(self):
+        """
+        Cleans up reply channel on close.
+        """
+        if self.reply_channel:
+            del self.channel.factory.reply_protocols[self.reply_channel]
+        logger.debug("HTTP close for %s", self.reply_channel)
+        http.Request.finish(self)
 
     def serverResponse(self, message):
         """

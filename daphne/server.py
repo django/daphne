@@ -1,7 +1,10 @@
+import logging
 import time
 from twisted.internet import reactor
 
 from .http_protocol import HTTPFactory
+
+logger = logging.getLogger(__name__)
 
 
 class Server(object):
@@ -27,10 +30,13 @@ class Server(object):
             channels = self.factory.reply_channels()
             # Quit if reactor is stopping
             if not reactor.running:
+                logging.debug("Backend reader quitting due to reactor stop")
                 return
             # Don't do anything if there's no channels to listen on
             if channels:
-                channel, message = self.channel_layer.receive_many(channels, block=True)
+                channel, message = self.channel_layer.receive_many(channels, block=False)
+                if channel:
+                    logging.debug("Server got message on %s", channel)
             else:
                 time.sleep(0.1)
                 continue
