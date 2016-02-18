@@ -4,6 +4,7 @@ import logging
 import time
 import traceback
 from six.moves.urllib.parse import urlencode
+from six import string_types
 
 from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
 
@@ -29,7 +30,10 @@ class WebSocketProtocol(WebSocketServerProtocol):
                 # Prevent CVE-2015-0219
                 if "_" in name:
                     continue
-                clean_headers[name.lower()] = value[0].encode("latin1")
+                if isinstance(value, string_types):
+                    clean_headers[name.lower()] = value.encode("latin1")
+                else:
+                    clean_headers[name.lower()] = value[0].encode("latin1")
             # Reconstruct query string
             # TODO: get autobahn to provide it raw
             query_string = urlencode(request.params).encode("ascii")
