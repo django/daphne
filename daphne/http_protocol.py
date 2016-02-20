@@ -97,11 +97,21 @@ class WebRequest(http.Request):
                 "server": [self.host.host, self.host.port],
             })
 
+    def send_disconnect(self):
+        """
+        Sends a disconnect message on the http.disconnect channel.
+        Useful only really for long-polling.
+        """
+        self.factory.channel_layer.send("http.disconnect", {
+            "reply_channel": self.reply_channel,
+        })
+
     def connectionLost(self, reason):
         """
         Cleans up reply channel on close.
         """
         if self.reply_channel and self.reply_channel in self.channel.factory.reply_protocols:
+            self.send_disconnect()
             del self.channel.factory.reply_protocols[self.reply_channel]
         logger.debug("HTTP disconnect for %s", self.reply_channel)
         http.Request.connectionLost(self, reason)
@@ -110,7 +120,8 @@ class WebRequest(http.Request):
         """
         Cleans up reply channel on close.
         """
-        if self.reply_channel:
+        if self.reply_channel and self.reply_channel in self.channel.factory.reply_protocols:
+            self.send_disconnect()
             del self.channel.factory.reply_protocols[self.reply_channel]
         logger.debug("HTTP close for %s", self.reply_channel)
         http.Request.finish(self)
