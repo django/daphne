@@ -143,21 +143,22 @@ class WebRequest(http.Request):
             # Write headers
             for header, value in message.get("headers", {}):
                 self.setHeader(header.encode("utf8"), value)
+            logger.debug("HTTP %s response started for %s", message['status'], self.reply_channel)
         # Write out body
         if "content" in message:
             http.Request.write(self, message['content'])
         # End if there's no more content
         if not message.get("more_content", False):
             self.finish()
-            logger.debug("HTTP %s response for %s", message['status'], self.reply_channel)
+            logger.debug("HTTP response complete for %s", self.reply_channel)
+            self.factory.log_action("http", "complete", {
+                "path": self.path.decode("ascii"),
+                "status": self.code,
+                "method": self.method.decode("ascii"),
+                "client": "%s:%s" % (self.client.host, self.client.port),
+            })
         else:
-            logger.debug("HTTP %s response chunk for %s", message['status'], self.reply_channel)
-        self.factory.log_action("http", "complete", {
-            "path": self.path.decode("ascii"),
-            "status": message['status'],
-            "method": self.method.decode("ascii"),
-            "client": "%s:%s" % (self.client.host, self.client.port),
-        })
+            logger.debug("HTTP response chunk for %s", self.reply_channel)
 
 
 class HTTPProtocol(http.HTTPChannel):
