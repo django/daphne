@@ -29,7 +29,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
                 # Prevent CVE-2015-0219
                 if "_" in name:
                     continue
-                clean_headers[name.lower()] = value[0].encode("latin1")
+                clean_headers[name.lower()] = value.encode("latin1")
             # Reconstruct query string
             # TODO: get autobahn to provide it raw
             query_string = urlencode(request.params).encode("ascii")
@@ -39,7 +39,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
             self.main_factory.reply_protocols[self.reply_channel] = self
             # Make initial request info dict from request (we only have it here)
             self.request_info = {
-                "path": request.path,
+                "path": request.path.encode("ascii"),
                 "headers": clean_headers,
                 "query_string": query_string,
                 "client": [self.transport.getPeer().host, self.transport.getPeer().port],
