@@ -1,0 +1,14 @@
+0.9 (2016-02-21)
+----------------
+
+* Signal handlers can now be disabled if you want to run inside a thread
+  (e.g. inside Django autoreloader)
+
+* Logging hooks that can be used to allow calling code to show requests
+  and other events.
+
+* Headers are now transmitted for websocket.connect
+
+* http.disconnect messages are now sent
+
+* Request handling speed significantly improved 
