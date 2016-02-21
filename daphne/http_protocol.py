@@ -34,6 +34,7 @@ class WebRequest(http.Request):
         self._got_response_start = False
 
     def process(self):
+        self.request_start = time.time()
         # Get upgrade header
         upgrade_header = None
         if self.requestHeaders.hasHeader(b"Upgrade"):
@@ -156,6 +157,7 @@ class WebRequest(http.Request):
                 "status": self.code,
                 "method": self.method.decode("ascii"),
                 "client": "%s:%s" % (self.client.host, self.client.port),
+                "time_taken": time.time() - self.request_start,
             })
         else:
             logger.debug("HTTP response chunk for %s", self.reply_channel)
