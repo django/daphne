@@ -44,7 +44,7 @@ class WebRequest(http.Request):
         if b"?" in self.uri:
             self.query_string = self.uri.split(b"?", 1)[1]
         # Is it WebSocket? IS IT?!
-        if upgrade_header == b"websocket":
+        if upgrade_header.lower() == b"websocket":
             # Make WebSocket protocol to hand off to
             protocol = self.factory.ws_factory.buildProtocol(self.transport.getPeer())
             if not protocol:
