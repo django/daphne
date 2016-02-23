@@ -133,7 +133,7 @@ class WebRequest(http.Request):
         """
         if "status" in message:
             if self._got_response_start:
-                raise ValueError("Got multiple Response messages!")
+                raise ValueError("Got multiple Response messages for %s!" % self.reply_channel)
             self._got_response_start = True
             # Write code
             status_text = message.get("status_text", None)

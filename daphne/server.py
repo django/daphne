@@ -38,7 +38,6 @@ class Server(object):
             channel, message = self.channel_layer.receive_many(channels, block=False)
             if channel:
                 delay = 0
-                logging.debug("Server got message on %s", channel)
                 # Deal with the message
                 self.factory.dispatch_reply(channel, message)
         reactor.callLater(delay, self.backend_reader)
