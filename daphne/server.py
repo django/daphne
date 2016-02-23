@@ -27,14 +27,14 @@ class Server(object):
         Run in a separate thread; reads messages from the backend.
         """
         channels = self.factory.reply_channels()
-        delay = 0.3
+        delay = 0.05
         # Quit if reactor is stopping
         if not reactor.running:
             logging.debug("Backend reader quitting due to reactor stop")
             return
         # Don't do anything if there's no channels to listen on
         if channels:
-            delay = 0.05
+            delay = 0.01
             channel, message = self.channel_layer.receive_many(channels, block=False)
             if channel:
                 delay = 0
