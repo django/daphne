@@ -1,5 +1,4 @@
 import logging
-import time
 from twisted.internet import reactor
 
 from .http_protocol import HTTPFactory
