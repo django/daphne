@@ -23,7 +23,8 @@ class Server(object):
 
     def backend_reader(self):
         """
-        Run in a separate thread; reads messages from the backend.
+        Runs as an-often-as-possible task with the reactor, unless there was
+        no result previously in which case we add a small delay.
         """
         channels = self.factory.reply_channels()
         delay = 0.05
