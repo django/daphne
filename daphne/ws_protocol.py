@@ -22,6 +22,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
 
     def onConnect(self, request):
         self.request = request
+        self.packets_received = 0
         try:
             # Sanitize and decode headers
             clean_headers = {}
@@ -45,6 +46,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
                 "client": [self.transport.getPeer().host, self.transport.getPeer().port],
                 "server": [self.transport.getHost().host, self.transport.getHost().port],
                 "reply_channel": self.reply_channel,
+                "order": 0,
             }
         except:
             # Exceptions here are not displayed right, just 500.
@@ -63,14 +65,17 @@ class WebSocketProtocol(WebSocketServerProtocol):
 
     def onMessage(self, payload, isBinary):
         logger.debug("WebSocket incoming packet on %s", self.reply_channel)
+        self.packets_received += 1
         if isBinary:
             self.channel_layer.send("websocket.receive", {
                 "reply_channel": self.reply_channel,
+                "order": self.packets_received,
                 "bytes": payload,
             })
         else:
             self.channel_layer.send("websocket.receive", {
                 "reply_channel": self.reply_channel,
+                "order": self.packets_received,
                 "text": payload.decode("utf8"),
             })
 
@@ -96,6 +101,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
             del self.factory.reply_protocols[self.reply_channel]
             self.channel_layer.send("websocket.disconnect", {
                 "reply_channel": self.reply_channel,
+                "order": self.packets_received + 1,
             })
             self.factory.log_action("websocket", "disconnected", {
                 "path": self.request.path,
