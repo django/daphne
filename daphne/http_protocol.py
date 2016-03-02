@@ -4,7 +4,6 @@ import logging
 import six
 import time
 
-from twisted.python.compat import _PY3
 from twisted.web import http
 from twisted.protocols.policies import ProtocolWrapper
 
@@ -21,6 +20,25 @@ class WebRequest(http.Request):
     Does some extra processing over the normal Twisted Web request to separate
     GET and POST out.
     """
+
+    error_template = """
+        <html>
+            <head>
+                <title>%(title)s</title>
+                <style>
+                    body { font-family: sans-serif; margin: 0; padding: 0; }
+                    h1 { background: #E9B1B1; padding: 0.3em 20px; color: #472B2Bl; border-bottom: 1px solid #CC8989; }
+                    p { padding: 0.3em 0 0.3em 20px; }
+                    footer { padding: 0.5em 0 0.3em 20px; color: #999; font-size: 80%%; font-style: italic; }
+                </style>
+            </head>
+            <body>
+                <h1>%(title)s</h1>
+                <p>%(body)s</p>
+                <footer>Daphne</footer>
+            </body>
+        </html>
+    """.replace("\n", "").replace("    ", " ").replace("   ", " ").replace("  ", " ")  # Shorten it a bit, bytes wise
 
     def __init__(self, *args, **kwargs):
         http.Request.__init__(self, *args, **kwargs)
@@ -157,10 +175,33 @@ class WebRequest(http.Request):
                 "status": self.code,
                 "method": self.method.decode("ascii"),
                 "client": "%s:%s" % (self.client.host, self.client.port),
-                "time_taken": time.time() - self.request_start,
+                "time_taken": self.duration(),
             })
         else:
             logger.debug("HTTP response chunk for %s", self.reply_channel)
+
+    def duration(self):
+        """
+        Returns the time since the start of the request.
+        """
+        return time.time() - self.request_start
+
+    def basic_error(self, status, status_text, body):
+        """
+        Responds with a server-level error page (very basic)
+        """
+        self.serverResponse({
+            "status": status,
+            "status_text": status_text,
+            "headers": [
+                ("Content-Type", b"text/html; charset=utf-8"),
+            ],
+            "content": (self.error_template % {
+                "title": str(status) + " " + status_text.decode("ascii"),
+                "body": body,
+            }).encode("utf8"),
+        })
+
 
 
 class HTTPProtocol(http.HTTPChannel):
@@ -178,10 +219,11 @@ class HTTPFactory(http.HTTPFactory):
 
     protocol = HTTPProtocol
 
-    def __init__(self, channel_layer, action_logger=None):
+    def __init__(self, channel_layer, action_logger=None, timeout=120):
         http.HTTPFactory.__init__(self)
         self.channel_layer = channel_layer
         self.action_logger = action_logger
+        self.timeout = timeout
         # We track all sub-protocols for response channel mapping
         self.reply_protocols = {}
         # Make a factory for WebSocket protocols
@@ -211,3 +253,12 @@ class HTTPFactory(http.HTTPFactory):
         """
         if self.action_logger:
             self.action_logger(protocol, action, details)
+
+    def check_timeouts(self):
+        """
+        Runs through all HTTP protocol instances and times them out if they've
+        taken too long (and so their message is probably expired)
+        """
+        for protocol in list(self.reply_protocols.values()):
+            if isinstance(protocol, WebRequest) and protocol.duration() > self.timeout:
+                protocol.basic_error(503, b"Service Unavailable", "Worker server failed to respond within time limit.")

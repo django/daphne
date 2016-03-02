@@ -41,6 +41,13 @@ class CommandLineInterface(object):
             default=1,
         )
         self.parser.add_argument(
+            '-t',
+            '--http-timeout',
+            type=int,
+            help='How long to wait for worker server before timing out HTTP connections',
+            default=120,
+        )
+        self.parser.add_argument(
             'channel_layer',
             help='The ASGI channel layer instance to use as path.to.module:instance.path',
         )
@@ -85,4 +92,5 @@ class CommandLineInterface(object):
             channel_layer=channel_layer,
             host=args.host,
             port=args.port,
+            http_timeout=args.http_timeout,
         ).run()
