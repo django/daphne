@@ -1,3 +1,10 @@
+0.9.2 (2016-03-02)
+------------------
+
+* HTTP requests now time out after a configurable amount of time and return 503
+  (default is 2 minutes)
+
+
 0.9.1 (2016-03-01)
 ------------------
 
@@ -6,6 +13,7 @@
 * WebSocket packets have an "order" attribute attached
 
 * WebSocket upgrade header detection is now case insensitive
+
 
 0.9 (2016-02-21)
 ----------------
