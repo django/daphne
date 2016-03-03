@@ -27,9 +27,9 @@ class WebRequest(http.Request):
                 <title>%(title)s</title>
                 <style>
                     body { font-family: sans-serif; margin: 0; padding: 0; }
-                    h1 { background: #E9B1B1; padding: 0.3em 20px; color: #472B2Bl; border-bottom: 1px solid #CC8989; }
-                    p { padding: 0.3em 0 0.3em 20px; }
-                    footer { padding: 0.5em 0 0.3em 20px; color: #999; font-size: 80%%; font-style: italic; }
+                    h1 { padding: 0.6em 0 0.2em 20px; color: #896868; margin: 0; }
+                    p { padding: 0 0 0.3em 20px; margin: 0; }
+                    footer { padding: 1em 0 0.3em 20px; color: #999; font-size: 80%%; font-style: italic; }
                 </style>
             </head>
             <body>
