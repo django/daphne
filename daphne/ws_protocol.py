@@ -33,7 +33,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
                 clean_headers[name.lower()] = value.encode("latin1")
             # Reconstruct query string
             # TODO: get autobahn to provide it raw
-            query_string = urlencode(request.params).encode("ascii")
+            query_string = urlencode(request.params, doseq=True).encode("ascii")
             # Make sending channel
             self.reply_channel = self.channel_layer.new_channel("!websocket.send.?")
             # Tell main factory about it
