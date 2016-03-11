@@ -155,11 +155,7 @@ class WebRequest(http.Request):
                 raise ValueError("Got multiple Response messages for %s!" % self.reply_channel)
             self._got_response_start = True
             # Write code
-            status_text = message.get("status_text", None)
-            if isinstance(status_text, six.text_type):
-                logger.warn("HTTP status text for %s was text - should be bytes", self.reply_channel)
-                status_text = status_text.encode("ascii")
-            self.setResponseCode(message['status'], status_text)
+            self.setResponseCode(message['status'])
             # Write headers
             for header, value in message.get("headers", {}):
                 # Shim code from old ASGI version, can be removed after a while
