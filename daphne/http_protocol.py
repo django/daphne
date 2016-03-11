@@ -93,12 +93,13 @@ class WebRequest(http.Request):
         # Boring old HTTP.
         else:
             # Sanitize and decode headers
-            self.clean_headers = {}
-            for name, value in self.requestHeaders.getAllRawHeaders():
+            self.clean_headers = []
+            for name, values in self.requestHeaders.getAllRawHeaders():
                 # Prevent CVE-2015-0219
                 if b"_" in name:
                     continue
-                self.clean_headers[name.lower().decode("latin1")] = value[0]
+                for value in values:
+                    self.clean_headers.append((name.lower(), value))
             logger.debug("HTTP %s request for %s", self.method, self.reply_channel)
             self.content.seek(0, 0)
             # Send message
@@ -161,7 +162,10 @@ class WebRequest(http.Request):
             self.setResponseCode(message['status'], status_text)
             # Write headers
             for header, value in message.get("headers", {}):
-                self.setHeader(header.encode("utf8"), value)
+                # Shim code from old ASGI version, can be removed after a while
+                if isinstance(header, six.text_type):
+                    header = header.encode("latin1")
+                self.setHeader(header, value)
             logger.debug("HTTP %s response started for %s", message['status'], self.reply_channel)
         # Write out body
         if "content" in message:
@@ -194,7 +198,7 @@ class WebRequest(http.Request):
             "status": status,
             "status_text": status_text,
             "headers": [
-                ("Content-Type", b"text/html; charset=utf-8"),
+                (b"Content-Type", b"text/html; charset=utf-8"),
             ],
             "content": (self.error_template % {
                 "title": str(status) + " " + status_text.decode("ascii"),
