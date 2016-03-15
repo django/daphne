@@ -17,4 +17,4 @@ Running
 Simply point Daphne to your ASGI channel layer instance, and optionally
 set a bind address and port (defaults to localhost, port 8000)::
 
-    daphne -b 0.0.0.0 -p 8001 django_project.asgi.channel_layer
+    daphne -b 0.0.0.0 -p 8001 django_project.asgi:channel_layer
