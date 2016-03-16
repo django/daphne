@@ -161,7 +161,7 @@ class WebRequest(http.Request):
                 # Shim code from old ASGI version, can be removed after a while
                 if isinstance(header, six.text_type):
                     header = header.encode("latin1")
-                self.setHeader(header, value)
+                self.responseHeaders.addRawHeader(header, value)
             logger.debug("HTTP %s response started for %s", message['status'], self.reply_channel)
         # Write out body
         if "content" in message:
