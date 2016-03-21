@@ -45,7 +45,7 @@ class WebRequest(http.Request):
         # Easy factory link
         self.factory = self.channel.factory
         # Make a name for our reply channel
-        self.reply_channel = self.factory.channel_layer.new_channel("!http.response.?")
+        self.reply_channel = self.factory.channel_layer.new_channel("http.response!")
         # Tell factory we're that channel's client
         self.last_keepalive = time.time()
         self.factory.reply_protocols[self.reply_channel] = self
@@ -235,9 +235,9 @@ class HTTPFactory(http.HTTPFactory):
         return self.reply_protocols.keys()
 
     def dispatch_reply(self, channel, message):
-        if channel.startswith("!http") and isinstance(self.reply_protocols[channel], WebRequest):
+        if channel.startswith("http") and isinstance(self.reply_protocols[channel], WebRequest):
             self.reply_protocols[channel].serverResponse(message)
-        elif channel.startswith("!websocket") and isinstance(self.reply_protocols[channel], WebSocketProtocol):
+        elif channel.startswith("websocket") and isinstance(self.reply_protocols[channel], WebSocketProtocol):
             if message.get("bytes", None):
                 self.reply_protocols[channel].serverSend(message["bytes"], True)
             if message.get("text", None):
