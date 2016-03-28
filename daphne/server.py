@@ -15,7 +15,8 @@ class Server(object):
         port=8000,
         signal_handlers=True,
         action_logger=None,
-        http_timeout=120
+        http_timeout=120,
+        websocket_timeout=None,
     ):
         self.channel_layer = channel_layer
         self.host = host
@@ -23,9 +24,17 @@ class Server(object):
         self.signal_handlers = signal_handlers
         self.action_logger = action_logger
         self.http_timeout = http_timeout
+        # If they did not provide a websocket timeout, default it to the
+        # channel layer's group_expiry value if present, or one day if not.
+        self.websocket_timeout = websocket_timeout or getattr(channel_layer, "group_expiry", 86400)
 
     def run(self):
-        self.factory = HTTPFactory(self.channel_layer, self.action_logger, timeout=self.http_timeout)
+        self.factory = HTTPFactory(
+            self.channel_layer,
+            self.action_logger,
+            timeout=self.http_timeout,
+            websocket_timeout=self.websocket_timeout,
+        )
         reactor.listenTCP(self.port, self.factory, interface=self.host)
         reactor.callLater(0, self.backend_reader)
         reactor.callLater(2, self.timeout_checker)
@@ -54,8 +63,7 @@ class Server(object):
 
     def timeout_checker(self):
         """
-        Called periodically to enforce timeout rules on HTTP connections
-        (but not WebSocket)
+        Called periodically to enforce timeout rules on all connections
         """
         self.factory.check_timeouts()
         reactor.callLater(2, self.timeout_checker)

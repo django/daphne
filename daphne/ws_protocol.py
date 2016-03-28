@@ -23,6 +23,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
     def onConnect(self, request):
         self.request = request
         self.packets_received = 0
+        self.socket_opened = time.time()
         try:
             # Sanitize and decode headers
             clean_headers = {}
@@ -113,6 +114,12 @@ class WebSocketProtocol(WebSocketServerProtocol):
             })
         else:
             logger.debug("WebSocket closed before handshake established")
+
+    def duration(self):
+        """
+        Returns the time since the socket was opened
+        """
+        return time.time() - self.socket_opened
 
 
 class WebSocketFactory(WebSocketServerFactory):

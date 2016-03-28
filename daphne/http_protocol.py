@@ -219,11 +219,12 @@ class HTTPFactory(http.HTTPFactory):
 
     protocol = HTTPProtocol
 
-    def __init__(self, channel_layer, action_logger=None, timeout=120):
+    def __init__(self, channel_layer, action_logger=None, timeout=120, websocket_timeout=86400):
         http.HTTPFactory.__init__(self)
         self.channel_layer = channel_layer
         self.action_logger = action_logger
         self.timeout = timeout
+        self.websocket_timeout = websocket_timeout
         # We track all sub-protocols for response channel mapping
         self.reply_protocols = {}
         # Make a factory for WebSocket protocols
@@ -260,5 +261,9 @@ class HTTPFactory(http.HTTPFactory):
         taken too long (and so their message is probably expired)
         """
         for protocol in list(self.reply_protocols.values()):
+            # Web timeout checking
             if isinstance(protocol, WebRequest) and protocol.duration() > self.timeout:
                 protocol.basic_error(503, b"Service Unavailable", "Worker server failed to respond within time limit.")
+            # WebSocket timeout checking
+            elif isinstance(protocol, WebSocketProtocol) and protocol.duration() > self.websocket_timeout:
+                protocol.serverClose()
