@@ -13,6 +13,7 @@ class Server(object):
         channel_layer,
         host="127.0.0.1",
         port=8000,
+        unix_socket=None,
         signal_handlers=True,
         action_logger=None,
         http_timeout=120,
@@ -21,6 +22,7 @@ class Server(object):
         self.channel_layer = channel_layer
         self.host = host
         self.port = port
+        self.unix_socket = unix_socket
         self.signal_handlers = signal_handlers
         self.action_logger = action_logger
         self.http_timeout = http_timeout
@@ -35,7 +37,10 @@ class Server(object):
             timeout=self.http_timeout,
             websocket_timeout=self.websocket_timeout,
         )
-        reactor.listenTCP(self.port, self.factory, interface=self.host)
+        if self.unix_socket:
+            reactor.listenUNIX(self.unix_socket, self.factory)
+        else:
+            reactor.listenTCP(self.port, self.factory, interface=self.host)
         reactor.callLater(0, self.backend_reader)
         reactor.callLater(2, self.timeout_checker)
         reactor.run(installSignalHandlers=self.signal_handlers)

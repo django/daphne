@@ -34,6 +34,13 @@ class CommandLineInterface(object):
             default="127.0.0.1",
         )
         self.parser.add_argument(
+            '-u',
+            '--unix-socket',
+            dest='unix_socket',
+            help='Bind to a UNIX socket rather than a TCP host/port',
+            default=None,
+        )
+        self.parser.add_argument(
             '-v',
             '--verbosity',
             type=int,
@@ -83,14 +90,14 @@ class CommandLineInterface(object):
             channel_layer = getattr(channel_layer, bit)
         # Run server
         logger.info(
-            "Starting server on %s:%s, channel layer %s",
-            args.host,
-            args.port,
+            "Starting server at %s, channel layer %s",
+            (args.unix_socket if args.unix_socket else "%s:%s" % (args.host, args.port)),
             args.channel_layer,
         )
         Server(
             channel_layer=channel_layer,
             host=args.host,
             port=args.port,
+            unix_socket=args.unix_socket,
             http_timeout=args.http_timeout,
         ).run()
