@@ -18,6 +18,7 @@ class Server(object):
         action_logger=None,
         http_timeout=120,
         websocket_timeout=None,
+        ping_interval=20,
     ):
         self.channel_layer = channel_layer
         self.host = host
@@ -26,6 +27,7 @@ class Server(object):
         self.signal_handlers = signal_handlers
         self.action_logger = action_logger
         self.http_timeout = http_timeout
+        self.ping_interval = ping_interval
         # If they did not provide a websocket timeout, default it to the
         # channel layer's group_expiry value if present, or one day if not.
         self.websocket_timeout = websocket_timeout or getattr(channel_layer, "group_expiry", 86400)
@@ -36,6 +38,7 @@ class Server(object):
             self.action_logger,
             timeout=self.http_timeout,
             websocket_timeout=self.websocket_timeout,
+            ping_interval=self.ping_interval,
         )
         if self.unix_socket:
             reactor.listenUNIX(self.unix_socket, self.factory)
@@ -68,7 +71,8 @@ class Server(object):
 
     def timeout_checker(self):
         """
-        Called periodically to enforce timeout rules on all connections
+        Called periodically to enforce timeout rules on all connections.
+        Also checks pings at the same time.
         """
         self.factory.check_timeouts()
         reactor.callLater(2, self.timeout_checker)

@@ -24,6 +24,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
         self.request = request
         self.packets_received = 0
         self.socket_opened = time.time()
+        self.last_data = time.time()
         try:
             # Sanitize and decode headers
             clean_headers = {}
@@ -68,6 +69,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
     def onMessage(self, payload, isBinary):
         logger.debug("WebSocket incoming packet on %s", self.reply_channel)
         self.packets_received += 1
+        self.last_data = time.time()
         if isBinary:
             self.channel_layer.send("websocket.receive", {
                 "reply_channel": self.reply_channel,
@@ -87,6 +89,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
         """
         Server-side channel message to send a message.
         """
+        self.last_data = time.time()
         logger.debug("Sent WebSocket packet to client for %s", self.reply_channel)
         if binary:
             self.sendMessage(content, binary)
@@ -120,6 +123,14 @@ class WebSocketProtocol(WebSocketServerProtocol):
         Returns the time since the socket was opened
         """
         return time.time() - self.socket_opened
+
+    def check_ping(self):
+        """
+        Checks to see if we should send a keepalive ping.
+        """
+        if (time.time() - self.last_data) > self.main_factory.ping_interval:
+            self.sendPing()
+            self.last_data = time.time()
 
 
 class WebSocketFactory(WebSocketServerFactory):

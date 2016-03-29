@@ -219,12 +219,13 @@ class HTTPFactory(http.HTTPFactory):
 
     protocol = HTTPProtocol
 
-    def __init__(self, channel_layer, action_logger=None, timeout=120, websocket_timeout=86400):
+    def __init__(self, channel_layer, action_logger=None, timeout=120, websocket_timeout=86400, ping_interval=20):
         http.HTTPFactory.__init__(self)
         self.channel_layer = channel_layer
         self.action_logger = action_logger
         self.timeout = timeout
         self.websocket_timeout = websocket_timeout
+        self.ping_interval = ping_interval
         # We track all sub-protocols for response channel mapping
         self.reply_protocols = {}
         # Make a factory for WebSocket protocols
@@ -264,6 +265,11 @@ class HTTPFactory(http.HTTPFactory):
             # Web timeout checking
             if isinstance(protocol, WebRequest) and protocol.duration() > self.timeout:
                 protocol.basic_error(503, b"Service Unavailable", "Worker server failed to respond within time limit.")
-            # WebSocket timeout checking
-            elif isinstance(protocol, WebSocketProtocol) and protocol.duration() > self.websocket_timeout:
-                protocol.serverClose()
+            # WebSocket timeout checking and keepalive ping sending
+            elif isinstance(protocol, WebSocketProtocol):
+                # Timeout check
+                if protocol.duration() > self.websocket_timeout:
+                    protocol.serverClose()
+                # Ping check
+                else:
+                    protocol.check_ping()

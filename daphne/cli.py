@@ -55,6 +55,12 @@ class CommandLineInterface(object):
             default=120,
         )
         self.parser.add_argument(
+            '--ping-interval',
+            type=int,
+            help='The number of seconds a WebSocket must be idle before a keepalive ping is sent',
+            default=20,
+        )
+        self.parser.add_argument(
             'channel_layer',
             help='The ASGI channel layer instance to use as path.to.module:instance.path',
         )
@@ -100,4 +106,5 @@ class CommandLineInterface(object):
             port=args.port,
             unix_socket=args.unix_socket,
             http_timeout=args.http_timeout,
+            ping_interval=args.ping_interval,
         ).run()
