@@ -1,3 +1,15 @@
+0.10.1 (2016-03-29)
+-------------------
+
+* WebSockets now close after they've been open for longer than the channel
+  layer group expiry (86400 seconds by default for most layers).
+
+* Binding to UNIX sockets is now possible (use the -u argument)
+
+* WebSockets now send keepalive pings if they've had no data for a certain
+  amount of time (20 seconds by default, set with --ping-interval)
+
+
 0.10.0 (2016-03-21)
 -------------------
 
