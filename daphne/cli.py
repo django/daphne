@@ -3,6 +3,7 @@ import argparse
 import logging
 import importlib
 from .server import Server
+from .access import AccessLogGenerator
 
 
 logger = logging.getLogger(__name__)
@@ -55,6 +56,11 @@ class CommandLineInterface(object):
             default=120,
         )
         self.parser.add_argument(
+            '--access-log',
+            help='Where to write the access log (- for stdout, the default for verbosity=1)',
+            default=None,
+        )
+        self.parser.add_argument(
             '--ping-interval',
             type=int,
             help='The number of seconds a WebSocket must be idle before a keepalive ping is sent',
@@ -88,6 +94,12 @@ class CommandLineInterface(object):
             }[args.verbosity],
             format = "%(asctime)-15s %(levelname)-8s %(message)s" ,
         )
+        # If verbosity is 1 or greater, or they told us explicitly, set up access log
+        access_log_stream = None
+        if args.access_log:
+            access_log_stream = open(args.access_log, "a")
+        elif args.verbosity >= 1:
+            access_log_stream = sys.stdout
         # Import channel layer
         sys.path.insert(0, ".")
         module_path, object_path = args.channel_layer.split(":", 1)
@@ -107,4 +119,5 @@ class CommandLineInterface(object):
             unix_socket=args.unix_socket,
             http_timeout=args.http_timeout,
             ping_interval=args.ping_interval,
+            action_logger=AccessLogGenerator(access_log_stream) if access_log_stream else None,
         ).run()
