@@ -11,6 +11,7 @@ class Server(object):
     def __init__(
         self,
         channel_layer,
+        factory_class, # that's a factory factory ... meeeh
         host="127.0.0.1",
         port=8000,
         unix_socket=None,
@@ -31,9 +32,10 @@ class Server(object):
         # If they did not provide a websocket timeout, default it to the
         # channel layer's group_expiry value if present, or one day if not.
         self.websocket_timeout = websocket_timeout or getattr(channel_layer, "group_expiry", 86400)
-
+        self.factory_class = factory_class
+        
     def run(self):
-        self.factory = HTTPFactory(
+        self.factory = self.factory_class(
             self.channel_layer,
             self.action_logger,
             timeout=self.http_timeout,
