@@ -21,6 +21,7 @@ class AccessLogGenerator(object):
                 date=datetime.datetime.now(),
                 request="%(method)s %(path)s" % details,
                 status=details['status'],
+                length=details['size'],
             )
         # Websocket requests
         elif protocol == "websocket" and action == "connected":

@@ -176,6 +176,7 @@ class WebRequest(http.Request):
                 "method": self.method.decode("ascii"),
                 "client": "%s:%s" % (self.client.host, self.client.port),
                 "time_taken": self.duration(),
+                "size": self.sentLength,
             })
         else:
             logger.debug("HTTP response chunk for %s", self.reply_channel)
