@@ -184,6 +184,8 @@ class WebRequest(http.Request):
         """
         Returns the time since the start of the request.
         """
+        if not hasattr(self, "request_start"):
+            return 0
         return time.time() - self.request_start
 
     def basic_error(self, status, status_text, body):
