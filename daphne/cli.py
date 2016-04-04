@@ -97,7 +97,10 @@ class CommandLineInterface(object):
         # If verbosity is 1 or greater, or they told us explicitly, set up access log
         access_log_stream = None
         if args.access_log:
-            access_log_stream = open(args.access_log, "a")
+            if args.access_log == "-":
+                access_log_stream = sys.stdout
+            else:
+                access_log_stream = open(args.access_log, "a")
         elif args.verbosity >= 1:
             access_log_stream = sys.stdout
         # Import channel layer
