@@ -75,9 +75,23 @@ class CommandLineInterface(object):
         )
 
         self.parser.add_argument(
+            '--sslcert',
+            action="store",
+            help="path to ssl certificate file"
+        )
+
+        self.parser.add_argument(
+            '--sslkey',
+            action="store",
+            help="path to ssl private key file"
+        )
+
+
+        self.parser.add_argument(
             'channel_layer',
             help='The ASGI channel layer instance to use as path.to.module:instance.path',
         )
+
 
     @classmethod
     def entrypoint(cls):
@@ -137,4 +151,7 @@ class CommandLineInterface(object):
             http_timeout=args.http_timeout,
             ping_interval=args.ping_interval,
             action_logger=AccessLogGenerator(access_log_stream) if access_log_stream else None,
+            ssl_certificate=args.sslcert,
+            ssl_key=args.sslkey
+
         ).run()

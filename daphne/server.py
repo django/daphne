@@ -1,5 +1,6 @@
 import logging
-from twisted.internet import reactor
+from twisted.internet import reactor, ssl, endpoints
+from OpenSSL import crypto
 
 from .http_protocol import HTTPFactory
 
@@ -20,6 +21,8 @@ class Server(object):
         http_timeout=120,
         websocket_timeout=None,
         ping_interval=20,
+        ssl_certificate = None,
+        ssl_key = None
     ):
         self.channel_layer = channel_layer
         self.host = host
@@ -33,7 +36,9 @@ class Server(object):
         # channel layer's group_expiry value if present, or one day if not.
         self.websocket_timeout = websocket_timeout or getattr(channel_layer, "group_expiry", 86400)
         self.factory_class = factory_class
-        
+        self.ssl_certificate = ssl_certificate
+        self.ssl_key = ssl_key
+
     def run(self):
         self.factory = self.factory_class(
             self.channel_layer,
@@ -42,10 +47,26 @@ class Server(object):
             websocket_timeout=self.websocket_timeout,
             ping_interval=self.ping_interval,
         )
-        if self.unix_socket:
-            reactor.listenUNIX(self.unix_socket, self.factory)
-        else:
-            reactor.listenTCP(self.port, self.factory, interface=self.host)
+
+        if self.ssl_certificate :
+            with open(self.ssl_certificate, 'r') as f:
+                cert = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
+            with open(self.ssl_key, 'r') as f:
+                key = crypto.load_privatekey(crypto.FILETYPE_PEM, f.read())
+
+            opts = ssl.CertificateOptions(
+                privateKey= key,
+                certificate=cert,
+                acceptableProtocols=[b'h2']
+            )
+
+            endpt = endpoints.SSL4ServerEndpoint(reactor, self.port, opts, backlog=128)
+            endpt.listen(self.factory)
+        else :
+            if self.unix_socket:
+                reactor.listenUNIX(self.unix_socket, self.factory)
+            else:
+                reactor.listenTCP(self.port, self.factory, interface=self.host)
         reactor.callLater(0, self.backend_reader)
         reactor.callLater(2, self.timeout_checker)
         reactor.run(installSignalHandlers=self.signal_handlers)
