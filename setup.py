@@ -24,6 +24,7 @@ setup(
         'asgiref>=0.10',
         'twisted>=15.5',
         'autobahn>=0.12',
+        'h2>=2.2'
     ],
     entry_points={'console_scripts': [
         'daphne = daphne.cli:CommandLineInterface.entrypoint',
