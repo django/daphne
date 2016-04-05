@@ -1,6 +1,5 @@
 import logging
 from twisted.internet import reactor, ssl, endpoints
-from OpenSSL import crypto
 
 from .http_protocol import HTTPFactory
 
@@ -49,6 +48,9 @@ class Server(object):
         )
 
         if self.ssl_certificate :
+
+            from OpenSSL import crypto
+
             with open(self.ssl_certificate, 'r') as f:
                 cert = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
             with open(self.ssl_key, 'r') as f:
