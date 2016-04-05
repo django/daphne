@@ -243,6 +243,15 @@ class HTTPFactory(http.HTTPFactory):
         if channel.startswith("http") and isinstance(self.reply_protocols[channel], WebRequest):
             self.reply_protocols[channel].serverResponse(message)
         elif channel.startswith("websocket") and isinstance(self.reply_protocols[channel], WebSocketProtocol):
+            # Ensure the message is a valid WebSocket one
+            unknown_message_keys = set(message.keys()) - {"bytes", "text", "close"}
+            if unknown_message_keys:
+                raise ValueError(
+                    "Got invalid WebSocket reply message on %s - contains unknown keys %s" % (
+                        channel,
+                        unknown_message_keys,
+                    )
+                )
             if message.get("bytes", None):
                 self.reply_protocols[channel].serverSend(message["bytes"], True)
             if message.get("text", None):
