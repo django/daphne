@@ -1,3 +1,9 @@
+0.10.3 (2016-04-05)
+-------------------
+
+* Error on badly formatted websocket reply messages
+
+
 0.10.2 (2016-04-03)
 -------------------
 
