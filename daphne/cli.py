@@ -5,6 +5,8 @@ import importlib
 from .server import Server
 from .access import AccessLogGenerator
 
+from .http_protocol import HTTPFactory
+from .http2_protocol import H2Factory
 
 logger = logging.getLogger(__name__)
 
@@ -67,9 +69,29 @@ class CommandLineInterface(object):
             default=20,
         )
         self.parser.add_argument(
+            '--h2',
+            action='store_true',
+            help="enable HTTP/2"
+        )
+
+        self.parser.add_argument(
+            '--sslcert',
+            action="store",
+            help="path to ssl certificate file"
+        )
+
+        self.parser.add_argument(
+            '--sslkey',
+            action="store",
+            help="path to ssl private key file"
+        )
+
+
+        self.parser.add_argument(
             'channel_layer',
             help='The ASGI channel layer instance to use as path.to.module:instance.path',
         )
+
 
     @classmethod
     def entrypoint(cls):
@@ -115,12 +137,21 @@ class CommandLineInterface(object):
             (args.unix_socket if args.unix_socket else "%s:%s" % (args.host, args.port)),
             args.channel_layer,
         )
+        if args.h2 :
+            factory_class = H2Factory
+        else :
+            factory_class = HTTPFactory
+
         Server(
             channel_layer=channel_layer,
+            factory_class=factory_class,
             host=args.host,
             port=args.port,
             unix_socket=args.unix_socket,
             http_timeout=args.http_timeout,
             ping_interval=args.ping_interval,
             action_logger=AccessLogGenerator(access_log_stream) if access_log_stream else None,
+            ssl_certificate=args.sslcert,
+            ssl_key=args.sslkey
+
         ).run()
