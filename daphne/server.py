@@ -19,6 +19,7 @@ class Server(object):
         http_timeout=120,
         websocket_timeout=None,
         ping_interval=20,
+        ws_protocols=None,
     ):
         self.channel_layer = channel_layer
         self.host = host
@@ -31,6 +32,7 @@ class Server(object):
         # If they did not provide a websocket timeout, default it to the
         # channel layer's group_expiry value if present, or one day if not.
         self.websocket_timeout = websocket_timeout or getattr(channel_layer, "group_expiry", 86400)
+        self.ws_protocols = ws_protocols
 
     def run(self):
         self.factory = HTTPFactory(
@@ -39,6 +41,7 @@ class Server(object):
             timeout=self.http_timeout,
             websocket_timeout=self.websocket_timeout,
             ping_interval=self.ping_interval,
+            ws_protocols=self.ws_protocols,
         )
         if self.unix_socket:
             reactor.listenUNIX(self.unix_socket, self.factory)
