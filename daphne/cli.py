@@ -70,6 +70,13 @@ class CommandLineInterface(object):
             'channel_layer',
             help='The ASGI channel layer instance to use as path.to.module:instance.path',
         )
+        self.parser.add_argument(
+            '--ws-protocol',
+            nargs='*',
+            dest='ws_protocols',
+            help='The WebSocket protocols you wish to support',
+            default=None,
+        )
 
     @classmethod
     def entrypoint(cls):
@@ -123,4 +130,5 @@ class CommandLineInterface(object):
             http_timeout=args.http_timeout,
             ping_interval=args.ping_interval,
             action_logger=AccessLogGenerator(access_log_stream) if access_log_stream else None,
+            ws_protocols=args.ws_protocols,
         ).run()
