@@ -57,6 +57,10 @@ class WebSocketProtocol(WebSocketServerProtocol):
             logger.error(traceback.format_exc())
             raise
 
+        ws_protocol = clean_headers.get('sec-websocket-protocol')
+        if ws_protocol and ws_protocol in self.factory.protocols:
+            return ws_protocol
+
     def onOpen(self):
         # Send news that this channel is open
         logger.debug("WebSocket open for %s", self.reply_channel)
