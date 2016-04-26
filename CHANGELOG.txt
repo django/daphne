@@ -1,3 +1,9 @@
+0.11.1 (2016-04-26)
+-------------------
+
+* Fix bugs with WebSocket path parsing under Python 2
+
+
 0.11.0 (2016-04-26)
 -------------------
 
