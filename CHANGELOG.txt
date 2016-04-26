@@ -1,3 +1,9 @@
+0.11.0 (2016-04-26)
+-------------------
+
+* HTTP paths and query strings are now pre-decoded before going to ASGI
+
+
 0.10.3 (2016-04-05)
 -------------------
 
