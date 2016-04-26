@@ -4,9 +4,9 @@ import logging
 import six
 import time
 
-from twisted.web import http
-from twisted.protocols.policies import ProtocolWrapper
 from six.moves.urllib_parse import unquote_plus
+from twisted.protocols.policies import ProtocolWrapper
+from twisted.web import http
 
 from .ws_protocol import WebSocketProtocol, WebSocketFactory
 
@@ -118,7 +118,8 @@ class WebRequest(http.Request):
                 "server": [self.host.host, self.host.port],
             })
 
-    def unquote(self, value):
+    @classmethod
+    def unquote(cls, value):
         """
         Python 2 and 3 compat layer for utf-8 unquoting
         """

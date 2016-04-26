@@ -1,9 +1,10 @@
 from __future__ import unicode_literals
 
 import logging
+import six
 import time
 import traceback
-from six.moves.urllib.parse import urlencode
+from six.moves.urllib_parse import unquote_plus, urlencode
 
 from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
 
@@ -43,9 +44,9 @@ class WebSocketProtocol(WebSocketServerProtocol):
             # Make initial request info dict from request (we only have it here)
             self.path = request.path.encode("ascii")
             self.request_info = {
-                "path": self.path,
+                "path": self.unquote(self.path),
                 "headers": clean_headers,
-                "query_string": query_string,
+                "query_string": self.unquote(query_string),
                 "client": [self.transport.getPeer().host, self.transport.getPeer().port],
                 "server": [self.transport.getHost().host, self.transport.getHost().port],
                 "reply_channel": self.reply_channel,
@@ -60,6 +61,16 @@ class WebSocketProtocol(WebSocketServerProtocol):
         ws_protocol = clean_headers.get('sec-websocket-protocol')
         if ws_protocol and ws_protocol in self.factory.protocols:
             return ws_protocol
+
+    @classmethod
+    def unquote(cls, value):
+        """
+        Python 2 and 3 compat layer for utf-8 unquoting
+        """
+        if six.PY2:
+            return unquote_plus(value).decode("utf8")
+        else:
+            return unquote_plus(value.decode("ascii"))
 
     def onOpen(self):
         # Send news that this channel is open
