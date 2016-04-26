@@ -6,6 +6,7 @@ import time
 
 from twisted.web import http
 from twisted.protocols.policies import ProtocolWrapper
+from six.moves.urllib_parse import unquote_plus
 
 from .ws_protocol import WebSocketProtocol, WebSocketFactory
 
@@ -108,14 +109,23 @@ class WebRequest(http.Request):
                 # TODO: Correctly say if it's 1.1 or 1.0
                 "http_version": "1.1",
                 "method": self.method.decode("ascii"),
-                "path": self.path,
+                "path": self.unquote(self.path),
                 "scheme": "http",
-                "query_string": self.query_string,
+                "query_string": self.unquote(self.query_string),
                 "headers": self.clean_headers,
                 "body": self.content.read(),
                 "client": [self.client.host, self.client.port],
                 "server": [self.host.host, self.host.port],
             })
+
+    def unquote(self, value):
+        """
+        Python 2 and 3 compat layer for utf-8 unquoting
+        """
+        if six.PY2:
+            return unquote_plus(value).decode("utf8")
+        else:
+            return unquote_plus(value.decode("ascii"))
 
     def send_disconnect(self):
         """
