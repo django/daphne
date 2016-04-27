@@ -4,7 +4,7 @@ import logging
 import six
 import time
 
-from six.moves.urllib_parse import unquote_plus
+from six.moves.urllib_parse import unquote
 from twisted.protocols.policies import ProtocolWrapper
 from twisted.web import http
 
@@ -124,9 +124,9 @@ class WebRequest(http.Request):
         Python 2 and 3 compat layer for utf-8 unquoting
         """
         if six.PY2:
-            return unquote_plus(value).decode("utf8")
+            return unquote(value).decode("utf8")
         else:
-            return unquote_plus(value.decode("ascii"))
+            return unquote(value.decode("ascii"))
 
     def send_disconnect(self):
         """

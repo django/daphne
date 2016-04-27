@@ -4,7 +4,7 @@ import logging
 import six
 import time
 import traceback
-from six.moves.urllib_parse import unquote_plus, urlencode
+from six.moves.urllib_parse import unquote, urlencode
 
 from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
 
@@ -68,9 +68,9 @@ class WebSocketProtocol(WebSocketServerProtocol):
         Python 2 and 3 compat layer for utf-8 unquoting
         """
         if six.PY2:
-            return unquote_plus(value).decode("utf8")
+            return unquote(value).decode("utf8")
         else:
-            return unquote_plus(value.decode("ascii"))
+            return unquote(value.decode("ascii"))
 
     def onOpen(self):
         # Send news that this channel is open
