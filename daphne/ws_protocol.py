@@ -88,14 +88,14 @@ class WebSocketProtocol(WebSocketServerProtocol):
         if isBinary:
             self.channel_layer.send("websocket.receive", {
                 "reply_channel": self.reply_channel,
-                "path": self.path,
+                "path": self.unquote(self.path),
                 "order": self.packets_received,
                 "bytes": payload,
             })
         else:
             self.channel_layer.send("websocket.receive", {
                 "reply_channel": self.reply_channel,
-                "path": self.path,
+                "path": self.unquote(self.path),
                 "order": self.packets_received,
                 "text": payload.decode("utf8"),
             })
@@ -123,7 +123,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
             del self.factory.reply_protocols[self.reply_channel]
             self.channel_layer.send("websocket.disconnect", {
                 "reply_channel": self.reply_channel,
-                "path": self.path,
+                "path": self.unquote(self.path),
                 "order": self.packets_received + 1,
             })
             self.factory.log_action("websocket", "disconnected", {
