@@ -103,6 +103,13 @@ class WebRequest(http.Request):
                     self.clean_headers.append((name.lower(), value))
             logger.debug("HTTP %s request for %s", self.method, self.reply_channel)
             self.content.seek(0, 0)
+            # Get client address if possible
+            if hasattr(self.client, "host") and hasattr(self.client, "port"):
+                self.client_addr = [self.client.host, self.client.port]
+                self.server_addr = [self.host.host, self.host.port]
+            else:
+                self.client_addr = None
+                self.server_addr = None
             # Send message
             self.factory.channel_layer.send("http.request", {
                 "reply_channel": self.reply_channel,
@@ -114,8 +121,8 @@ class WebRequest(http.Request):
                 "query_string": self.unquote(self.query_string),
                 "headers": self.clean_headers,
                 "body": self.content.read(),
-                "client": [self.client.host, self.client.port],
-                "server": [self.host.host, self.host.port],
+                "client": self.client_addr,
+                "server": self.server_addr,
             })
 
     @classmethod
@@ -185,7 +192,7 @@ class WebRequest(http.Request):
                 "path": self.path.decode("ascii"),
                 "status": self.code,
                 "method": self.method.decode("ascii"),
-                "client": "%s:%s" % (self.client.host, self.client.port),
+                "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,
                 "time_taken": self.duration(),
                 "size": self.sentLength,
             })

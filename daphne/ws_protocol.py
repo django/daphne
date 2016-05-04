@@ -41,14 +41,21 @@ class WebSocketProtocol(WebSocketServerProtocol):
             self.reply_channel = self.channel_layer.new_channel("websocket.send!")
             # Tell main factory about it
             self.main_factory.reply_protocols[self.reply_channel] = self
+            # Get client address if possible
+            if hasattr(self.transport.getPeer(), "host") and hasattr(self.transport.getPeer(), "port"):
+                self.client_addr = [self.transport.getPeer().host, self.transport.getPeer().port]
+                self.server_addr = [self.transport.getHost().host, self.transport.getHost().port]
+            else:
+                self.client_addr = None
+                self.server_addr = None
             # Make initial request info dict from request (we only have it here)
             self.path = request.path.encode("ascii")
             self.request_info = {
                 "path": self.unquote(self.path),
                 "headers": clean_headers,
                 "query_string": self.unquote(query_string),
-                "client": [self.transport.getPeer().host, self.transport.getPeer().port],
-                "server": [self.transport.getHost().host, self.transport.getHost().port],
+                "client": self.client_addr,
+                "server": self.server_addr,
                 "reply_channel": self.reply_channel,
                 "order": 0,
             }
@@ -78,7 +85,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
         self.channel_layer.send("websocket.connect", self.request_info)
         self.factory.log_action("websocket", "connected", {
             "path": self.request.path,
-            "client": "%s:%s" % (self.transport.getPeer().host, self.transport.getPeer().port),
+            "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,
         })
 
     def onMessage(self, payload, isBinary):
@@ -128,7 +135,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
             })
             self.factory.log_action("websocket", "disconnected", {
                 "path": self.request.path,
-                "client": "%s:%s" % (self.transport.getPeer().host, self.transport.getPeer().port),
+                "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,
             })
         else:
             logger.debug("WebSocket closed before handshake established")
