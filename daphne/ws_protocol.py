@@ -82,7 +82,11 @@ class WebSocketProtocol(WebSocketServerProtocol):
     def onOpen(self):
         # Send news that this channel is open
         logger.debug("WebSocket open for %s", self.reply_channel)
-        self.channel_layer.send("websocket.connect", self.request_info)
+        try:
+            self.channel_layer.send("websocket.connect", self.request_info)
+        except self.channel_layer.ChannelFull:
+            # We don't drop the connection here as you don't _have_ to consume websocket.connect
+            pass
         self.factory.log_action("websocket", "connected", {
             "path": self.request.path,
             "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,
@@ -92,20 +96,25 @@ class WebSocketProtocol(WebSocketServerProtocol):
         logger.debug("WebSocket incoming packet on %s", self.reply_channel)
         self.packets_received += 1
         self.last_data = time.time()
-        if isBinary:
-            self.channel_layer.send("websocket.receive", {
-                "reply_channel": self.reply_channel,
-                "path": self.unquote(self.path),
-                "order": self.packets_received,
-                "bytes": payload,
-            })
-        else:
-            self.channel_layer.send("websocket.receive", {
-                "reply_channel": self.reply_channel,
-                "path": self.unquote(self.path),
-                "order": self.packets_received,
-                "text": payload.decode("utf8"),
-            })
+        try:
+            if isBinary:
+                self.channel_layer.send("websocket.receive", {
+                    "reply_channel": self.reply_channel,
+                    "path": self.unquote(self.path),
+                    "order": self.packets_received,
+                    "bytes": payload,
+                })
+            else:
+                self.channel_layer.send("websocket.receive", {
+                    "reply_channel": self.reply_channel,
+                    "path": self.unquote(self.path),
+                    "order": self.packets_received,
+                    "text": payload.decode("utf8"),
+                })
+        except self.channel_layer.ChannelFull:
+            # We don't drop the connection here as you don't _have_ to consume websocket.receive
+            # TODO: Maybe add an option to drop if this is backlogged?
+            pass
 
     def serverSend(self, content, binary=False):
         """
@@ -128,11 +137,14 @@ class WebSocketProtocol(WebSocketServerProtocol):
         if hasattr(self, "reply_channel"):
             logger.debug("WebSocket closed for %s", self.reply_channel)
             del self.factory.reply_protocols[self.reply_channel]
-            self.channel_layer.send("websocket.disconnect", {
-                "reply_channel": self.reply_channel,
-                "path": self.unquote(self.path),
-                "order": self.packets_received + 1,
-            })
+            try:
+                self.channel_layer.send("websocket.disconnect", {
+                    "reply_channel": self.reply_channel,
+                    "path": self.unquote(self.path),
+                    "order": self.packets_received + 1,
+                })
+            except self.channel_layer.ChannelFull:
+                pass
             self.factory.log_action("websocket", "disconnected", {
                 "path": self.request.path,
                 "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,

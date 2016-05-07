@@ -111,19 +111,23 @@ class WebRequest(http.Request):
                 self.client_addr = None
                 self.server_addr = None
             # Send message
-            self.factory.channel_layer.send("http.request", {
-                "reply_channel": self.reply_channel,
-                # TODO: Correctly say if it's 1.1 or 1.0
-                "http_version": "1.1",
-                "method": self.method.decode("ascii"),
-                "path": self.unquote(self.path),
-                "scheme": "http",
-                "query_string": self.unquote(self.query_string),
-                "headers": self.clean_headers,
-                "body": self.content.read(),
-                "client": self.client_addr,
-                "server": self.server_addr,
-            })
+            try:
+                self.factory.channel_layer.send("http.request", {
+                    "reply_channel": self.reply_channel,
+                    # TODO: Correctly say if it's 1.1 or 1.0
+                    "http_version": "1.1",
+                    "method": self.method.decode("ascii"),
+                    "path": self.unquote(self.path),
+                    "scheme": "http",
+                    "query_string": self.unquote(self.query_string),
+                    "headers": self.clean_headers,
+                    "body": self.content.read(),
+                    "client": self.client_addr,
+                    "server": self.server_addr,
+                })
+            except self.factory.channel_layer.ChannelFull:
+                # Channel is too full; reject request with 503
+                self.basic_error(503, b"Service Unavailable", "Request queue full.")
 
     @classmethod
     def unquote(cls, value):
@@ -140,9 +144,12 @@ class WebRequest(http.Request):
         Sends a disconnect message on the http.disconnect channel.
         Useful only really for long-polling.
         """
-        self.factory.channel_layer.send("http.disconnect", {
-            "reply_channel": self.reply_channel,
-        })
+        try:
+            self.factory.channel_layer.send("http.disconnect", {
+                "reply_channel": self.reply_channel,
+            })
+        except self.factory.channel_layer.ChannelFull:
+            pass
 
     def connectionLost(self, reason):
         """
