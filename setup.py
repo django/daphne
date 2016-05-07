@@ -21,7 +21,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'asgiref>=0.10',
+        'asgiref>=0.13',
         'twisted>=15.5',
         'autobahn>=0.12',
     ],
