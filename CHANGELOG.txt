@@ -1,3 +1,12 @@
+0.12.0 (2016-05-07)
+-------------------
+
+* Backpressure on http.request now causes incoming requests to drop with 503.
+  Websockets will drop connection/disconnection messages/received frames if
+  backpressure is encountered; options are coming soon to instead drop the
+  connection if this happens.
+
+
 0.11.4 (2016-05-04)
 -------------------
 
