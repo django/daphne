@@ -1,3 +1,14 @@
+0.12.1 (2016-05-18)
+-------------------
+
+* Fixed bug where a non-ASCII byte in URL paths would crash the HTTP parser
+  without a response; now returns 400, and hardening in place to catch most
+  other errors and return a 500.
+
+* WebSocket header format now matches HTTP header format and the ASGI spec.
+  No update needed to channels library, but user code may need updating.
+
+
 0.12.0 (2016-05-07)
 -------------------
 
