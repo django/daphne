@@ -3,9 +3,12 @@ daphne
 
 .. image:: https://api.travis-ci.org/andrewgodwin/daphne.svg
     :target: https://travis-ci.org/andrewgodwin/daphne
-    
+
 .. image:: https://img.shields.io/pypi/v/daphne.svg
     :target: https://pypi.python.org/pypi/daphne
+
+.. image:: https://codecov.io/github/andrewgodwin/daphne/coverage.svg?branch=master
+    :target: https://codecov.io/github/andrewgodwin/daphne?branch=master
 
 Daphne is a HTTP, HTTP2 and WebSocket protocol server for
 `ASGI <http://channels.readthedocs.org/en/latest/asgi.html>`_, and developed
