@@ -1,0 +1,7 @@
+[paths]
+source =
+    daphne/
+
+[report]
+omit =
+    .tox/*

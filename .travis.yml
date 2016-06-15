@@ -1,9 +1,17 @@
 sudo: false
 language: python
 python:
-  - "2.7"
-  - "3.5"
+- "3.5"
+env:
+  global:
+  - PIP_RETRIES=10
+  - PIP_TIMEOUT=30
+  matrix:
+  - TOXENV=py27
+  - TOXENV=py35
 install:
-  - if [[ $TRAVIS_PYTHON_VERSION == 2.7 ]]; then pip install unittest2; fi
-  - pip install asgiref twisted autobahn
-script: if [[ $TRAVIS_PYTHON_VERSION == 2.7 ]]; then python -m unittest2; else python -m unittest; fi
+- travis_retry pip install tox codecov
+script:
+- tox
+after_success:
+- codecov
