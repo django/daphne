@@ -55,3 +55,15 @@ class TestHTTPProtocol(TestCase):
         )
         # Make sure that comes back right on the protocol
         self.assertEqual(self.tr.value(), b"HTTP/1.1 201 Created\r\nTransfer-Encoding: chunked\r\nX-Test: Boom!\r\n\r\n6\r\nOH HAI\r\n0\r\n\r\n")
+
+    def test_malformed_url(self):
+        # Send malformed request to the protocol
+        self.proto.dataReceived(
+            b"GET /\x99 HTTP/1.1\r\n" +
+            b"Host: somewhere.com\r\n" +
+            b"\r\n"
+        )
+        # Make sure that this doesn't come back
+        _, message = self.channel_layer.receive_many(["http.request"])
+        self.assertIsNone(_)
+        self.assertIsNone(message)
