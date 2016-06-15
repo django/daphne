@@ -19,10 +19,6 @@ class TestHTTPProtocol(TestCase):
         self.tr = proto_helpers.StringTransport()
         self.proto.makeConnection(self.tr)
 
-    def assertStartsWith(self, data, prefix):
-        real_prefix = data[:len(prefix)]
-        self.assertEqual(real_prefix, prefix)
-
     def test_basic(self):
         """
         Tests basic HTTP parsing
