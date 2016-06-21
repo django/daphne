@@ -1,3 +1,12 @@
+0.12.2 (2016-06-21)
+-------------------
+
+* Plus signs in query string are now handled by Daphne, not Django-by-mistake.
+  Ensure you're running Channels 0.14.3 or higher.
+
+* New --root-path and DAPHNE_ROOT_PATH options for setting root path.
+
+
 0.12.1 (2016-05-18)
 -------------------
 
