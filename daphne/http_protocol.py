@@ -5,7 +5,7 @@ import six
 import time
 import traceback
 
-from six.moves.urllib_parse import unquote
+from six.moves.urllib_parse import unquote, unquote_plus
 from twisted.protocols.policies import ProtocolWrapper
 from twisted.web import http
 
@@ -128,7 +128,7 @@ class WebRequest(http.Request):
                         "method": self.method.decode("ascii"),
                         "path": self.unquote(self.path),
                         "scheme": "http",
-                        "query_string": self.unquote(self.query_string),
+                        "query_string": self.unquote(self.query_string, plus_as_space=True),
                         "headers": self.clean_headers,
                         "body": self.content.read(),
                         "client": self.client_addr,
@@ -142,14 +142,20 @@ class WebRequest(http.Request):
             self.basic_error(500, b"Internal Server Error", "HTTP processing error")
 
     @classmethod
-    def unquote(cls, value):
+    def unquote(cls, value, plus_as_space=False):
         """
         Python 2 and 3 compat layer for utf-8 unquoting
         """
         if six.PY2:
-            return unquote(value).decode("utf8")
+            if plus_as_space:
+                return unquote_plus(value).decode("utf8")
+            else:
+                return unquote(value).decode("utf8")
         else:
-            return unquote(value.decode("ascii"))
+            if plus_as_space:
+                return unquote_plus(value.decode("ascii"))
+            else:
+                return unquote(value.decode("ascii"))
 
     def send_disconnect(self):
         """
