@@ -51,3 +51,18 @@ class TestHTTPProtocol(TestCase):
         )
         # Make sure that comes back right on the protocol
         self.assertEqual(self.tr.value(), b"HTTP/1.1 201 Created\r\nTransfer-Encoding: chunked\r\nX-Test: Boom!\r\n\r\n6\r\nOH HAI\r\n0\r\n\r\n")
+
+    def test_root_path_header(self):
+        """
+        Tests root path header handling
+        """
+        # Send a simple request to the protocol
+        self.proto.dataReceived(
+            b"GET /te%20st-%C3%A0/?foo=bar HTTP/1.1\r\n" +
+            b"Host: somewhere.com\r\n" +
+            b"Daphne-Root-Path: /foobar%20/bar\r\n" +
+            b"\r\n"
+        )
+        # Get the resulting message off of the channel layer, check root_path
+        _, message = self.channel_layer.receive_many(["http.request"])
+        self.assertEqual(message['root_path'], "/foobar /bar")

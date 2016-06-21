@@ -30,11 +30,11 @@ Root Path (SCRIPT_NAME)
 In order to set the root path for Daphne, which is the equivalent of the
 WSGI ``SCRIPT_NAME`` setting, you have two options:
 
-* Pass a header value ``DAPHNE_ROOT_PATH``, with the desired root path as a
-  URLencoded ASCII value
+* Pass a header value ``Daphne-Root-Path``, with the desired root path as a
+  URLencoded ASCII value. This header will not be passed down to applications.
 
 * Set the ``--root-path`` commandline option with the desired root path as a
-  URLencoded ASCII value
+  URLencoded ASCII value.
 
 The header takes precedence if both are set. As with ``SCRIPT_ALIAS``, the value
 should start with a slash, but not end with one; for example::
