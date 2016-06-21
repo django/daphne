@@ -14,6 +14,7 @@ to power Django Channels.
 It supports automatic negotiation of protocols; there's no need for URL
 prefixing to determine WebSocket endpoints versus HTTP endpoints.
 
+
 Running
 -------
 
@@ -21,3 +22,21 @@ Simply point Daphne to your ASGI channel layer instance, and optionally
 set a bind address and port (defaults to localhost, port 8000)::
 
     daphne -b 0.0.0.0 -p 8001 django_project.asgi:channel_layer
+
+
+Root Path (SCRIPT_NAME)
+-----------------------
+
+In order to set the root path for Daphne, which is the equivalent of the
+WSGI ``SCRIPT_NAME`` setting, you have two options:
+
+* Pass a header value ``DAPHNE_ROOT_PATH``, with the desired root path as a
+  URLencoded ASCII value
+
+* Set the ``--root-path`` commandline option with the desired root path as a
+  URLencoded ASCII value
+
+The header takes precedence if both are set. As with ``SCRIPT_ALIAS``, the value
+should start with a slash, but not end with one; for example::
+
+    daphne --root-path=/forum django_project.asgi:channel_layer

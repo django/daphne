@@ -109,14 +109,18 @@ class WebRequest(http.Request):
                 self.reply_channel = None
             # Boring old HTTP.
             else:
-                # Sanitize and decode headers
+                # Sanitize and decode headers, potentially extracting root path
                 self.clean_headers = []
+                self.root_path = self.factory.root_path
                 for name, values in self.requestHeaders.getAllRawHeaders():
                     # Prevent CVE-2015-0219
                     if b"_" in name:
                         continue
                     for value in values:
-                        self.clean_headers.append((name.lower(), value))
+                        if name.lower() == "asgi_root_path":
+                            self.root_path = self.unquote(value)
+                        else:
+                            self.clean_headers.append((name.lower(), value))
                 logger.debug("HTTP %s request for %s", self.method, self.reply_channel)
                 self.content.seek(0, 0)
                 # Send message
@@ -127,6 +131,7 @@ class WebRequest(http.Request):
                         "http_version": "1.1",
                         "method": self.method.decode("ascii"),
                         "path": self.unquote(self.path),
+                        "root_path": self.root_path,
                         "scheme": "http",
                         "query_string": self.unquote(self.query_string, plus_as_space=True),
                         "headers": self.clean_headers,
@@ -268,7 +273,7 @@ class HTTPFactory(http.HTTPFactory):
 
     protocol = HTTPProtocol
 
-    def __init__(self, channel_layer, action_logger=None, timeout=120, websocket_timeout=86400, ping_interval=20, ws_protocols=None):
+    def __init__(self, channel_layer, action_logger=None, timeout=120, websocket_timeout=86400, ping_interval=20, ws_protocols=None, root_path=""):
         http.HTTPFactory.__init__(self)
         self.channel_layer = channel_layer
         self.action_logger = action_logger
@@ -281,6 +286,7 @@ class HTTPFactory(http.HTTPFactory):
         self.ws_factory = WebSocketFactory(self, protocols=ws_protocols)
         self.ws_factory.protocol = WebSocketProtocol
         self.ws_factory.reply_protocols = self.reply_protocols
+        self.root_path = root_path
 
     def reply_channels(self):
         return self.reply_protocols.keys()

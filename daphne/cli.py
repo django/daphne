@@ -77,6 +77,12 @@ class CommandLineInterface(object):
             help='The WebSocket protocols you wish to support',
             default=None,
         )
+        self.parser.add_argument(
+            '--root-path',
+            dest='root_path',
+            help='The setting for the ASGI root_path variable',
+            default="",
+        )
 
     @classmethod
     def entrypoint(cls):
@@ -131,4 +137,5 @@ class CommandLineInterface(object):
             ping_interval=args.ping_interval,
             action_logger=AccessLogGenerator(access_log_stream) if access_log_stream else None,
             ws_protocols=args.ws_protocols,
+            root_path=args.root_path,
         ).run()
