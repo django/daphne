@@ -117,7 +117,7 @@ class WebRequest(http.Request):
                     if b"_" in name:
                         continue
                     for value in values:
-                        if name.lower() == "asgi_root_path":
+                        if name.lower() == "daphne_root_path":
                             self.root_path = self.unquote(value)
                         else:
                             self.clean_headers.append((name.lower(), value))
