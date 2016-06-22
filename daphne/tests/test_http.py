@@ -25,7 +25,7 @@ class TestHTTPProtocol(TestCase):
         """
         # Send a simple request to the protocol
         self.proto.dataReceived(
-            b"GET /te%20st-%C3%A0/?foo=bar HTTP/1.1\r\n" +
+            b"GET /te%20st-%C3%A0/?foo=+bar HTTP/1.1\r\n" +
             b"Host: somewhere.com\r\n" +
             b"\r\n"
         )
@@ -35,7 +35,7 @@ class TestHTTPProtocol(TestCase):
         self.assertEqual(message['method'], "GET")
         self.assertEqual(message['scheme'], "http")
         self.assertEqual(message['path'], "/te st-à/")
-        self.assertEqual(message['query_string'], "foo=bar")
+        self.assertEqual(message['query_string'], b"foo=+bar")
         self.assertEqual(message['headers'], [(b"host", b"somewhere.com")])
         self.assertFalse(message.get("body", None))
         self.assertTrue(message['reply_channel'])

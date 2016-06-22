@@ -133,7 +133,7 @@ class WebRequest(http.Request):
                         "path": self.unquote(self.path),
                         "root_path": self.root_path,
                         "scheme": "http",
-                        "query_string": self.unquote(self.query_string, plus_as_space=True),
+                        "query_string": self.query_string,
                         "headers": self.clean_headers,
                         "body": self.content.read(),
                         "client": self.client_addr,
