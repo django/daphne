@@ -104,7 +104,10 @@ class WebRequest(http.Request):
                 data += self.content.read()
                 protocol.dataReceived(data)
                 # Remove our HTTP reply channel association
-                logger.debug("Upgraded connection %s to WebSocket %s", self.reply_channel, protocol.reply_channel)
+                if hasattr(protocol, "reply_channel"):
+                    logger.debug("Upgraded connection %s to WebSocket %s", self.reply_channel, protocol.reply_channel)
+                else:
+                    logger.debug("Connection %s did not get successful WS handshake.", self.reply_channel)
                 del self.factory.reply_protocols[self.reply_channel]
                 self.reply_channel = None
             # Boring old HTTP.
