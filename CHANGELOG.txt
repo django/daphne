@@ -1,3 +1,10 @@
+0.13.1 (2016-06-28)
+-------------------
+
+* Bad WebSocket handshakes now return 400 and an error messages
+  rather than 500 with no content.
+
+
 0.13.0 (2016-06-22)
 -------------------
 
