@@ -68,8 +68,13 @@ class WebSocketProtocol(WebSocketServerProtocol):
 
         ws_protocol = None
         for header, value in self.clean_headers:
-            if header == 'sec-websocket-protocol':
-                ws_protocol = value
+            if header == b'sec-websocket-protocol':
+                protocols = [x.strip() for x in self.unquote(value).split(",")]
+                for protocol in protocols:
+                    if protocol in self.factory.protocols:
+                        ws_protocol = protocol
+                        break
+
         if ws_protocol and ws_protocol in self.factory.protocols:
             return ws_protocol
 
