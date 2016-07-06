@@ -100,7 +100,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
             # You have to consume websocket.connect according to the spec,
             # so drop the connection.
             self.muted = True
-            logger.warn("WebSocket force closed for %s due to backpressure", self.reply_channel)
+            logger.warn("WebSocket force closed for %s due to connect backpressure", self.reply_channel)
             # Send code 1013 "try again later" with close.
             self.sendClose(code=1013)
         else:
@@ -132,9 +132,12 @@ class WebSocketProtocol(WebSocketServerProtocol):
                     "text": payload.decode("utf8"),
                 })
         except self.channel_layer.ChannelFull:
-            # We don't drop the connection here as you don't _have_ to consume websocket.receive
-            # TODO: Maybe add an option to drop if this is backlogged?
-            pass
+            # You have to consume websocket.receive according to the spec,
+            # so drop the connection.
+            self.muted = True
+            logger.warn("WebSocket force closed for %s due to receive backpressure", self.reply_channel)
+            # Send code 1013 "try again later" with close.
+            self.sendClose(code=1013)
 
     def serverSend(self, content, binary=False):
         """
