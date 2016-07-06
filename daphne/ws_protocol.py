@@ -101,7 +101,8 @@ class WebSocketProtocol(WebSocketServerProtocol):
             # so drop the connection.
             self.muted = True
             logger.warn("WebSocket force closed for %s due to backpressure", self.reply_channel)
-            self.sendClose()
+            # Send code 1013 "try again later" with close.
+            self.sendClose(code=1013)
         else:
             self.factory.log_action("websocket", "connected", {
                 "path": self.request.path,
