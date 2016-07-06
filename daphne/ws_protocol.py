@@ -102,7 +102,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
             self.muted = True
             logger.warn("WebSocket force closed for %s due to connect backpressure", self.reply_channel)
             # Send code 1013 "try again later" with close.
-            self.sendClose(code=1013)
+            self.sendCloseFrame(code=1013, isReply=False)
         else:
             self.factory.log_action("websocket", "connected", {
                 "path": self.request.path,
@@ -137,7 +137,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
             self.muted = True
             logger.warn("WebSocket force closed for %s due to receive backpressure", self.reply_channel)
             # Send code 1013 "try again later" with close.
-            self.sendClose(code=1013)
+            self.sendCloseFrame(code=1013, isReply=False)
 
     def serverSend(self, content, binary=False):
         """
