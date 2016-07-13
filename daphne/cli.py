@@ -42,6 +42,13 @@ class CommandLineInterface(object):
             default=None,
         )
         self.parser.add_argument(
+            '--fd',
+            type=int,
+            dest='file_descriptor',
+            help='Bind to a file descriptor rather than a TCP host/port or named unix socket',
+            default=None,
+        )
+        self.parser.add_argument(
             '-v',
             '--verbosity',
             type=int,
@@ -133,6 +140,7 @@ class CommandLineInterface(object):
             host=args.host,
             port=args.port,
             unix_socket=args.unix_socket,
+            file_descriptor=args.file_descriptor,
             http_timeout=args.http_timeout,
             ping_interval=args.ping_interval,
             action_logger=AccessLogGenerator(access_log_stream) if access_log_stream else None,
