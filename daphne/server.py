@@ -1,6 +1,6 @@
 import logging
 from twisted.internet import reactor
-
+import socket
 from .http_protocol import HTTPFactory
 
 logger = logging.getLogger(__name__)
@@ -14,6 +14,7 @@ class Server(object):
         host="127.0.0.1",
         port=8000,
         unix_socket=None,
+        file_descriptor=None,
         signal_handlers=True,
         action_logger=None,
         http_timeout=120,
@@ -26,6 +27,7 @@ class Server(object):
         self.host = host
         self.port = port
         self.unix_socket = unix_socket
+        self.file_descriptor = file_descriptor
         self.signal_handlers = signal_handlers
         self.action_logger = action_logger
         self.http_timeout = http_timeout
@@ -48,8 +50,13 @@ class Server(object):
         )
         if self.unix_socket:
             reactor.listenUNIX(self.unix_socket, self.factory)
+        elif self.file_descriptor:
+            # socket returns the same socket if supplied with a fileno
+            sock = socket.socket(fileno=self.file_descriptor)
+            reactor.adoptStreamPort(self.file_descriptor, sock.family, self.factory)
         else:
             reactor.listenTCP(self.port, self.factory, interface=self.host)
+
         reactor.callLater(0, self.backend_reader)
         reactor.callLater(2, self.timeout_checker)
         reactor.run(installSignalHandlers=self.signal_handlers)
