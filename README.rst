@@ -24,6 +24,21 @@ set a bind address and port (defaults to localhost, port 8000)::
     daphne -b 0.0.0.0 -p 8001 django_project.asgi:channel_layer
 
 
+If you intend to run daphne behind a proxy server you can use UNIX
+sockets to communicate between the two::
+
+    daphne -u /tmp/daphne.sock django_project.asgi:channel_layer
+
+
+If daphne is being run inside a process manager such as
+`Circus <https://github.com/circus-tent/circus/>`_ you might
+want it to bind to a file descriptor passed down from a parent process.
+To achieve this you can use the --fd flag::
+
+    daphne --fd 5 django_project.asgi:channel_layer
+
+To see all available command line options run daphne with the *-h* flag.
+
 Root Path (SCRIPT_NAME)
 -----------------------
 
