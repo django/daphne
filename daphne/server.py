@@ -1,6 +1,9 @@
 import logging
-from twisted.internet import reactor
 import socket
+
+from twisted.internet import reactor
+from twisted.logger import globalLogBeginner
+
 from .http_protocol import HTTPFactory
 
 logger = logging.getLogger(__name__)
@@ -48,6 +51,9 @@ class Server(object):
             ws_protocols=self.ws_protocols,
             root_path=self.root_path,
         )
+        # Redirect the Twisted log to nowhere
+        globalLogBeginner.beginLoggingTo([lambda _: None], redirectStandardIO=False, discardBuffer=True)
+        # Listen on a socket
         if self.unix_socket:
             reactor.listenUNIX(self.unix_socket, self.factory)
         elif self.file_descriptor:
