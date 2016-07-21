@@ -112,8 +112,9 @@ class WebSocketProtocol(WebSocketServerProtocol):
     def onMessage(self, payload, isBinary):
         # If we're muted, do nothing.
         if self.muted:
+            logger.debug("Muting incoming frame on %s", self.reply_channel)
             return
-        logger.debug("WebSocket incoming packet on %s", self.reply_channel)
+        logger.debug("WebSocket incoming frame on %s", self.reply_channel)
         self.packets_received += 1
         self.last_data = time.time()
         try:
