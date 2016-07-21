@@ -1,3 +1,15 @@
+0.14.3 (2016-07-21)
+-------------------
+
+* File descriptors can now be passed on the commandline for process managers
+  that pass sockets along like this.
+
+* websocket.disconnect messages now come with a "code" attribute matching the
+  WebSocket spec.
+
+* A memory leak in request logging has been fixed.
+
+
 0.14.2 (2016-07-07)
 -------------------
 
