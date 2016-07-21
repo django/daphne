@@ -165,6 +165,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
                 if not self.muted:
                     self.channel_layer.send("websocket.disconnect", {
                         "reply_channel": self.reply_channel,
+                        "code": code,
                         "path": self.unquote(self.path),
                         "order": self.packets_received + 1,
                     })
