@@ -189,7 +189,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
         Checks to see if we should send a keepalive ping.
         """
         if (time.time() - self.last_data) > self.main_factory.ping_interval:
-            self.sendPing()
+            self._sendAutoPing()
             self.last_data = time.time()
 
 
