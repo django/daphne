@@ -74,6 +74,12 @@ class CommandLineInterface(object):
             default=20,
         )
         self.parser.add_argument(
+            '--ping-timeout',
+            type=int,
+            help='The number of seconds before a WeSocket is closed if no response to a keepalive ping',
+            default=30,
+        )
+        self.parser.add_argument(
             'channel_layer',
             help='The ASGI channel layer instance to use as path.to.module:instance.path',
         )
@@ -143,6 +149,7 @@ class CommandLineInterface(object):
             file_descriptor=args.file_descriptor,
             http_timeout=args.http_timeout,
             ping_interval=args.ping_interval,
+            ping_timeout=args.ping_timeout,
             action_logger=AccessLogGenerator(access_log_stream) if access_log_stream else None,
             ws_protocols=args.ws_protocols,
             root_path=args.root_path,

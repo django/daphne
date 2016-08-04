@@ -23,6 +23,7 @@ class Server(object):
         http_timeout=120,
         websocket_timeout=None,
         ping_interval=20,
+        ping_timeout=30,
         ws_protocols=None,
         root_path="",
     ):
@@ -35,6 +36,7 @@ class Server(object):
         self.action_logger = action_logger
         self.http_timeout = http_timeout
         self.ping_interval = ping_interval
+        self.ping_timeout = ping_timeout
         # If they did not provide a websocket timeout, default it to the
         # channel layer's group_expiry value if present, or one day if not.
         self.websocket_timeout = websocket_timeout or getattr(channel_layer, "group_expiry", 86400)
@@ -48,6 +50,7 @@ class Server(object):
             timeout=self.http_timeout,
             websocket_timeout=self.websocket_timeout,
             ping_interval=self.ping_interval,
+            ping_timeout=self.ping_timeout,
             ws_protocols=self.ws_protocols,
             root_path=self.root_path,
         )
