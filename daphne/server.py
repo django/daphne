@@ -66,11 +66,11 @@ class Server(object):
         else:
             reactor.listenTCP(self.port, self.factory, interface=self.host)
 
-        if "twisted" in self.channel_layer.extensions:
-            logging.info("Using native Twisted mode on channel layer")
+        if "twisted" in self.channel_layer.extensions and False:
+            logger.info("Using native Twisted mode on channel layer")
             reactor.callLater(0, self.backend_reader_twisted)
         else:
-            logging.info("Using busy-loop synchronous mode on channel layer")
+            logger.info("Using busy-loop synchronous mode on channel layer")
             reactor.callLater(0, self.backend_reader_sync)
         reactor.callLater(2, self.timeout_checker)
         reactor.run(installSignalHandlers=self.signal_handlers)
@@ -84,7 +84,7 @@ class Server(object):
         delay = 0.05
         # Quit if reactor is stopping
         if not reactor.running:
-            logging.debug("Backend reader quitting due to reactor stop")
+            logger.debug("Backend reader quitting due to reactor stop")
             return
         # Don't do anything if there's no channels to listen on
         if channels:
@@ -93,7 +93,10 @@ class Server(object):
             if channel:
                 delay = 0.00
                 # Deal with the message
-                self.factory.dispatch_reply(channel, message)
+                try:
+                    self.factory.dispatch_reply(channel, message)
+                except Exception as e:
+                    logger.error("HTTP/WS send decode error: %s" % e)
         reactor.callLater(delay, self.backend_reader_sync)
 
     @defer.inlineCallbacks
@@ -111,7 +114,10 @@ class Server(object):
                 channel, message = yield self.channel_layer.receive_many_twisted(channels)
                 # Deal with the message
                 if channel:
-                    self.factory.dispatch_reply(channel, message)
+                    try:
+                        self.factory.dispatch_reply(channel, message)
+                    except Exception as e:
+                        logger.error("HTTP/WS send decode error: %s" % e)
                 else:
                     yield self.sleep(0.01)
             else:
