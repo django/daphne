@@ -55,3 +55,15 @@ The header takes precedence if both are set. As with ``SCRIPT_ALIAS``, the value
 should start with a slash, but not end with one; for example::
 
     daphne --root-path=/forum django_project.asgi:channel_layer
+
+
+
+Running daphne in secure mode
+-----------------------------
+
+Simply copy the key and certificate to the certificates folder inside the daphne path as server.key and server.crt or add path of the certificate as arguments. Specify secure connection as argument along with it, point Daphne to your ASGI channel layer instance, and optionally
+set a bind address and port (defaults to localhost, port 8000) add options ::
+
+ daphne -b 0.0.0.0 -p 8001 django_project.asgi:channel_layer -secure True -cert <path to SSL certificate> -key <path to SSL key>
+
+

@@ -173,7 +173,6 @@ class CommandLineInterface(object):
             file_descriptor=args.file_descriptor,
             http_timeout=args.http_timeout,
             ping_interval=args.ping_interval,
-            ping_timeout=args.ping_timeout,
             action_logger=AccessLogGenerator(access_log_stream) if access_log_stream else None,
             ws_protocols=args.ws_protocols,
             root_path=args.root_path,

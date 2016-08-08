@@ -56,7 +56,6 @@ class Server(object):
             timeout=self.http_timeout,
             websocket_timeout=self.websocket_timeout,
             ping_interval=self.ping_interval,
-            ping_timeout=self.ping_timeout,
             ws_protocols=self.ws_protocols,
             root_path=self.root_path,
         )
