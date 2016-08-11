@@ -2,9 +2,9 @@
 from __future__ import unicode_literals
 from unittest import TestCase
 from six import string_types
+import pkgutil
 from ..server import Server
 from ..cli import CommandLineInterface
-
 
 # this is the callable that will be tested here
 build = Server.build_endpoint_description_strings
@@ -72,10 +72,7 @@ class TestEndpointDescriptions(TestCase):
 class TestCLIInterface(TestCase):
 
     # construct a string that will be accepted as the channel_layer argument
-    _import_channel_layer_string = '.'.join(
-        __loader__.name.split('.')[:-1] +
-        ['asgi:channel_layer']
-    )
+    _import_channel_layer_string = 'daphne.tests.asgi:channel_layer'
 
     def build_cli(self, cli_args=''):
         # split the string and append the channel_layer positional argument
@@ -154,9 +151,3 @@ class TestCLIInterface(TestCase):
             '-e imap:',
             ['imap:']
         )
-
-
-
-
-
-
