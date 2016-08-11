@@ -8,6 +8,8 @@ from .access import AccessLogGenerator
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_HOST = '127.0.0.1'
+DEFAULT_PORT = 8000
 
 class CommandLineInterface(object):
     """
@@ -25,14 +27,14 @@ class CommandLineInterface(object):
             '--port',
             type=int,
             help='Port number to listen on',
-            default=8000,
+            default=None,
         )
         self.parser.add_argument(
             '-b',
             '--bind',
             dest='host',
             help='The host/address to bind to',
-            default="127.0.0.1",
+            default=None,
         )
         self.parser.add_argument(
             '-u',
@@ -47,6 +49,14 @@ class CommandLineInterface(object):
             dest='file_descriptor',
             help='Bind to a file descriptor rather than a TCP host/port or named unix socket',
             default=None,
+        )
+        self.parser.add_argument(
+            '-e',
+            '--endpoint',
+            dest='socket_strings',
+            action='append',
+            help='Use raw server strings passed directly to twisted',
+            default=[],
         )
         self.parser.add_argument(
             '-v',
@@ -135,22 +145,30 @@ class CommandLineInterface(object):
         channel_layer = importlib.import_module(module_path)
         for bit in object_path.split("."):
             channel_layer = getattr(channel_layer, bit)
+
+        if not any([args.host, args.port, args.unix_socket, args.file_descriptor, args.socket_strings]):
+            # no advanced binding options passed, patch in defaults
+            args.host = DEFAULT_HOST
+            args.port = DEFAULT_PORT
+        elif args.host and not args.port:
+            args.port = DEFAULT_PORT
+        elif args.port and not args.host:
+            args.host = DEFAULT_HOST
+
         # Run server
-        logger.info(
-            "Starting server at %s, channel layer %s",
-            (args.unix_socket if args.unix_socket else "%s:%s" % (args.host, args.port)),
-            args.channel_layer,
-        )
-        Server(
+        self.server = Server(
             channel_layer=channel_layer,
             host=args.host,
             port=args.port,
             unix_socket=args.unix_socket,
             file_descriptor=args.file_descriptor,
+            endpoints=args.socket_strings,
             http_timeout=args.http_timeout,
             ping_interval=args.ping_interval,
             ping_timeout=args.ping_timeout,
             action_logger=AccessLogGenerator(access_log_stream) if access_log_stream else None,
             ws_protocols=args.ws_protocols,
             root_path=args.root_path,
-        ).run()
+        )
+        self.server.run()
+

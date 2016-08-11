@@ -3,7 +3,6 @@ import sys
 from setuptools import find_packages, setup
 from daphne import __version__
 
-
 # We use the README as the long_description
 readme_path = os.path.join(os.path.dirname(__file__), "README.rst")
 
@@ -18,7 +17,8 @@ setup(
     long_description=open(readme_path).read(),
     license='BSD',
     zip_safe=False,
-    packages=find_packages(),
+    package_dir={'twisted': 'daphne/twisted'},
+    packages=find_packages() + ['twisted.plugins'],
     include_package_data=True,
     install_requires=[
         'asgiref>=0.13',
