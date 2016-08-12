@@ -3,7 +3,7 @@ daphne
 
 .. image:: https://api.travis-ci.org/andrewgodwin/daphne.svg
     :target: https://travis-ci.org/andrewgodwin/daphne
-    
+
 .. image:: https://img.shields.io/pypi/v/daphne.svg
     :target: https://pypi.python.org/pypi/daphne
 
@@ -36,6 +36,17 @@ want it to bind to a file descriptor passed down from a parent process.
 To achieve this you can use the --fd flag::
 
     daphne --fd 5 django_project.asgi:channel_layer
+
+
+If you want more control over the port/socket bindings you can fall back to
+using `twisted's endpoint description strings
+<http://twistedmatrix.com/documents/current/api/twisted.internet.endpoints.html#serverFromString>`_
+by using the `--endpoint (-e)` flag, which can be used multiple times.
+This line would start a SSL server on port 443, assuming that `key.pem` and `crt.pem`
+exist in the current directory (requires pyopenssl to be installed)::
+
+    daphne -e ssl:443:privateKey=key.pem:certKey=crt.pem django_project.asgi:channel_layer
+
 
 To see all available command line options run daphne with the *-h* flag.
 
