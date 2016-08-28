@@ -22,7 +22,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'asgiref>=0.13',
-        'twisted>=15.5,<16.3',
+        'twisted>=16.0',
         'autobahn>=0.12',
     ],
     entry_points={'console_scripts': [

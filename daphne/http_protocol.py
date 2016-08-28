@@ -110,9 +110,9 @@ class WebRequest(http.Request):
                     logger.debug("Connection %s did not get successful WS handshake.", self.reply_channel)
                 del self.factory.reply_protocols[self.reply_channel]
                 self.reply_channel = None
-
-                # Resume the producer so we keep getting data
-                self.channel.resumeProducing()
+                # Resume the producer so we keep getting data, if it's available as a method
+                if hasattr(self.channel, "resumeProducing"):
+                    self.channel.resumeProducing()
 
             # Boring old HTTP.
             else:
