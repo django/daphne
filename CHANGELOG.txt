@@ -1,3 +1,15 @@
+0.15.0 (2016-08-28)
+-------------------
+
+* Connections now force-close themselves after pings fail for a certain
+  timeframe, controllable via the new --ping-timeout option.
+
+* Badly-formatted websocket response messages now log to console in
+  all situations
+
+* Compatability with Twisted 16.3 and up
+
+
 0.14.3 (2016-07-21)
 -------------------
 
