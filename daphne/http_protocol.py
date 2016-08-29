@@ -177,6 +177,7 @@ class WebRequest(http.Request):
         try:
             self.factory.channel_layer.send("http.disconnect", {
                 "reply_channel": self.reply_channel,
+                "path": self.unquote(self.path),
             })
         except self.factory.channel_layer.ChannelFull:
             pass
