@@ -1,7 +1,8 @@
 import logging
 import socket
+import os
 
-from twisted.internet import reactor, defer
+from twisted.internet import reactor, defer, ssl
 from twisted.logger import globalLogBeginner
 
 from .http_protocol import HTTPFactory
@@ -23,9 +24,11 @@ class Server(object):
         http_timeout=120,
         websocket_timeout=None,
         ping_interval=20,
-        ping_timeout=30,
         ws_protocols=None,
         root_path="",
+        secure=False,
+        certificate = os.path.dirname(__file__) +"/certificates/server.crt",
+        key = os.path.dirname(__file__) +"/certificates/server.key",
     ):
         self.channel_layer = channel_layer
         self.host = host
@@ -42,6 +45,9 @@ class Server(object):
         self.websocket_timeout = websocket_timeout or getattr(channel_layer, "group_expiry", 86400)
         self.ws_protocols = ws_protocols
         self.root_path = root_path
+        self.secure = secure
+        self.certificate = certificate
+        self.key = key
 
     def run(self):
         self.factory = HTTPFactory(
@@ -64,7 +70,18 @@ class Server(object):
             sock = socket.socket(fileno=self.file_descriptor)
             reactor.adoptStreamPort(self.file_descriptor, sock.family, self.factory)
         else:
-            reactor.listenTCP(self.port, self.factory, interface=self.host)
+            #secure connection request check
+            if self.secure :
+
+                if os.path.isfile(self.key) and os.path.isfile(self.certificate):
+
+                    reactor.listenSSL(self.port, self.factory, ssl.DefaultOpenSSLContextFactory(self.key, self.certificate),interface=self.host)
+
+                else :
+                    logging.error("SSL key and certificate are not properly configured. \n It should be placed in " +os.path.dirname(__file__) +"/certificates " + "folder as server.key and server.crt. \n Or you have to pass key and certificate path in -key and -cert arguments along with secure argument."  )
+
+            else :
+                reactor.listenTCP(self.port, self.factory, interface=self.host)
 
         if "twisted" in self.channel_layer.extensions and False:
             logger.info("Using native Twisted mode on channel layer")

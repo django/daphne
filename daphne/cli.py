@@ -2,6 +2,8 @@ import sys
 import argparse
 import logging
 import importlib
+import os
+
 from .server import Server
 from .access import AccessLogGenerator
 
@@ -28,11 +30,39 @@ class CommandLineInterface(object):
             default=8000,
         )
         self.parser.add_argument(
+            '-secure',
+            '--secure',
+            type= bool,
+            dest= 'is_secure',
+            help='Set it to True to make secure connection',
+            default=False,
+        )
+        self.parser.add_argument(
+            '-cert',
+            '--certificate',
+            dest= 'certificate_path',
+            help='Setthe path to the SSL certificate for secure connection',
+            default=os.path.dirname(__file__) +"/certificates/server.crt",
+        )
+        self.parser.add_argument(
+            '-key',
+            '--key',
+            dest= 'key_path',
+            help='Set the path to the SSL key for secure connection',
+            default=os.path.dirname(__file__) +"/certificates/server.key",
+        )
+        self.parser.add_argument(
             '-b',
             '--bind',
             dest='host',
             help='The host/address to bind to',
             default="127.0.0.1",
+        )
+        self.parser.add_argument(
+            '--ping-timeout',
+            type=int,
+            help='The number of seconds before a WeSocket is closed if no response to a keepalive ping',
+            default=30,
         )
         self.parser.add_argument(
             '-u',
@@ -72,12 +102,6 @@ class CommandLineInterface(object):
             type=int,
             help='The number of seconds a WebSocket must be idle before a keepalive ping is sent',
             default=20,
-        )
-        self.parser.add_argument(
-            '--ping-timeout',
-            type=int,
-            help='The number of seconds before a WeSocket is closed if no response to a keepalive ping',
-            default=30,
         )
         self.parser.add_argument(
             'channel_layer',
@@ -153,4 +177,7 @@ class CommandLineInterface(object):
             action_logger=AccessLogGenerator(access_log_stream) if access_log_stream else None,
             ws_protocols=args.ws_protocols,
             root_path=args.root_path,
+            secure=args.is_secure,
+            certificate = args.certificate_path,
+            key = args.key_path
         ).run()
