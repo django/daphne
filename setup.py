@@ -11,7 +11,7 @@ readme_path = os.path.join(os.path.dirname(__file__), "README.rst")
 setup(
     name='daphne',
     version=__version__,
-    url='http://www.djangoproject.com/',
+    url='http://github.com/django/daphne',
     author='Django Software Foundation',
     author_email='foundation@djangoproject.com',
     description='Django ASGI (HTTP/WebSocket) server',

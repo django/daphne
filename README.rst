@@ -1,8 +1,8 @@
 daphne
 ======
 
-.. image:: https://api.travis-ci.org/andrewgodwin/daphne.svg
-    :target: https://travis-ci.org/andrewgodwin/daphne
+.. image:: https://api.travis-ci.org/django/daphne.svg
+    :target: https://travis-ci.org/django/daphne
     
 .. image:: https://img.shields.io/pypi/v/daphne.svg
     :target: https://pypi.python.org/pypi/daphne
@@ -67,4 +67,4 @@ https://docs.djangoproject.com/en/dev/internals/security/.
 To report bugs or request new features, please open a new GitHub issue.
 
 This repository is part of the Channels project. For the shepherd and maintenance team, please see the
-`main Channels readme <https://github.com/andrewgodwin/channels/blob/master/README.rst>`_.
+`main Channels readme <https://github.com/django/channels/blob/master/README.rst>`_.
