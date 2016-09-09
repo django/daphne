@@ -55,3 +55,16 @@ The header takes precedence if both are set. As with ``SCRIPT_ALIAS``, the value
 should start with a slash, but not end with one; for example::
 
     daphne --root-path=/forum django_project.asgi:channel_layer
+
+
+Maintenance and Security
+------------------------
+
+To report security issues, please contact security@djangoproject.com. For GPG
+signatures and more security process information, see
+https://docs.djangoproject.com/en/dev/internals/security/.
+
+To report bugs or request new features, please open a new GitHub issue.
+
+This repository is part of the Channels project. For the shepherd and maintenance team, please see the
+`main Channels readme <https://github.com/andrewgodwin/channels/blob/master/README.rst>`_.
