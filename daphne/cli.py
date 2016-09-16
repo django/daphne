@@ -153,4 +153,5 @@ class CommandLineInterface(object):
             action_logger=AccessLogGenerator(access_log_stream) if access_log_stream else None,
             ws_protocols=args.ws_protocols,
             root_path=args.root_path,
+            verbosity=args.verbosity,
         ).run()
