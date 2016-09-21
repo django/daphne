@@ -69,7 +69,7 @@ class TestHTTPProtocol(TestCase):
 
     def test_http_disconnect_sets_path_key(self):
         """
-        Tests http disconnect has the path key set, see http://channels.readthedocs.io/en/latest/asgi.html#disconnect
+        Tests http disconnect has the path key set, see https://channels.readthedocs.io/en/latest/asgi.html#disconnect
         """
         # Send a simple request to the protocol
         self.proto.dataReceived(
