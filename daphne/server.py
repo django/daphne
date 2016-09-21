@@ -89,14 +89,19 @@ class Server(object):
         # Don't do anything if there's no channels to listen on
         if channels:
             delay = 0.01
-            channel, message = self.channel_layer.receive_many(channels, block=False)
-            if channel:
-                delay = 0.00
-                # Deal with the message
-                try:
-                    self.factory.dispatch_reply(channel, message)
-                except Exception as e:
-                    logger.error("HTTP/WS send decode error: %s" % e)
+            try:
+                channel, message = self.channel_layer.receive_many(channels, block=False)
+            except Exception as e:
+                logger.error('Error at trying to receive messages: %s' % e)
+                delay = 5.00
+            else:
+                if channel:
+                    delay = 0.00
+                    # Deal with the message
+                    try:
+                        self.factory.dispatch_reply(channel, message)
+                    except Exception as e:
+                        logger.error("HTTP/WS send decode error: %s" % e)
         reactor.callLater(delay, self.backend_reader_sync)
 
     @defer.inlineCallbacks
@@ -111,15 +116,20 @@ class Server(object):
                 return
             channels = self.factory.reply_channels()
             if channels:
-                channel, message = yield self.channel_layer.receive_many_twisted(channels)
-                # Deal with the message
-                if channel:
-                    try:
-                        self.factory.dispatch_reply(channel, message)
-                    except Exception as e:
-                        logger.error("HTTP/WS send decode error: %s" % e)
+                try:
+                    channel, message = yield self.channel_layer.receive_many_twisted(channels)
+                except Exception as e:
+                    logger.error('Error at trying to receive messages: %s' % e)
+                    yield self.sleep(5.00)
                 else:
-                    yield self.sleep(0.01)
+                    # Deal with the message
+                    if channel:
+                        try:
+                            self.factory.dispatch_reply(channel, message)
+                        except Exception as e:
+                            logger.error("HTTP/WS send decode error: %s" % e)
+                    else:
+                        yield self.sleep(0.01)
             else:
                 yield self.sleep(0.05)
 
