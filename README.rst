@@ -8,7 +8,7 @@ daphne
     :target: https://pypi.python.org/pypi/daphne
 
 Daphne is a HTTP, HTTP2 and WebSocket protocol server for
-`ASGI <http://channels.readthedocs.org/en/latest/asgi.html>`_, and developed
+`ASGI <https://channels.readthedocs.io/en/latest/asgi.html>`_, and developed
 to power Django Channels.
 
 It supports automatic negotiation of protocols; there's no need for URL
