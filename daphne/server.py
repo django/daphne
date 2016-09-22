@@ -2,7 +2,7 @@ import logging
 import socket
 
 from twisted.internet import reactor, defer
-from twisted.logger import globalLogBeginner
+from twisted.logger import globalLogBeginner, STDLibLogObserver
 
 from .http_protocol import HTTPFactory
 
@@ -26,6 +26,7 @@ class Server(object):
         ping_timeout=30,
         ws_protocols=None,
         root_path="",
+        verbosity=None
     ):
         self.channel_layer = channel_layer
         self.host = host
@@ -42,6 +43,7 @@ class Server(object):
         self.websocket_timeout = websocket_timeout or getattr(channel_layer, "group_expiry", 86400)
         self.ws_protocols = ws_protocols
         self.root_path = root_path
+        self.verbosity = verbosity
 
     def run(self):
         self.factory = HTTPFactory(
@@ -54,8 +56,11 @@ class Server(object):
             ws_protocols=self.ws_protocols,
             root_path=self.root_path,
         )
-        # Redirect the Twisted log to nowhere
-        globalLogBeginner.beginLoggingTo([lambda _: None], redirectStandardIO=False, discardBuffer=True)
+        if self.verbosity <= 1:
+            # Redirect the Twisted log to nowhere
+            globalLogBeginner.beginLoggingTo([lambda _: None], redirectStandardIO=False, discardBuffer=True)
+        else:
+            globalLogBeginner.beginLoggingTo([STDLibLogObserver(__name__)])
         # Listen on a socket
         if self.unix_socket:
             reactor.listenUNIX(self.unix_socket, self.factory)

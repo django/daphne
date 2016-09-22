@@ -113,12 +113,12 @@ class CommandLineInterface(object):
         args = self.parser.parse_args(args)
         # Set up logging
         logging.basicConfig(
-            level = {
+            level={
                 0: logging.WARN,
                 1: logging.INFO,
                 2: logging.DEBUG,
             }[args.verbosity],
-            format = "%(asctime)-15s %(levelname)-8s %(message)s" ,
+            format="%(asctime)-15s %(levelname)-8s %(message)s",
         )
         # If verbosity is 1 or greater, or they told us explicitly, set up access log
         access_log_stream = None
@@ -153,4 +153,5 @@ class CommandLineInterface(object):
             action_logger=AccessLogGenerator(access_log_stream) if access_log_stream else None,
             ws_protocols=args.ws_protocols,
             root_path=args.root_path,
+            verbosity=args.verbosity,
         ).run()
