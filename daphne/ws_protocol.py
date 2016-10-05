@@ -7,7 +7,7 @@ import traceback
 from six.moves.urllib_parse import unquote, urlencode
 from twisted.internet import defer
 
-from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
+from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory, ConnectionDeny
 
 logger = logging.getLogger(__name__)
 
