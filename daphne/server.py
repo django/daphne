@@ -26,7 +26,7 @@ class Server(object):
         ping_timeout=30,
         ws_protocols=None,
         root_path="",
-        verbosity=None
+        verbosity=1
     ):
         self.channel_layer = channel_layer
         self.host = host
