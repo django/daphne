@@ -281,12 +281,13 @@ class HTTPFactory(http.HTTPFactory):
 
     protocol = HTTPProtocol
 
-    def __init__(self, channel_layer, action_logger=None, timeout=120, websocket_timeout=86400, ping_interval=20, ping_timeout=30, ws_protocols=None, root_path=""):
+    def __init__(self, channel_layer, action_logger=None, timeout=120, websocket_timeout=86400, ping_interval=20, ping_timeout=30, ws_protocols=None, root_path="", websocket_connect_timeout=30):
         http.HTTPFactory.__init__(self)
         self.channel_layer = channel_layer
         self.action_logger = action_logger
         self.timeout = timeout
         self.websocket_timeout = websocket_timeout
+        self.websocket_connect_timeout = websocket_connect_timeout
         self.ping_interval = ping_interval
         # We track all sub-protocols for response channel mapping
         self.reply_protocols = {}
@@ -304,21 +305,37 @@ class HTTPFactory(http.HTTPFactory):
         if channel.startswith("http") and isinstance(self.reply_protocols[channel], WebRequest):
             self.reply_protocols[channel].serverResponse(message)
         elif channel.startswith("websocket") and isinstance(self.reply_protocols[channel], WebSocketProtocol):
-            # Ensure the message is a valid WebSocket one
-            unknown_message_keys = set(message.keys()) - {"bytes", "text", "close"}
-            if unknown_message_keys:
+            # Switch depending on current socket state
+            protocol = self.reply_protocols[channel]
+            # See if the message is valid
+            non_accept_keys = set(message.keys()) - {"accept"}
+            non_send_keys = set(message.keys()) - {"bytes", "text", "close"}
+            if non_accept_keys and non_send_keys:
                 raise ValueError(
-                    "Got invalid WebSocket reply message on %s - contains unknown keys %s" % (
+                    "Got invalid WebSocket reply message on %s - "
+                    "contains unknown keys %s (looking for either {'accept'} or {'text', 'bytes', 'close'})" % (
                         channel,
                         unknown_message_keys,
                     )
                 )
-            if message.get("bytes", None):
-                self.reply_protocols[channel].serverSend(message["bytes"], True)
-            if message.get("text", None):
-                self.reply_protocols[channel].serverSend(message["text"], False)
-            if message.get("close", False):
-                self.reply_protocols[channel].serverClose()
+            if "accept" in message:
+                if protocol.state != protocol.STATE_CONNECTING:
+                    raise ValueError(
+                        "Got invalid WebSocket connection reply message on %s - websocket is not in handshake phase" % (
+                            channel,
+                        )
+                    )
+                if message['accept']:
+                    protocol.serverAccept()
+                else:
+                    protocol.serverReject()
+            else:
+                if message.get("bytes", None):
+                    protocol.serverSend(message["bytes"], True)
+                if message.get("text", None):
+                    protocol.serverSend(message["text"], False)
+                if message.get("close", False):
+                    protocol.serverClose()
         else:
             raise ValueError("Cannot dispatch message on channel %r" % channel)
 
