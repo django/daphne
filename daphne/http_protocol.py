@@ -228,7 +228,7 @@ class WebRequest(http.Request):
             logger.debug("HTTP response complete for %s", self.reply_channel)
             try:
                 self.factory.log_action("http", "complete", {
-                    "path": self.path.decode("ascii"),
+                    "path": self.uri.decode("ascii"),
                     "status": self.code,
                     "method": self.method.decode("ascii"),
                     "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,
