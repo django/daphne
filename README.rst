@@ -1,14 +1,14 @@
 daphne
 ======
 
-.. image:: https://api.travis-ci.org/andrewgodwin/daphne.svg
-    :target: https://travis-ci.org/andrewgodwin/daphne
-
+.. image:: https://api.travis-ci.org/django/daphne.svg
+    :target: https://travis-ci.org/django/daphne
+    
 .. image:: https://img.shields.io/pypi/v/daphne.svg
     :target: https://pypi.python.org/pypi/daphne
 
 Daphne is a HTTP, HTTP2 and WebSocket protocol server for
-`ASGI <http://channels.readthedocs.org/en/latest/asgi.html>`_, and developed
+`ASGI <https://channels.readthedocs.io/en/latest/asgi.html>`_, and developed
 to power Django Channels.
 
 It supports automatic negotiation of protocols; there's no need for URL
@@ -66,3 +66,16 @@ The header takes precedence if both are set. As with ``SCRIPT_ALIAS``, the value
 should start with a slash, but not end with one; for example::
 
     daphne --root-path=/forum django_project.asgi:channel_layer
+
+
+Maintenance and Security
+------------------------
+
+To report security issues, please contact security@djangoproject.com. For GPG
+signatures and more security process information, see
+https://docs.djangoproject.com/en/dev/internals/security/.
+
+To report bugs or request new features, please open a new GitHub issue.
+
+This repository is part of the Channels project. For the shepherd and maintenance team, please see the
+`main Channels readme <https://github.com/django/channels/blob/master/README.rst>`_.

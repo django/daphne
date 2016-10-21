@@ -106,7 +106,8 @@ class CommandLineInterface(object):
             help='The setting for the ASGI root_path variable',
             default="",
         )
-
+        self.server = None
+        
     @classmethod
     def entrypoint(cls):
         """
@@ -123,12 +124,12 @@ class CommandLineInterface(object):
         args = self.parser.parse_args(args)
         # Set up logging
         logging.basicConfig(
-            level = {
+            level={
                 0: logging.WARN,
                 1: logging.INFO,
                 2: logging.DEBUG,
             }[args.verbosity],
-            format = "%(asctime)-15s %(levelname)-8s %(message)s" ,
+            format="%(asctime)-15s %(levelname)-8s %(message)s",
         )
         # If verbosity is 1 or greater, or they told us explicitly, set up access log
         access_log_stream = None
@@ -156,6 +157,11 @@ class CommandLineInterface(object):
             args.host = DEFAULT_HOST
 
         # Run server
+        logger.info(
+            "Starting server at %s, channel layer %s",
+            (args.unix_socket if args.unix_socket else "%s:%s" % (args.host, args.port)),
+            args.channel_layer,
+        )
         self.server = Server(
             channel_layer=channel_layer,
             host=args.host,
@@ -169,6 +175,7 @@ class CommandLineInterface(object):
             action_logger=AccessLogGenerator(access_log_stream) if access_log_stream else None,
             ws_protocols=args.ws_protocols,
             root_path=args.root_path,
+            verbosity=args.verbosity,
         )
         self.server.run()
 

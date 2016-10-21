@@ -24,6 +24,18 @@ class AccessLogGenerator(object):
                 length=details['size'],
             )
         # Websocket requests
+        elif protocol == "websocket" and action == "connecting":
+            self.write_entry(
+                host=details['client'],
+                date=datetime.datetime.now(),
+                request="WSCONNECTING %(path)s" % details,
+            )
+        elif protocol == "websocket" and action == "rejected":
+            self.write_entry(
+                host=details['client'],
+                date=datetime.datetime.now(),
+                request="WSREJECT %(path)s" % details,
+            )
         elif protocol == "websocket" and action == "connected":
             self.write_entry(
                 host=details['client'],

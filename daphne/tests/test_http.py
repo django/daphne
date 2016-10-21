@@ -66,3 +66,30 @@ class TestHTTPProtocol(TestCase):
         # Get the resulting message off of the channel layer, check root_path
         _, message = self.channel_layer.receive_many(["http.request"])
         self.assertEqual(message['root_path'], "/foobar /bar")
+
+    def test_http_disconnect_sets_path_key(self):
+        """
+        Tests http disconnect has the path key set, see https://channels.readthedocs.io/en/latest/asgi.html#disconnect
+        """
+        # Send a simple request to the protocol
+        self.proto.dataReceived(
+            b"GET /te%20st-%C3%A0/?foo=bar HTTP/1.1\r\n" +
+            b"Host: anywhere.com\r\n" +
+            b"\r\n"
+        )
+        # Get the request message
+        _, message = self.channel_layer.receive_many(["http.request"])
+
+        # Send back an example response
+        self.factory.dispatch_reply(
+            message['reply_channel'],
+            {
+                "status": 200,
+                "status_text": b"OK",
+                "content": b"DISCO",
+            }
+        )
+
+        # Get the disconnection notification
+        _, disconnect_message = self.channel_layer.receive_many(["http.disconnect"])
+        self.assertEqual(disconnect_message['path'], "/te st-à/")

@@ -1,11 +1,11 @@
 import logging
+import socket
 
 from twisted.internet import reactor, defer
-from twisted.logger import globalLogBeginner
+from twisted.logger import globalLogBeginner, STDLibLogObserver
 from twisted.internet.endpoints import serverFromString
 
 from .http_protocol import HTTPFactory
-
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,7 @@ class Server(object):
         ping_timeout=30,
         ws_protocols=None,
         root_path="",
+        verbosity=1
     ):
         self.channel_layer = channel_layer
 
@@ -46,12 +47,12 @@ class Server(object):
         self.http_timeout = http_timeout
         self.ping_interval = ping_interval
         self.ping_timeout = ping_timeout
-
         # If they did not provide a websocket timeout, default it to the
         # channel layer's group_expiry value if present, or one day if not.
         self.websocket_timeout = websocket_timeout or getattr(channel_layer, "group_expiry", 86400)
         self.ws_protocols = ws_protocols
         self.root_path = root_path
+        self.verbosity = verbosity
 
     def run(self):
         self.factory = HTTPFactory(
@@ -64,9 +65,11 @@ class Server(object):
             ws_protocols=self.ws_protocols,
             root_path=self.root_path,
         )
-
-        # Redirect the Twisted log to nowhere
-        globalLogBeginner.beginLoggingTo([lambda _: None], redirectStandardIO=False, discardBuffer=True)
+        if self.verbosity <= 1:
+            # Redirect the Twisted log to nowhere
+            globalLogBeginner.beginLoggingTo([lambda _: None], redirectStandardIO=False, discardBuffer=True)
+        else:
+            globalLogBeginner.beginLoggingTo([STDLibLogObserver(__name__)])
 
         if "twisted" in self.channel_layer.extensions and False:
             logger.info("Using native Twisted mode on channel layer")
@@ -97,14 +100,19 @@ class Server(object):
         # Don't do anything if there's no channels to listen on
         if channels:
             delay = 0.01
-            channel, message = self.channel_layer.receive_many(channels, block=False)
-            if channel:
-                delay = 0.00
-                # Deal with the message
-                try:
-                    self.factory.dispatch_reply(channel, message)
-                except Exception as e:
-                    logger.error("HTTP/WS send decode error: %s" % e)
+            try:
+                channel, message = self.channel_layer.receive_many(channels, block=False)
+            except Exception as e:
+                logger.error('Error at trying to receive messages: %s' % e)
+                delay = 5.00
+            else:
+                if channel:
+                    delay = 0.00
+                    # Deal with the message
+                    try:
+                        self.factory.dispatch_reply(channel, message)
+                    except Exception as e:
+                        logger.error("HTTP/WS send decode error: %s" % e)
         reactor.callLater(delay, self.backend_reader_sync)
 
     @defer.inlineCallbacks
@@ -119,15 +127,20 @@ class Server(object):
                 return
             channels = self.factory.reply_channels()
             if channels:
-                channel, message = yield self.channel_layer.receive_many_twisted(channels)
-                # Deal with the message
-                if channel:
-                    try:
-                        self.factory.dispatch_reply(channel, message)
-                    except Exception as e:
-                        logger.error("HTTP/WS send decode error: %s" % e)
+                try:
+                    channel, message = yield self.channel_layer.receive_many_twisted(channels)
+                except Exception as e:
+                    logger.error('Error at trying to receive messages: %s' % e)
+                    yield self.sleep(5.00)
                 else:
-                    yield self.sleep(0.01)
+                    # Deal with the message
+                    if channel:
+                        try:
+                            self.factory.dispatch_reply(channel, message)
+                        except Exception as e:
+                            logger.error("HTTP/WS send decode error: %s" % e)
+                    else:
+                        yield self.sleep(0.01)
             else:
                 yield self.sleep(0.05)
 

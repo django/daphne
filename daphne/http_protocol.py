@@ -110,6 +110,10 @@ class WebRequest(http.Request):
                     logger.debug("Connection %s did not get successful WS handshake.", self.reply_channel)
                 del self.factory.reply_protocols[self.reply_channel]
                 self.reply_channel = None
+                # Resume the producer so we keep getting data, if it's available as a method
+                if hasattr(self.channel, "resumeProducing"):
+                    self.channel.resumeProducing()
+
             # Boring old HTTP.
             else:
                 # Sanitize and decode headers, potentially extracting root path
@@ -173,6 +177,7 @@ class WebRequest(http.Request):
         try:
             self.factory.channel_layer.send("http.disconnect", {
                 "reply_channel": self.reply_channel,
+                "path": self.unquote(self.path),
             })
         except self.factory.channel_layer.ChannelFull:
             pass
@@ -276,12 +281,13 @@ class HTTPFactory(http.HTTPFactory):
 
     protocol = HTTPProtocol
 
-    def __init__(self, channel_layer, action_logger=None, timeout=120, websocket_timeout=86400, ping_interval=20, ping_timeout=30, ws_protocols=None, root_path=""):
+    def __init__(self, channel_layer, action_logger=None, timeout=120, websocket_timeout=86400, ping_interval=20, ping_timeout=30, ws_protocols=None, root_path="", websocket_connect_timeout=30):
         http.HTTPFactory.__init__(self)
         self.channel_layer = channel_layer
         self.action_logger = action_logger
         self.timeout = timeout
         self.websocket_timeout = websocket_timeout
+        self.websocket_connect_timeout = websocket_connect_timeout
         self.ping_interval = ping_interval
         # We track all sub-protocols for response channel mapping
         self.reply_protocols = {}
@@ -299,21 +305,29 @@ class HTTPFactory(http.HTTPFactory):
         if channel.startswith("http") and isinstance(self.reply_protocols[channel], WebRequest):
             self.reply_protocols[channel].serverResponse(message)
         elif channel.startswith("websocket") and isinstance(self.reply_protocols[channel], WebSocketProtocol):
-            # Ensure the message is a valid WebSocket one
-            unknown_message_keys = set(message.keys()) - {"bytes", "text", "close"}
-            if unknown_message_keys:
+            # Switch depending on current socket state
+            protocol = self.reply_protocols[channel]
+            # See if the message is valid
+            unknown_keys = set(message.keys()) - {"bytes", "text", "close", "accept"}
+            if unknown_keys:
                 raise ValueError(
-                    "Got invalid WebSocket reply message on %s - contains unknown keys %s" % (
+                    "Got invalid WebSocket reply message on %s - "
+                    "contains unknown keys %s (looking for either {'accept', 'text', 'bytes', 'close'})" % (
                         channel,
                         unknown_message_keys,
                     )
                 )
+            if message.get("accept", None) and protocol.state == protocol.STATE_CONNECTING:
+                protocol.serverAccept()
             if message.get("bytes", None):
-                self.reply_protocols[channel].serverSend(message["bytes"], True)
+                protocol.serverSend(message["bytes"], True)
             if message.get("text", None):
-                self.reply_protocols[channel].serverSend(message["text"], False)
+                protocol.serverSend(message["text"], False)
             if message.get("close", False):
-                self.reply_protocols[channel].serverClose()
+                if protocol.state == protocol.STATE_CONNECTING:
+                    protocol.serverReject()
+                else:
+                    protocol.serverClose()
         else:
             raise ValueError("Cannot dispatch message on channel %r" % channel)
 
