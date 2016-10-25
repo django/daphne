@@ -314,7 +314,7 @@ class HTTPFactory(http.HTTPFactory):
                     "Got invalid WebSocket reply message on %s - "
                     "contains unknown keys %s (looking for either {'accept', 'text', 'bytes', 'close'})" % (
                         channel,
-                        unknown_message_keys,
+                        unknown_keys,
                     )
                 )
             if message.get("accept", None) and protocol.state == protocol.STATE_CONNECTING:
