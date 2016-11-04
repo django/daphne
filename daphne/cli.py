@@ -137,7 +137,7 @@ class CommandLineInterface(object):
             if args.access_log == "-":
                 access_log_stream = sys.stdout
             else:
-                access_log_stream = open(args.access_log, "a")
+                access_log_stream = open(args.access_log, "a", 1)
         elif args.verbosity >= 1:
             access_log_stream = sys.stdout
         # Import channel layer
