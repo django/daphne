@@ -9,6 +9,7 @@ from six.moves.urllib_parse import unquote, unquote_plus
 from twisted.protocols.policies import ProtocolWrapper
 from twisted.web import http
 
+from .utils import parse_x_forwarded_for
 from .ws_protocol import WebSocketProtocol, WebSocketFactory
 
 logger = logging.getLogger(__name__)
@@ -67,6 +68,15 @@ class WebRequest(http.Request):
             else:
                 self.client_addr = None
                 self.server_addr = None
+
+            if self.factory.proxy_forwarded_address_header:
+                self.client_addr = parse_x_forwarded_for(
+                    self.requestHeaders,
+                    self.factory.proxy_forwarded_address_header,
+                    self.factory.proxy_forwarded_port_header,
+                    self.client_addr
+                )
+
             # Check for unicodeish path (or it'll crash when trying to parse)
             try:
                 self.path.decode("ascii")
@@ -281,7 +291,7 @@ class HTTPFactory(http.HTTPFactory):
 
     protocol = HTTPProtocol
 
-    def __init__(self, channel_layer, action_logger=None, timeout=120, websocket_timeout=86400, ping_interval=20, ping_timeout=30, ws_protocols=None, root_path="", websocket_connect_timeout=30):
+    def __init__(self, channel_layer, action_logger=None, timeout=120, websocket_timeout=86400, ping_interval=20, ping_timeout=30, ws_protocols=None, root_path="", websocket_connect_timeout=30, proxy_forwarded_address_header=None, proxy_forwarded_port_header=None):
         http.HTTPFactory.__init__(self)
         self.channel_layer = channel_layer
         self.action_logger = action_logger
@@ -289,6 +299,8 @@ class HTTPFactory(http.HTTPFactory):
         self.websocket_timeout = websocket_timeout
         self.websocket_connect_timeout = websocket_connect_timeout
         self.ping_interval = ping_interval
+        self.proxy_forwarded_address_header = proxy_forwarded_address_header
+        self.proxy_forwarded_port_header = proxy_forwarded_port_header
         # We track all sub-protocols for response channel mapping
         self.reply_protocols = {}
         # Make a factory for WebSocket protocols

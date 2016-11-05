@@ -28,6 +28,8 @@ class Server(object):
         ping_timeout=30,
         ws_protocols=None,
         root_path="",
+        proxy_forwarded_address_header=None,
+        proxy_forwarded_port_header=None,
         verbosity=1
     ):
         self.channel_layer = channel_layer
@@ -47,6 +49,8 @@ class Server(object):
         self.http_timeout = http_timeout
         self.ping_interval = ping_interval
         self.ping_timeout = ping_timeout
+        self.proxy_forwarded_address_header = proxy_forwarded_address_header
+        self.proxy_forwarded_port_header = proxy_forwarded_port_header
         # If they did not provide a websocket timeout, default it to the
         # channel layer's group_expiry value if present, or one day if not.
         self.websocket_timeout = websocket_timeout or getattr(channel_layer, "group_expiry", 86400)
@@ -64,6 +68,8 @@ class Server(object):
             ping_timeout=self.ping_timeout,
             ws_protocols=self.ws_protocols,
             root_path=self.root_path,
+            proxy_forwarded_address_header=self.proxy_forwarded_address_header,
+            proxy_forwarded_port_header=self.proxy_forwarded_port_header
         )
         if self.verbosity <= 1:
             # Redirect the Twisted log to nowhere
