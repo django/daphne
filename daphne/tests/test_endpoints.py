@@ -2,15 +2,13 @@
 from __future__ import unicode_literals
 from unittest import TestCase
 from six import string_types
-import pkgutil
+import logging
+
 from ..server import Server
 from ..cli import CommandLineInterface
 
 # this is the callable that will be tested here
 build = Server.build_endpoint_description_strings
-
-# patch out the servers run function
-Server.run = lambda x: x
 
 
 class TestEndpointDescriptions(TestCase):
@@ -74,6 +72,17 @@ class TestCLIInterface(TestCase):
     # construct a string that will be accepted as the channel_layer argument
     _import_channel_layer_string = 'daphne.tests.asgi:channel_layer'
 
+    def setUp(self):
+        logging.disable(logging.CRITICAL)
+        # patch out the servers run method
+        self._default_server_run = Server.run
+        Server.run = lambda x: x
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
+        # restore the original server run method
+        Server.run = self._default_server_run
+
     def build_cli(self, cli_args=''):
         # split the string and append the channel_layer positional argument
         if isinstance(cli_args, string_types):
@@ -118,7 +127,7 @@ class TestCLIInterface(TestCase):
             ['tcp:port=8080:interface=example.com']
         )
 
-    def testMixedCLIEndpoints(self):
+    def testCLIEndpointCreation(self):
         self.checkCLI(
             '-p 8080 -u /tmp/daphne.sock',
             [
@@ -144,6 +153,26 @@ class TestCLIInterface(TestCase):
                 'unix:/tmp/daphne.sock'
             ],
             'File descriptor and unix socket bound, TCP ignored.'
+        )
+
+    def testMixedCLIEndpointCreation(self):
+
+        self.checkCLI(
+            '-p 8080 -e unix:/tmp/daphne.sock',
+            [
+                'tcp:port=8080:interface=127.0.0.1',
+                'unix:/tmp/daphne.sock'
+            ],
+            'Mix host/port args with endpoint args'
+        )
+
+        self.checkCLI(
+            '-p 8080 -e tcp:port=8080:interface=127.0.0.1',
+            [
+                'tcp:port=8080:interface=127.0.0.1',
+            ] * 2,
+            'Do not try to de-duplicate endpoint description strings.'
+            'This would fail when running the server.'
         )
 
     def testCustomEndpoints(self):

@@ -163,7 +163,6 @@ class Server(object):
         self.factory.check_timeouts()
         reactor.callLater(2, self.timeout_checker)
 
-
     @staticmethod
     def build_endpoint_description_strings(
         host=None,

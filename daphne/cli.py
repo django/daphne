@@ -115,7 +115,6 @@ class CommandLineInterface(object):
             action='store_true',
         )
 
-
         self.server = None
 
     @classmethod
