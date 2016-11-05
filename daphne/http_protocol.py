@@ -275,7 +275,6 @@ class WebRequest(http.Request):
         })
 
 
-
 class HTTPProtocol(http.HTTPChannel):
 
     requestFactory = WebRequest
@@ -335,11 +334,13 @@ class HTTPFactory(http.HTTPFactory):
                 protocol.serverSend(message["bytes"], True)
             if message.get("text", None):
                 protocol.serverSend(message["text"], False)
-            if message.get("close", False):
+
+            closing_code = message.get("close", False)
+            if closing_code:
                 if protocol.state == protocol.STATE_CONNECTING:
                     protocol.serverReject()
                 else:
-                    protocol.serverClose()
+                    protocol.serverClose(code=closing_code)
         else:
             raise ValueError("Cannot dispatch message on channel %r" % channel)
 
