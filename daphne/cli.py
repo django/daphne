@@ -96,6 +96,14 @@ class CommandLineInterface(object):
             help='The setting for the ASGI root_path variable',
             default="",
         )
+        self.parser.add_argument(
+            '--proxy-headers',
+            dest='proxy_headers',
+            help='Enable parsing and using of X-Forwarded-For and X-Forwarded-Port headers and using that as the '
+                 'client address',
+            default=False,
+            action='store_true',
+        )
 
     @classmethod
     def entrypoint(cls):
@@ -154,4 +162,6 @@ class CommandLineInterface(object):
             ws_protocols=args.ws_protocols,
             root_path=args.root_path,
             verbosity=args.verbosity,
+            proxy_forwarded_address_header='X-Forwarded-For' if args.proxy_headers else None,
+            proxy_forwarded_port_header='X-Forwarded-Port' if args.proxy_headers else None,
         ).run()

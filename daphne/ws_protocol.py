@@ -9,6 +9,8 @@ from twisted.internet import defer
 
 from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory, ConnectionDeny
 
+from .utils import parse_x_forwarded_for
+
 logger = logging.getLogger(__name__)
 
 
@@ -54,6 +56,15 @@ class WebSocketProtocol(WebSocketServerProtocol):
             else:
                 self.client_addr = None
                 self.server_addr = None
+
+            if self.factory.proxy_forwarded_address_header:
+                self.client_addr = parse_x_forwarded_for(
+                    self.requestHeaders,
+                    self.main_factory.proxy_forwarded_address_header,
+                    self.main_factory.proxy_forwarded_port_header,
+                    self.client_addr
+                )
+
             # Make initial request info dict from request (we only have it here)
             self.path = request.path.encode("ascii")
             self.request_info = {
