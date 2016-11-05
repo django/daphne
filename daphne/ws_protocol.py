@@ -105,7 +105,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
             # so drop the connection.
             self.muted = True
             logger.warn("WebSocket force closed for %s due to connect backpressure", self.reply_channel)
-            # Send code 1013 "try again later" with close.
+            # Send code 503 "Service Unavailable" with close.
             raise ConnectionDeny(code=503, reason="Connection queue at capacity")
         else:
             self.factory.log_action("websocket", "connecting", {
@@ -198,11 +198,12 @@ class WebSocketProtocol(WebSocketServerProtocol):
         else:
             self.sendMessage(content.encode("utf8"), binary)
 
-    def serverClose(self):
+    def serverClose(self, code=True):
         """
         Server-side channel message to close the socket
         """
-        self.sendClose()
+        code = 1000 if code is True else code
+        self.sendClose(code=code)
 
     def onClose(self, wasClean, code, reason):
         self.cleanup()
