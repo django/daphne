@@ -93,3 +93,51 @@ class TestHTTPProtocol(TestCase):
         # Get the disconnection notification
         _, disconnect_message = self.channel_layer.receive_many(["http.disconnect"])
         self.assertEqual(disconnect_message['path'], "/te st-à/")
+
+    def test_x_forwarded_for_ignored(self):
+        """
+        Tests basic HTTP parsing
+        """
+        self.proto.dataReceived(
+            b"GET /te%20st-%C3%A0/?foo=+bar HTTP/1.1\r\n" +
+            b"Host: somewhere.com\r\n" +
+            b"X-Forwarded-For: 10.1.2.3\r\n" +
+            b"X-Forwarded-Port: 80\r\n" +
+            b"\r\n"
+        )
+        # Get the resulting message off of the channel layer
+        _, message = self.channel_layer.receive_many(["http.request"])
+        self.assertEqual(message['client'], ['192.168.1.1', 54321])
+
+    def test_x_forwarded_for_parsed(self):
+        """
+        Tests basic HTTP parsing
+        """
+        self.factory.proxy_forwarded_address_header = 'X-Forwarded-For'
+        self.factory.proxy_forwarded_port_header = 'X-Forwarded-Port'
+        self.proto.dataReceived(
+            b"GET /te%20st-%C3%A0/?foo=+bar HTTP/1.1\r\n" +
+            b"Host: somewhere.com\r\n" +
+            b"X-Forwarded-For: 10.1.2.3\r\n" +
+            b"X-Forwarded-Port: 80\r\n" +
+            b"\r\n"
+        )
+        # Get the resulting message off of the channel layer
+        _, message = self.channel_layer.receive_many(["http.request"])
+        self.assertEqual(message['client'], ['10.1.2.3', 80])
+
+    def test_x_forwarded_for_port_missing(self):
+        """
+        Tests basic HTTP parsing
+        """
+        self.factory.proxy_forwarded_address_header = 'X-Forwarded-For'
+        self.factory.proxy_forwarded_port_header = 'X-Forwarded-Port'
+        self.proto.dataReceived(
+            b"GET /te%20st-%C3%A0/?foo=+bar HTTP/1.1\r\n" +
+            b"Host: somewhere.com\r\n" +
+            b"X-Forwarded-For: 10.1.2.3\r\n" +
+            b"\r\n"
+        )
+        # Get the resulting message off of the channel layer
+        _, message = self.channel_layer.receive_many(["http.request"])
+        self.assertEqual(message['client'], ['10.1.2.3', 0])
