@@ -33,13 +33,19 @@ class Server(object):
         verbosity=1
     ):
         self.channel_layer = channel_layer
+        self.endpoints = endpoints
 
-        self.endpoints = sorted(endpoints + self.build_endpoint_description_strings(
-            host=host,
-            port=port,
-            unix_socket=unix_socket,
-            file_descriptor=file_descriptor
-        ))
+        if any([host, port, unix_socket, file_descriptor]):
+            raise DeprecationWarning('''
+                The host/port/unix_socket/file_descriptor keyword arguments to %s are deprecated.
+            ''' % self.__class__.__name__)
+            # build endpoint description strings from deprecated kwargs
+            self.endpoints = sorted(self.endpoints + build_endpoint_description_strings(
+                host=host,
+                port=port,
+                unix_socket=unix_socket,
+                file_descriptor=file_descriptor
+            ))
 
         if len(self.endpoints) == 0:
             raise UserWarning("No endpoints. This server will not listen on anything.")
@@ -163,29 +169,31 @@ class Server(object):
         self.factory.check_timeouts()
         reactor.callLater(2, self.timeout_checker)
 
-    @staticmethod
-    def build_endpoint_description_strings(
-        host=None,
-        port=None,
-        unix_socket=None,
-        file_descriptor=None
+
+def build_endpoint_description_strings(
+    host=None,
+    port=None,
+    unix_socket=None,
+    file_descriptor=None
     ):
-        """
-        Build a list of twisted endpoint description strings that the server will listen on
-        """
-        socket_descriptions = []
-        if host and port:
-            socket_descriptions.append('tcp:port=%d:interface=%s' % (int(port), host))
-        elif any([host, port]):
-            raise ValueError('TCP binding requires both port and host kwargs.')
+    """
+    Build a list of twisted endpoint description strings that the server will listen on.
+    This is to streamline the generation of twisted endpoint description strings from easier
+    to use command line args such as host, port, unix sockets etc.
+    """
+    socket_descriptions = []
+    if host and port:
+        socket_descriptions.append('tcp:port=%d:interface=%s' % (int(port), host))
+    elif any([host, port]):
+        raise ValueError('TCP binding requires both port and host kwargs.')
 
-        if unix_socket:
-            socket_descriptions.append('unix:%s' % unix_socket)
+    if unix_socket:
+        socket_descriptions.append('unix:%s' % unix_socket)
 
-        if file_descriptor:
-            socket_descriptions.append('fd:domain=INET:fileno=%d' % int(file_descriptor))
+    if file_descriptor:
+        socket_descriptions.append('fd:domain=INET:fileno=%d' % int(file_descriptor))
 
-        return socket_descriptions
+    return socket_descriptions
 
 
 

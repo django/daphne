@@ -2,7 +2,7 @@ import sys
 import argparse
 import logging
 import importlib
-from .server import Server
+from .server import Server, build_endpoint_description_strings
 from .access import AccessLogGenerator
 
 
@@ -165,19 +165,24 @@ class CommandLineInterface(object):
         elif args.port and not args.host:
             args.host = DEFAULT_HOST
 
-        # Run server
-        logger.info(
-            "Starting server at %s, channel layer %s",
-            (args.unix_socket if args.unix_socket else "%s:%s" % (args.host, args.port)),
-            args.channel_layer,
-        )
-        self.server = Server(
-            channel_layer=channel_layer,
+        # build endpoint description strings from (optional) cli arguments
+        endpoints = build_endpoint_description_strings(
             host=args.host,
             port=args.port,
             unix_socket=args.unix_socket,
-            file_descriptor=args.file_descriptor,
-            endpoints=args.socket_strings,
+            file_descriptor=args.file_descriptor
+        )
+        endpoints = sorted(
+            args.socket_strings + endpoints
+        )
+        logger.info(
+            'Starting server at %s, channel layer %s.' %
+            (endpoints.join(', '), args.channel_layer)
+        )
+
+        self.server = Server(
+            channel_layer=channel_layer,
+            endpoints=endpoints,
             http_timeout=args.http_timeout,
             ping_interval=args.ping_interval,
             ping_timeout=args.ping_timeout,
