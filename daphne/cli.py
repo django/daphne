@@ -2,12 +2,14 @@ import sys
 import argparse
 import logging
 import importlib
-from .server import Server
+from .server import Server, build_endpoint_description_strings
 from .access import AccessLogGenerator
 
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_HOST = '127.0.0.1'
+DEFAULT_PORT = 8000
 
 class CommandLineInterface(object):
     """
@@ -25,14 +27,14 @@ class CommandLineInterface(object):
             '--port',
             type=int,
             help='Port number to listen on',
-            default=8000,
+            default=None,
         )
         self.parser.add_argument(
             '-b',
             '--bind',
             dest='host',
             help='The host/address to bind to',
-            default="127.0.0.1",
+            default=None,
         )
         self.parser.add_argument(
             '-u',
@@ -47,6 +49,14 @@ class CommandLineInterface(object):
             dest='file_descriptor',
             help='Bind to a file descriptor rather than a TCP host/port or named unix socket',
             default=None,
+        )
+        self.parser.add_argument(
+            '-e',
+            '--endpoint',
+            dest='socket_strings',
+            action='append',
+            help='Use raw server strings passed directly to twisted',
+            default=[],
         )
         self.parser.add_argument(
             '-v',
@@ -105,6 +115,8 @@ class CommandLineInterface(object):
             action='store_true',
         )
 
+        self.server = None
+
     @classmethod
     def entrypoint(cls):
         """
@@ -143,18 +155,34 @@ class CommandLineInterface(object):
         channel_layer = importlib.import_module(module_path)
         for bit in object_path.split("."):
             channel_layer = getattr(channel_layer, bit)
-        # Run server
-        logger.info(
-            "Starting server at %s, channel layer %s",
-            (args.unix_socket if args.unix_socket else "%s:%s" % (args.host, args.port)),
-            args.channel_layer,
-        )
-        Server(
-            channel_layer=channel_layer,
+
+        if not any([args.host, args.port, args.unix_socket, args.file_descriptor, args.socket_strings]):
+            # no advanced binding options passed, patch in defaults
+            args.host = DEFAULT_HOST
+            args.port = DEFAULT_PORT
+        elif args.host and not args.port:
+            args.port = DEFAULT_PORT
+        elif args.port and not args.host:
+            args.host = DEFAULT_HOST
+
+        # build endpoint description strings from (optional) cli arguments
+        endpoints = build_endpoint_description_strings(
             host=args.host,
             port=args.port,
             unix_socket=args.unix_socket,
-            file_descriptor=args.file_descriptor,
+            file_descriptor=args.file_descriptor
+        )
+        endpoints = sorted(
+            args.socket_strings + endpoints
+        )
+        logger.info(
+            'Starting server at %s, channel layer %s.' %
+            (', '.join(endpoints), args.channel_layer)
+        )
+
+        self.server = Server(
+            channel_layer=channel_layer,
+            endpoints=endpoints,
             http_timeout=args.http_timeout,
             ping_interval=args.ping_interval,
             ping_timeout=args.ping_timeout,
@@ -164,4 +192,5 @@ class CommandLineInterface(object):
             verbosity=args.verbosity,
             proxy_forwarded_address_header='X-Forwarded-For' if args.proxy_headers else None,
             proxy_forwarded_port_header='X-Forwarded-Port' if args.proxy_headers else None,
-        ).run()
+        )
+        self.server.run()

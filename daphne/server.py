@@ -3,6 +3,7 @@ import socket
 
 from twisted.internet import reactor, defer
 from twisted.logger import globalLogBeginner, STDLibLogObserver
+from twisted.internet.endpoints import serverFromString
 
 from .http_protocol import HTTPFactory
 
@@ -14,8 +15,9 @@ class Server(object):
     def __init__(
         self,
         channel_layer,
-        host="127.0.0.1",
-        port=8000,
+        host=None,
+        port=None,
+        endpoints=[],
         unix_socket=None,
         file_descriptor=None,
         signal_handlers=True,
@@ -31,10 +33,23 @@ class Server(object):
         verbosity=1
     ):
         self.channel_layer = channel_layer
-        self.host = host
-        self.port = port
-        self.unix_socket = unix_socket
-        self.file_descriptor = file_descriptor
+        self.endpoints = endpoints
+
+        if any([host, port, unix_socket, file_descriptor]):
+            raise DeprecationWarning('''
+                The host/port/unix_socket/file_descriptor keyword arguments to %s are deprecated.
+            ''' % self.__class__.__name__)
+            # build endpoint description strings from deprecated kwargs
+            self.endpoints = sorted(self.endpoints + build_endpoint_description_strings(
+                host=host,
+                port=port,
+                unix_socket=unix_socket,
+                file_descriptor=file_descriptor
+            ))
+
+        if len(self.endpoints) == 0:
+            raise UserWarning("No endpoints. This server will not listen on anything.")
+
         self.signal_handlers = signal_handlers
         self.action_logger = action_logger
         self.http_timeout = http_timeout
@@ -67,15 +82,6 @@ class Server(object):
             globalLogBeginner.beginLoggingTo([lambda _: None], redirectStandardIO=False, discardBuffer=True)
         else:
             globalLogBeginner.beginLoggingTo([STDLibLogObserver(__name__)])
-        # Listen on a socket
-        if self.unix_socket:
-            reactor.listenUNIX(self.unix_socket, self.factory)
-        elif self.file_descriptor:
-            # socket returns the same socket if supplied with a fileno
-            sock = socket.socket(fileno=self.file_descriptor)
-            reactor.adoptStreamPort(self.file_descriptor, sock.family, self.factory)
-        else:
-            reactor.listenTCP(self.port, self.factory, interface=self.host)
 
         if "twisted" in self.channel_layer.extensions and False:
             logger.info("Using native Twisted mode on channel layer")
@@ -84,6 +90,12 @@ class Server(object):
             logger.info("Using busy-loop synchronous mode on channel layer")
             reactor.callLater(0, self.backend_reader_sync)
         reactor.callLater(2, self.timeout_checker)
+
+        for socket_description in self.endpoints:
+            logger.info("Listening on endpoint %s" % socket_description)
+            ep = serverFromString(reactor, socket_description)
+            ep.listen(self.factory)
+
         reactor.run(installSignalHandlers=self.signal_handlers)
 
     def backend_reader_sync(self):
@@ -156,3 +168,35 @@ class Server(object):
         """
         self.factory.check_timeouts()
         reactor.callLater(2, self.timeout_checker)
+
+
+def build_endpoint_description_strings(
+    host=None,
+    port=None,
+    unix_socket=None,
+    file_descriptor=None
+    ):
+    """
+    Build a list of twisted endpoint description strings that the server will listen on.
+    This is to streamline the generation of twisted endpoint description strings from easier
+    to use command line args such as host, port, unix sockets etc.
+    """
+    socket_descriptions = []
+    if host and port:
+        socket_descriptions.append('tcp:port=%d:interface=%s' % (int(port), host))
+    elif any([host, port]):
+        raise ValueError('TCP binding requires both port and host kwargs.')
+
+    if unix_socket:
+        socket_descriptions.append('unix:%s' % unix_socket)
+
+    if file_descriptor:
+        socket_descriptions.append('fd:domain=INET:fileno=%d' % int(file_descriptor))
+
+    return socket_descriptions
+
+
+
+
+
+
