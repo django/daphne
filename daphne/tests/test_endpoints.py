@@ -4,11 +4,11 @@ from unittest import TestCase
 from six import string_types
 import logging
 
-from ..server import Server
+from ..server import Server, build_endpoint_description_strings
 from ..cli import CommandLineInterface
 
 # this is the callable that will be tested here
-build = Server.build_endpoint_description_strings
+build = build_endpoint_description_strings
 
 
 class TestEndpointDescriptions(TestCase):

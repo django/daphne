@@ -177,7 +177,7 @@ class CommandLineInterface(object):
         )
         logger.info(
             'Starting server at %s, channel layer %s.' %
-            (endpoints.join(', '), args.channel_layer)
+            (', '.join(endpoints), args.channel_layer)
         )
 
         self.server = Server(
