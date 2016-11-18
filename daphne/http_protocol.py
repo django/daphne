@@ -5,7 +5,10 @@ import six
 import time
 import traceback
 
+from zope.interface import implementer
+
 from six.moves.urllib_parse import unquote, unquote_plus
+from twisted.internet.interfaces import IProtocolNegotiationFactory
 from twisted.protocols.policies import ProtocolWrapper
 from twisted.web import http
 
@@ -283,6 +286,7 @@ class WebRequest(http.Request):
         })
 
 
+@implementer(IProtocolNegotiationFactory)
 class HTTPFactory(http.HTTPFactory):
     """
     Factory which takes care of tracking which protocol
@@ -381,3 +385,18 @@ class HTTPFactory(http.HTTPFactory):
                 # Ping check
                 else:
                     protocol.check_ping()
+
+    # IProtocolNegotiationFactory
+    def acceptableProtocols(self):
+        """
+        Protocols this server can speak after ALPN negotiation. Currently that
+        is HTTP/1.1 and optionally HTTP/2. Websockets cannot be negotiated
+        using ALPN, so that doesn't go here: anyone wanting websockets will
+        negotiate HTTP/1.1 and then do the upgrade dance.
+        """
+        baseProtocols = [b'http/1.1']
+
+        if http.H2_ENABLED:
+            baseProtocols.insert(0, b'h2')
+
+        return baseProtocols
