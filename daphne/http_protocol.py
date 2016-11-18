@@ -275,11 +275,6 @@ class WebRequest(http.Request):
         })
 
 
-class HTTPProtocol(http.HTTPChannel):
-
-    requestFactory = WebRequest
-
-
 class HTTPFactory(http.HTTPFactory):
     """
     Factory which takes care of tracking which protocol
@@ -287,8 +282,6 @@ class HTTPFactory(http.HTTPFactory):
     named response channels, so incoming messages can be
     routed appropriately.
     """
-
-    protocol = HTTPProtocol
 
     def __init__(self, channel_layer, action_logger=None, timeout=120, websocket_timeout=86400, ping_interval=20, ping_timeout=30, ws_protocols=None, root_path="", websocket_connect_timeout=30, proxy_forwarded_address_header=None, proxy_forwarded_port_header=None):
         http.HTTPFactory.__init__(self)
@@ -308,6 +301,15 @@ class HTTPFactory(http.HTTPFactory):
         self.ws_factory.protocol = WebSocketProtocol
         self.ws_factory.reply_protocols = self.reply_protocols
         self.root_path = root_path
+
+    def buildProtocol(self, addr):
+        """
+        Builds protocol instances. This override is used to ensure we use our
+        own Request object instead of the default.
+        """
+        protocol = http.HTTPFactory.buildProtocol(self, addr)
+        protocol.requestFactory = WebRequest
+        return protocol
 
     def reply_channels(self):
         return self.reply_protocols.keys()
