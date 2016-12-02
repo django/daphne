@@ -114,6 +114,12 @@ class CommandLineInterface(object):
             default=False,
             action='store_true',
         )
+        self.parser.add_argument(
+            '--chdir',
+            dest='chdir',
+            help='chdir to specified directory before apps loading',
+            default=".",
+        )
 
         self.server = None
 
@@ -150,7 +156,7 @@ class CommandLineInterface(object):
         elif args.verbosity >= 1:
             access_log_stream = sys.stdout
         # Import channel layer
-        sys.path.insert(0, ".")
+        sys.path.insert(0, args.chdir)
         module_path, object_path = args.channel_layer.split(":", 1)
         channel_layer = importlib.import_module(module_path)
         for bit in object_path.split("."):
