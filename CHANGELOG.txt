@@ -1,3 +1,24 @@
+1.0.0 (2017-01-08)
+------------------
+
+* BREAKING CHANGE: Daphne now requires acceptance of WebSocket connections
+  before it finishes the socket handshake and relays incoming packets.
+  You must upgrade to at least Channels 1.0.0 as well; see
+  http://channels.readthedocs.io/en/latest/releases/1.0.0.html for more.
+
+* http.disconnect now has a `path` key
+
+* WebSockets can now be closed with a specific code
+
+* X-Forwarded-For header support; defaults to X-Forwarded-For, override with
+  --proxy-headers on the commandline.
+
+* Twisted endpoint description string support with `-e` on the command line
+  (allowing for SNI/ACME support, among other things)
+
+* Logging/error verbosity fixes and access log flushes properly
+
+
 0.15.0 (2016-08-28)
 -------------------
 
