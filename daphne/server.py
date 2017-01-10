@@ -83,6 +83,7 @@ class Server(object):
         else:
             globalLogBeginner.beginLoggingTo([STDLibLogObserver(__name__)])
 
+        # Disabled deliberately for the moment as it's worse performing
         if "twisted" in self.channel_layer.extensions and False:
             logger.info("Using native Twisted mode on channel layer")
             reactor.callLater(0, self.backend_reader_twisted)
@@ -93,7 +94,8 @@ class Server(object):
 
         for socket_description in self.endpoints:
             logger.info("Listening on endpoint %s" % socket_description)
-            ep = serverFromString(reactor, socket_description)
+            # Twisted requires str on python2 (not unicode) and str on python3 (not bytes)
+            ep = serverFromString(reactor, str(socket_description))
             ep.listen(self.factory)
 
         reactor.run(installSignalHandlers=self.signal_handlers)
