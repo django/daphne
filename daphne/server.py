@@ -1,9 +1,9 @@
 import logging
-import socket
+import warnings
 
 from twisted.internet import reactor, defer
-from twisted.logger import globalLogBeginner, STDLibLogObserver
 from twisted.internet.endpoints import serverFromString
+from twisted.logger import globalLogBeginner, STDLibLogObserver
 
 from .http_protocol import HTTPFactory
 
@@ -17,7 +17,7 @@ class Server(object):
         channel_layer,
         host=None,
         port=None,
-        endpoints=[],
+        endpoints=None,
         unix_socket=None,
         file_descriptor=None,
         signal_handlers=True,
@@ -33,12 +33,12 @@ class Server(object):
         verbosity=1
     ):
         self.channel_layer = channel_layer
-        self.endpoints = endpoints
+        self.endpoints = endpoints or []
 
         if any([host, port, unix_socket, file_descriptor]):
-            raise DeprecationWarning('''
+            warnings.warn('''
                 The host/port/unix_socket/file_descriptor keyword arguments to %s are deprecated.
-            ''' % self.__class__.__name__)
+            ''' % self.__class__.__name__, DeprecationWarning)
             # build endpoint description strings from deprecated kwargs
             self.endpoints = sorted(self.endpoints + build_endpoint_description_strings(
                 host=host,
@@ -193,12 +193,6 @@ def build_endpoint_description_strings(
         socket_descriptions.append('unix:%s' % unix_socket)
 
     if file_descriptor:
-        socket_descriptions.append('fd:domain=INET:fileno=%d' % int(file_descriptor))
+        socket_descriptions.append('fd:fileno=%d' % int(file_descriptor))
 
     return socket_descriptions
-
-
-
-
-
-

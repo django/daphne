@@ -1,18 +1,19 @@
 # coding: utf8
 from __future__ import unicode_literals
-from unittest import TestCase
-from six import string_types
-import logging
 
-from ..server import Server, build_endpoint_description_strings
+import logging
+from unittest import TestCase
+
+from six import string_types
+
 from ..cli import CommandLineInterface
+from ..server import Server, build_endpoint_description_strings
 
 # this is the callable that will be tested here
 build = build_endpoint_description_strings
 
 
 class TestEndpointDescriptions(TestCase):
-
     def testBasics(self):
         self.assertEqual(build(), [], msg="Empty list returned when no kwargs given")
 
@@ -46,7 +47,7 @@ class TestEndpointDescriptions(TestCase):
     def testFileDescriptorBinding(self):
         self.assertEqual(
             build(file_descriptor=5),
-            ['fd:domain=INET:fileno=5']
+            ['fd:fileno=5']
         )
 
     def testMultipleEnpoints(self):
@@ -62,13 +63,12 @@ class TestEndpointDescriptions(TestCase):
             sorted([
                 'tcp:port=8080:interface=10.0.0.1',
                 'unix:/tmp/daphne.sock',
-                'fd:domain=INET:fileno=123'
+                'fd:fileno=123'
             ])
         )
 
 
 class TestCLIInterface(TestCase):
-
     # construct a string that will be accepted as the channel_layer argument
     _import_channel_layer_string = 'daphne.tests.asgi:channel_layer'
 
@@ -97,7 +97,8 @@ class TestCLIInterface(TestCase):
         cli = self.build_cli(cli_args=cli_args)
         return cli.server.endpoints
 
-    def checkCLI(self, args='', endpoints=[], msg='Expected endpoints do not match.'):
+    def checkCLI(self, args='', endpoints=None, msg='Expected endpoints do not match.'):
+        endpoints = endpoints or []
         cli = self.build_cli(cli_args=args)
         generated_endpoints = sorted(cli.server.endpoints)
         endpoints.sort()
@@ -149,14 +150,13 @@ class TestCLIInterface(TestCase):
         self.checkCLI(
             '-u /tmp/daphne.sock --fd 5',
             [
-                'fd:domain=INET:fileno=5',
+                'fd:fileno=5',
                 'unix:/tmp/daphne.sock'
             ],
             'File descriptor and unix socket bound, TCP ignored.'
         )
 
     def testMixedCLIEndpointCreation(self):
-
         self.checkCLI(
             '-p 8080 -e unix:/tmp/daphne.sock',
             [
