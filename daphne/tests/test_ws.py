@@ -9,7 +9,7 @@ from ..http_protocol import HTTPFactory
 
 class TestWebSocketProtocol(TestCase):
     """
-    Tests that the HTTP protocol class correctly generates and parses messages.
+    Tests that the WebSocket protocol class correctly generates and parses messages.
     """
 
     def setUp(self):
