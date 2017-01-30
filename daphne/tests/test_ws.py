@@ -89,3 +89,62 @@ class TestWebSocketProtocol(TestCase):
         response = self.tr.value()
         self.assertEqual(response, b"\x88\x02\x03\xe8")
         self.tr.clear()
+
+    def test_connection_with_file_origin_is_accepted(self):
+        # Send a simple request to the protocol
+        self.proto.dataReceived(
+            b"GET /chat HTTP/1.1\r\n"
+            b"Host: somewhere.com\r\n"
+            b"Upgrade: websocket\r\n"
+            b"Connection: Upgrade\r\n"
+            b"Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==\r\n"
+            b"Sec-WebSocket-Protocol: chat, superchat\r\n"
+            b"Sec-WebSocket-Version: 13\r\n"
+            b"Origin: file://\r\n"
+            b"\r\n"
+        )
+
+        # Get the resulting message off of the channel layer
+        _, message = self.channel_layer.receive_many(["websocket.connect"])
+        self.assertIn((b'origin', b'file://'), message['headers'])
+        self.assertTrue(message['reply_channel'].startswith("websocket.send!"))
+
+        # Accept the connection
+        self.factory.dispatch_reply(
+            message['reply_channel'],
+            {'accept': True}
+        )
+
+        # Make sure that we get a 101 Switching Protocols back
+        response = self.tr.value()
+        self.assertIn(b"HTTP/1.1 101 Switching Protocols\r\n", response)
+        self.assertIn(b"Sec-WebSocket-Accept: HSmrc0sMlYUkAGmm5OPpG2HaGWk=\r\n", response)
+
+    def test_connection_with_no_origin_is_accepted(self):
+        # Send a simple request to the protocol
+        self.proto.dataReceived(
+            b"GET /chat HTTP/1.1\r\n"
+            b"Host: somewhere.com\r\n"
+            b"Upgrade: websocket\r\n"
+            b"Connection: Upgrade\r\n"
+            b"Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==\r\n"
+            b"Sec-WebSocket-Protocol: chat, superchat\r\n"
+            b"Sec-WebSocket-Version: 13\r\n"
+            b"\r\n"
+        )
+
+        # Get the resulting message off of the channel layer
+        _, message = self.channel_layer.receive_many(["websocket.connect"])
+        self.assertNotIn(b'origin', [header_tuple[0] for header_tuple in message['headers']])
+        self.assertTrue(message['reply_channel'].startswith("websocket.send!"))
+
+        # Accept the connection
+        self.factory.dispatch_reply(
+            message['reply_channel'],
+            {'accept': True}
+        )
+
+        # Make sure that we get a 101 Switching Protocols back
+        response = self.tr.value()
+        self.assertIn(b"HTTP/1.1 101 Switching Protocols\r\n", response)
+        self.assertIn(b"Sec-WebSocket-Accept: HSmrc0sMlYUkAGmm5OPpG2HaGWk=\r\n", response)
