@@ -67,6 +67,19 @@ should start with a slash, but not end with one; for example::
 
     daphne --root-path=/forum django_project.asgi:channel_layer
 
+Dependencies
+------------
+
+All Channels projects currently support Python 2.7, 3.4 and 3.5. `daphne` requires Twisted 16.0 or
+greater.
+
+Contributing
+------------
+
+Please refer to the
+`main Channels contributing docs <https://github.com/django/channels/blob/master/CONTRIBUTING.rst>`_.
+That also contains advice on how to set up the development environment and run the tests.
+
 
 Maintenance and Security
 ------------------------
