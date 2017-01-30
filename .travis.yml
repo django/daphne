@@ -1,9 +1,16 @@
 sudo: false
+
 language: python
+
 python:
   - "2.7"
+  - "3.4"
   - "3.5"
-install:
-  - if [[ $TRAVIS_PYTHON_VERSION == 2.7 ]]; then pip install unittest2; fi
-  - pip install asgiref twisted autobahn
-script: if [[ $TRAVIS_PYTHON_VERSION == 2.7 ]]; then python -m unittest2; else python -m unittest; fi
+
+env:
+  - TWISTED_RELEASE="twisted"
+  - TWISTED_RELEASE="twisted==16.0.0"
+
+install: pip install $TWISTED_RELEASE -e .
+
+script: python -m unittest discover
