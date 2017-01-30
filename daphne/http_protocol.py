@@ -304,7 +304,10 @@ class HTTPFactory(http.HTTPFactory):
         self.reply_protocols = {}
         # Make a factory for WebSocket protocols
         self.ws_factory = WebSocketFactory(self, protocols=ws_protocols)
-        self.ws_factory.setProtocolOptions(autoPingTimeout=ping_timeout)
+        self.ws_factory.setProtocolOptions(
+            autoPingTimeout=ping_timeout,
+            allowNullOrigin=True,
+        )
         self.ws_factory.protocol = WebSocketProtocol
         self.ws_factory.reply_protocols = self.reply_protocols
         self.root_path = root_path
