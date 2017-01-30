@@ -23,7 +23,7 @@ setup(
     packages=find_packages() + ['twisted.plugins'],
     include_package_data=True,
     install_requires=[
-        'asgiref>=0.13',
+        'asgiref>=1.0.0',
         'twisted>=16.0',
         'autobahn>=0.12',
     ],

@@ -33,7 +33,7 @@ class TestWebSocketProtocol(TestCase):
             b"\r\n"
         )
         # Get the resulting message off of the channel layer
-        _, message = self.channel_layer.receive_many(["websocket.connect"])
+        _, message = self.channel_layer.receive(["websocket.connect"])
         self.assertEqual(message['path'], "/chat")
         self.assertEqual(message['query_string'], "")
         self.assertEqual(

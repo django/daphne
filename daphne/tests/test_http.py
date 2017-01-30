@@ -30,7 +30,7 @@ class TestHTTPProtocol(TestCase):
             b"\r\n"
         )
         # Get the resulting message off of the channel layer
-        _, message = self.channel_layer.receive_many(["http.request"])
+        _, message = self.channel_layer.receive(["http.request"])
         self.assertEqual(message['http_version'], "1.1")
         self.assertEqual(message['method'], "GET")
         self.assertEqual(message['scheme'], "http")
@@ -64,7 +64,7 @@ class TestHTTPProtocol(TestCase):
             b"\r\n"
         )
         # Get the resulting message off of the channel layer, check root_path
-        _, message = self.channel_layer.receive_many(["http.request"])
+        _, message = self.channel_layer.receive(["http.request"])
         self.assertEqual(message['root_path'], "/foobar /bar")
 
     def test_http_disconnect_sets_path_key(self):
@@ -78,7 +78,7 @@ class TestHTTPProtocol(TestCase):
             b"\r\n"
         )
         # Get the request message
-        _, message = self.channel_layer.receive_many(["http.request"])
+        _, message = self.channel_layer.receive(["http.request"])
 
         # Send back an example response
         self.factory.dispatch_reply(
@@ -91,7 +91,7 @@ class TestHTTPProtocol(TestCase):
         )
 
         # Get the disconnection notification
-        _, disconnect_message = self.channel_layer.receive_many(["http.disconnect"])
+        _, disconnect_message = self.channel_layer.receive(["http.disconnect"])
         self.assertEqual(disconnect_message['path'], "/te st-à/")
 
     def test_x_forwarded_for_ignored(self):
@@ -106,7 +106,7 @@ class TestHTTPProtocol(TestCase):
             b"\r\n"
         )
         # Get the resulting message off of the channel layer
-        _, message = self.channel_layer.receive_many(["http.request"])
+        _, message = self.channel_layer.receive(["http.request"])
         self.assertEqual(message['client'], ['192.168.1.1', 54321])
 
     def test_x_forwarded_for_parsed(self):
@@ -123,7 +123,7 @@ class TestHTTPProtocol(TestCase):
             b"\r\n"
         )
         # Get the resulting message off of the channel layer
-        _, message = self.channel_layer.receive_many(["http.request"])
+        _, message = self.channel_layer.receive(["http.request"])
         self.assertEqual(message['client'], ['10.1.2.3', 80])
 
     def test_x_forwarded_for_port_missing(self):
@@ -139,5 +139,5 @@ class TestHTTPProtocol(TestCase):
             b"\r\n"
         )
         # Get the resulting message off of the channel layer
-        _, message = self.channel_layer.receive_many(["http.request"])
+        _, message = self.channel_layer.receive(["http.request"])
         self.assertEqual(message['client'], ['10.1.2.3', 0])
