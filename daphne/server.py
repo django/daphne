@@ -115,7 +115,7 @@ class Server(object):
         if channels:
             delay = 0.01
             try:
-                channel, message = self.channel_layer.receive_many(channels, block=False)
+                channel, message = self.channel_layer.receive(channels, block=False)
             except Exception as e:
                 logger.error('Error at trying to receive messages: %s' % e)
                 delay = 5.00
@@ -142,7 +142,7 @@ class Server(object):
             channels = self.factory.reply_channels()
             if channels:
                 try:
-                    channel, message = yield self.channel_layer.receive_many_twisted(channels)
+                    channel, message = yield self.channel_layer.receive_twisted(channels)
                 except Exception as e:
                     logger.error('Error at trying to receive messages: %s' % e)
                     yield self.sleep(5.00)
