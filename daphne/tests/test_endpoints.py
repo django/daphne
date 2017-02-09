@@ -28,6 +28,16 @@ class TestEndpointDescriptions(TestCase):
             ['tcp:port=8000:interface=127.0.0.1']
         )
 
+        self.assertEqual(
+            build(port=8000, host='[200a::1]'),
+            ['tcp:port=8000:interface=200a\:\:1']
+        )
+
+        self.assertEqual(
+            build(port=8000, host='200a::1'),
+            ['tcp:port=8000:interface=200a\:\:1']
+        )
+
         # incomplete port/host kwargs raise errors
         self.assertRaises(
             ValueError,
@@ -122,6 +132,14 @@ class TestCLIInterface(TestCase):
         self.checkCLI(
             '-b 10.0.0.1',
             ['tcp:port=8000:interface=10.0.0.1']
+        )
+        self.checkCLI(
+            '-b 200a::1',
+            ['tcp:port=8000:interface=200a\:\:1']
+        )
+        self.checkCLI(
+            '-b [200a::1]',
+            ['tcp:port=8000:interface=200a\:\:1']
         )
         self.checkCLI(
             '-p 8080 -b example.com',
