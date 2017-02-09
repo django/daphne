@@ -27,6 +27,9 @@ setup(
         'twisted>=16.0',
         'autobahn>=0.12',
     ],
+    extras_require={
+        'tests': ['hypothesis', 'tox']
+    },
     entry_points={'console_scripts': [
         'daphne = daphne.cli:CommandLineInterface.entrypoint',
     ]},
