@@ -269,7 +269,7 @@ class WebRequest(http.Request):
                 (b"Content-Type", b"text/html; charset=utf-8"),
             ],
             "content": (self.error_template % {
-                "title": str(status) + " " + status_text.decode("ascii"),
+                "title": six.text_type(status) + " " + status_text.decode("ascii"),
                 "body": body,
             }).encode("utf8"),
         })
