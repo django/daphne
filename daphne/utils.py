@@ -1,3 +1,4 @@
+from twisted.web.http_headers import Headers
 
 
 def parse_x_forwarded_for(headers,
@@ -16,10 +17,17 @@ def parse_x_forwarded_for(headers,
     if not address_header_name:
         return original
 
+    # Convert twisted-style headers into dicts
+    if isinstance(headers, Headers):
+        headers = dict(headers.getAllRawHeaders())
+
+    # Lowercase all header names in the dict
+    headers = {name.lower(): values for name, values in headers.items()}
+
     address_header_name = address_header_name.lower().encode("utf-8")
     result = original
-    if headers.hasHeader(address_header_name):
-        address_value = headers.getRawHeaders(address_header_name)[0].decode("utf-8")
+    if address_header_name in headers:
+        address_value = headers[address_header_name].decode("utf-8")
 
         if ',' in address_value:
             address_value = address_value.split(",")[-1].strip()
