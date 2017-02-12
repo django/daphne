@@ -105,7 +105,7 @@ class TestWebSocketProtocol(TestCase):
         )
 
         # Get the resulting message off of the channel layer
-        _, message = self.channel_layer.receive_many(["websocket.connect"])
+        _, message = self.channel_layer.receive(["websocket.connect"])
         self.assertIn((b'origin', b'file://'), message['headers'])
         self.assertTrue(message['reply_channel'].startswith("websocket.send!"))
 
@@ -134,7 +134,7 @@ class TestWebSocketProtocol(TestCase):
         )
 
         # Get the resulting message off of the channel layer
-        _, message = self.channel_layer.receive_many(["websocket.connect"])
+        _, message = self.channel_layer.receive(["websocket.connect"])
         self.assertNotIn(b'origin', [header_tuple[0] for header_tuple in message['headers']])
         self.assertTrue(message['reply_channel'].startswith("websocket.send!"))
 
