@@ -27,7 +27,7 @@ def parse_x_forwarded_for(headers,
     address_header_name = address_header_name.lower().encode("utf-8")
     result = original
     if address_header_name in headers:
-        address_value = headers[address_header_name].decode("utf-8")
+        address_value = headers[address_header_name][0].decode("utf-8")
 
         if ',' in address_value:
             address_value = address_value.split(",")[-1].strip()
@@ -46,8 +46,8 @@ def parse_x_forwarded_for(headers,
             # We only want to parse the X-Forwarded-Port header if we also parsed the X-Forwarded-For
             # header to avoid inconsistent results.
             port_header_name = port_header_name.lower().encode("utf-8")
-            if headers.hasHeader(port_header_name):
-                port_value = headers.getRawHeaders(port_header_name)[0].decode("utf-8")
+            if port_header_name in headers:
+                port_value = headers[port_header_name][0].decode("utf-8")
                 try:
                     result[1] = int(port_value)
                 except ValueError:
