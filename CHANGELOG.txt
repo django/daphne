@@ -1,3 +1,12 @@
+1.0.3 (2017-02-12)
+------------------
+
+* IPv6 addresses are correctly accepted as bind targets on the command line
+
+* Twisted 17.1 compatability fixes for WebSocket receiving/keepalive and
+  proxy header detection.
+
+
 1.0.2 (2017-02-01)
 ------------------
 
