@@ -121,7 +121,11 @@ class WebRequest(http.Request):
                 del self.factory.reply_protocols[self.reply_channel]
                 self.reply_channel = None
                 # Resume the producer so we keep getting data, if it's available as a method
-                if hasattr(self.channel, "resumeProducing"):
+                # 17.1 version
+                if hasattr(self.channel, "_networkProducer"):
+                    self.channel._networkProducer.resumeProducing()
+                # 16.x version
+                elif hasattr(self.channel, "resumeProducing"):
                     self.channel.resumeProducing()
 
             # Boring old HTTP.
