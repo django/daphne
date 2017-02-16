@@ -100,7 +100,7 @@ class TestXForwardedForWsParsing(TestCase):
         }
         self.assertEqual(
             parse_x_forwarded_for(headers),
-            ['10.1.2.4', 0]
+            ['10.1.2.3', 0]
         )
 
     def test_original(self):
