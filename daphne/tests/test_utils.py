@@ -31,13 +31,13 @@ class TestXForwardedForHttpParsing(TestCase):
             ['10.1.2.3', 0]
         )
 
-    def test_port_in_address(self):
+    def test_v6_address(self):
         headers = Headers({
-            b'X-Forwarded-For': [b'10.1.2.3:5123'],
+            b'X-Forwarded-For': [b'1043::a321:0001, 10.0.5.6'],
         })
         self.assertEqual(
             parse_x_forwarded_for(headers),
-            ['10.1.2.3', 5123]
+            ['1043::a321:0001', 0]
         )
 
     def test_multiple_proxys(self):
@@ -85,13 +85,13 @@ class TestXForwardedForWsParsing(TestCase):
             ['10.1.2.3', 0]
         )
 
-    def test_port_in_address(self):
+    def test_v6_address(self):
         headers = {
-            b'X-Forwarded-For': b'10.1.2.3:5123',
+            b'X-Forwarded-For': [b'1043::a321:0001, 10.0.5.6'],
         }
         self.assertEqual(
             parse_x_forwarded_for(headers),
-            ['10.1.2.3', 5123]
+            ['1043::a321:0001', 0]
         )
 
     def test_multiple_proxys(self):

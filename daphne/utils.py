@@ -39,15 +39,7 @@ def parse_x_forwarded_for(headers,
         if ',' in address_value:
             address_value = address_value.split(",")[0].strip()
 
-        if ':' in address_value:
-            address_host, address_port = address_value.split(':')
-            result = [address_host, 0]
-            try:
-                result[1] = int(address_port)
-            except ValueError:
-                pass
-        else:
-            result = [address_value, 0]
+        result = [address_value, 0]
 
         if port_header_name:
             # We only want to parse the X-Forwarded-Port header if we also parsed the X-Forwarded-For
