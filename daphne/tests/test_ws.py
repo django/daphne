@@ -4,12 +4,12 @@ from unittest import TestCase
 from asgiref.inmemory import ChannelLayer
 from twisted.test import proto_helpers
 
-from ..http_protocol import HTTPFactory
+from daphne.http_protocol import HTTPFactory
 
 
 class TestWebSocketProtocol(TestCase):
     """
-    Tests that the WebSocket protocol class correctly generates and parses messages.
+    Tests that the WebSocket protocol class correcly generates and parses messages.
     """
 
     def setUp(self):
