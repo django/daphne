@@ -8,7 +8,7 @@ import unittest
 from six.moves.urllib import parse
 
 from asgiref.inmemory import ChannelLayer
-from hypothesis import given, assume
+from hypothesis import given, assume, settings, HealthCheck
 from twisted.test import proto_helpers
 
 from daphne.http_protocol import HTTPFactory
@@ -98,6 +98,8 @@ class TestHTTPRequestSpec(testcases.ASGITestCase):
         request_headers=http_strategies.headers(),
         request_body=http_strategies.http_body(),
     )
+    # This test is slow enough that on Travis, hypothesis sometimes complains.
+    @settings(suppress_health_check=[HealthCheck.too_slow])
     def test_kitchen_sink(
             self, request_method, request_path, request_params, request_headers, request_body):
         """
