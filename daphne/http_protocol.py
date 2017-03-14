@@ -63,8 +63,10 @@ class WebRequest(http.Request):
                 upgrade_header = self.requestHeaders.getRawHeaders(b"Upgrade")[0]
             # Get client address if possible
             if hasattr(self.client, "host") and hasattr(self.client, "port"):
-                self.client_addr = [self.client.host, self.client.port]
-                self.server_addr = [self.host.host, self.host.port]
+                # client.host and host.host are byte strings in Python 2, but spec
+                # requires unicode string.
+                self.client_addr = [six.text_type(self.client.host), self.client.port]
+                self.server_addr = [six.text_type(self.host.host), self.host.port]
             else:
                 self.client_addr = None
                 self.server_addr = None
@@ -273,7 +275,7 @@ class WebRequest(http.Request):
                 (b"Content-Type", b"text/html; charset=utf-8"),
             ],
             "content": (self.error_template % {
-                "title": str(status) + " " + status_text.decode("ascii"),
+                "title": six.text_type(status) + " " + status_text.decode("ascii"),
                 "body": body,
             }).encode("utf8"),
         })
