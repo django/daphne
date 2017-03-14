@@ -50,6 +50,7 @@ class Server(object):
         if len(self.endpoints) == 0:
             raise UserWarning("No endpoints. This server will not listen on anything.")
 
+        self.ports = []
         self.signal_handlers = signal_handlers
         self.action_logger = action_logger
         self.http_timeout = http_timeout
@@ -96,7 +97,7 @@ class Server(object):
             logger.info("Listening on endpoint %s" % socket_description)
             # Twisted requires str on python2 (not unicode) and str on python3 (not bytes)
             ep = serverFromString(reactor, str(socket_description))
-            ep.listen(self.factory)
+            self.ports.append(ep.listen(self.factory))
 
         reactor.run(installSignalHandlers=self.signal_handlers)
 
