@@ -190,13 +190,15 @@ class WebRequest(http.Request):
         Sends a disconnect message on the http.disconnect channel.
         Useful only really for long-polling.
         """
-        try:
-            self.factory.channel_layer.send("http.disconnect", {
-                "reply_channel": self.reply_channel,
-                "path": self.unquote(self.path),
-            })
-        except self.factory.channel_layer.ChannelFull:
-            pass
+        # If we don't yet have a path, then don't send as we never opened.
+        if self.path:
+            try:
+                self.factory.channel_layer.send("http.disconnect", {
+                    "reply_channel": self.reply_channel,
+                    "path": self.unquote(self.path),
+                })
+            except self.factory.channel_layer.ChannelFull:
+                pass
 
     def connectionLost(self, reason):
         """
