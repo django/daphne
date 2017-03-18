@@ -110,8 +110,9 @@ should start with a slash, but not end with one; for example::
 Dependencies
 ------------
 
-All Channels projects currently support Python 2.7, 3.4 and 3.5. `daphne` requires Twisted 16.0 or
+All Channels projects currently support Python 2.7, 3.4 and 3.5. `daphne` requires Twisted 17.0 or
 greater.
+
 
 Contributing
 ------------
