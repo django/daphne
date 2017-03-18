@@ -1,3 +1,17 @@
+1.1.0 (2017-03-18)
+------------------
+
+* HTTP/2 termination is now supported natively. The Twisted dependency has been
+  increased to at least 17.1 as a result; for more information about setting up
+  HTTP/2, see the README.
+
+* X-Forwarded-For decoding support understands IPv6 addresses, and picks the
+  most remote (leftmost) entry if there are multiple relay hosts.
+
+* Fixed an error where `disconnect` messages would still try and get sent even
+  if the client never finished a request.
+
+
 1.0.3 (2017-02-12)
 ------------------
 
