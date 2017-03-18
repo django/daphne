@@ -24,7 +24,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'asgiref>=1.0.0',
-        'twisted>=16.0',
+        'twisted>=17.0',
         'autobahn>=0.12',
     ],
     extras_require={

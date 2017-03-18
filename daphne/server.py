@@ -4,6 +4,7 @@ import warnings
 from twisted.internet import reactor, defer
 from twisted.internet.endpoints import serverFromString
 from twisted.logger import globalLogBeginner, STDLibLogObserver
+from twisted.web import http
 
 from .http_protocol import HTTPFactory
 
@@ -83,6 +84,12 @@ class Server(object):
             globalLogBeginner.beginLoggingTo([lambda _: None], redirectStandardIO=False, discardBuffer=True)
         else:
             globalLogBeginner.beginLoggingTo([STDLibLogObserver(__name__)])
+
+        # Detect what Twisted features are enabled
+        if http.H2_ENABLED:
+            logger.info("HTTP/2 support enabled")
+        else:
+            logger.info("HTTP/2 support not enabled (install the http2 and tls Twisted extras)")
 
         # Disabled deliberately for the moment as it's worse performing
         if "twisted" in self.channel_layer.extensions and False:
