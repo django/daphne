@@ -240,9 +240,10 @@ class WebRequest(http.Request):
                     header = header.encode("latin1")
                 self.responseHeaders.addRawHeader(header, value)
             logger.debug("HTTP %s response started for %s", message['status'], self.reply_channel)
+
         # Write out body
-        if "content" in message:
-            http.Request.write(self, message['content'])
+        http.Request.write(self, message.get('content', b''))
+
         # End if there's no more content
         if not message.get("more_content", False):
             self.finish()
