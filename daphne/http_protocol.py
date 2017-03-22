@@ -227,11 +227,12 @@ class WebRequest(http.Request):
         """
         Writes a received HTTP response back out to the transport.
         """
-        if "status" in message:
-            if self._got_response_start:
-                raise ValueError("Got multiple Response messages for %s!" % self.reply_channel)
+        if not self._got_response_start:
             self._got_response_start = True
-            # Write code
+            if 'status' not in message:
+                raise ValueError("Specifying a status code is required for a Response message.")
+
+            # Set HTTP status code
             self.setResponseCode(message['status'])
             # Write headers
             for header, value in message.get("headers", {}):
@@ -240,6 +241,9 @@ class WebRequest(http.Request):
                     header = header.encode("latin1")
                 self.responseHeaders.addRawHeader(header, value)
             logger.debug("HTTP %s response started for %s", message['status'], self.reply_channel)
+        else:
+            if 'status' in message:
+                raise ValueError("Got multiple Response messages for %s!" % self.reply_channel)
 
         # Write out body
         http.Request.write(self, message.get('content', b''))
