@@ -73,8 +73,8 @@ def _build_request(method, path, params=None, headers=None, body=None):
             quoted_path += b'?' + parse.urlencode(params)
 
     request = method.encode('ascii') + b' ' + quoted_path + b" HTTP/1.1\r\n"
-    for k, v in headers:
-        request += k.encode('ascii') + b': ' + v.encode('ascii') + b"\r\n"
+    for name, value in headers:
+        request += header_line(name, value)
 
     request += b'\r\n'
 
@@ -82,6 +82,13 @@ def _build_request(method, path, params=None, headers=None, body=None):
         request += body.encode('ascii')
 
     return request
+
+
+def header_line(name, value):
+    """
+    Given a header name and value, returns the line to use in a HTTP request or response.
+    """
+    return name.encode('ascii') + b': ' + value.encode('ascii') + b"\r\n"
 
 
 def _run_through_daphne(request, channel_name):
