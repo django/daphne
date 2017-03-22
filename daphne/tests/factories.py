@@ -14,7 +14,23 @@ def message_for_request(method, path, params=None, headers=None, body=None):
     that through daphne and returns the emitted channel message.
     """
     request = _build_request(method, path, params, headers, body)
-    return _run_through_daphne(request, 'http.request')
+    message, factory, transport = _run_through_daphne(request, 'http.request')
+    return message
+
+
+def response_for_message(message):
+    """
+    Returns the raw HTTP response that Daphne constructs when sending a reply
+    to a HTTP request.
+
+    The current approach actually first builds a HTTP request (similar to
+    message_for_request) because we need a valid reply channel. I'm sure
+    this can be streamlined, but it works for now.
+    """
+    request = _build_request('GET', '/')
+    request_message, factory, transport = _run_through_daphne(request, 'http.request')
+    factory.dispatch_reply(request_message['reply_channel'], message)
+    return transport.value()
 
 
 def _build_request(method, path, params=None, headers=None, body=None):
@@ -57,8 +73,8 @@ def _build_request(method, path, params=None, headers=None, body=None):
             quoted_path += b'?' + parse.urlencode(params)
 
     request = method.encode('ascii') + b' ' + quoted_path + b" HTTP/1.1\r\n"
-    for k, v in headers:
-        request += k.encode('ascii') + b': ' + v.encode('ascii') + b"\r\n"
+    for name, value in headers:
+        request += header_line(name, value)
 
     request += b'\r\n'
 
@@ -66,6 +82,13 @@ def _build_request(method, path, params=None, headers=None, body=None):
         request += body.encode('ascii')
 
     return request
+
+
+def header_line(name, value):
+    """
+    Given a header name and value, returns the line to use in a HTTP request or response.
+    """
+    return name.encode('ascii') + b': ' + value.encode('ascii') + b"\r\n"
 
 
 def _run_through_daphne(request, channel_name):
@@ -78,11 +101,11 @@ def _run_through_daphne(request, channel_name):
     channel_layer = ChannelLayer()
     factory = HTTPFactory(channel_layer)
     proto = factory.buildProtocol(('127.0.0.1', 0))
-    tr = proto_helpers.StringTransport()
-    proto.makeConnection(tr)
+    transport = proto_helpers.StringTransport()
+    proto.makeConnection(transport)
     proto.dataReceived(request)
     _, message = channel_layer.receive([channel_name])
-    return message
+    return message, factory, transport
 
 
 def content_length_header(body):

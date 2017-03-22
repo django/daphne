@@ -4,11 +4,12 @@ Contains a test case class to allow verifying ASGI messages
 from __future__ import unicode_literals
 
 from collections import defaultdict
-
 import six
-import socket
 from six.moves.urllib import parse
+import socket
 import unittest
+
+from . import factories
 
 
 class ASGITestCase(unittest.TestCase):
@@ -122,3 +123,27 @@ class ASGITestCase(unittest.TestCase):
             self.assertIsInstance(server_host, six.text_type)
             self.assert_is_ip_address(server_host)
             self.assertIsInstance(server_port, int)
+
+    def assert_valid_http_response_message(self, message, response):
+        self.assertTrue(message)
+        self.assertTrue(response.startswith(b'HTTP'))
+
+        status_code_bytes = six.text_type(message['status']).encode('ascii')
+        self.assertIn(status_code_bytes, response)
+
+        if 'content' in message:
+            self.assertIn(message['content'], response)
+
+        # Check that headers are in the given order.
+        # N.b. HTTP spec only enforces that the order of header values is kept, but
+        # the ASGI spec requires that order of all headers is kept. This code
+        # checks conformance with the stricter ASGI spec.
+        if 'headers' in message:
+            for name, value in message['headers']:
+                expected_header = factories.header_line(name, value)
+                # Daphne or Twisted turn our lower cased header names ('foo-bar') into title
+                # case ('Foo-Bar'). So technically we want to to match that the header name is
+                # present while ignoring casing, and want to ensure the value is present without
+                # altered casing. The approach below does this well enough.
+                self.assertIn(expected_header.lower(), response.lower())
+                self.assertIn(value.encode('ascii'), response)
