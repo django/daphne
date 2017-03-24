@@ -385,7 +385,7 @@ class HTTPFactory(http.HTTPFactory):
             # WebSocket timeout checking and keepalive ping sending
             elif isinstance(protocol, WebSocketProtocol):
                 # Timeout check
-                if protocol.duration() > self.websocket_timeout and self.websocket_timeout > -1:
+                if protocol.duration() > self.websocket_timeout and self.websocket_timeout >= 0:
                     protocol.serverClose()
                 # Ping check
                 else:
