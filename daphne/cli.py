@@ -37,6 +37,18 @@ class CommandLineInterface(object):
             default=None,
         )
         self.parser.add_argument(
+            '--websocket_timeout',
+            type=int,
+            help='max time websocket connected. -1 to infinite.',
+            default=None,
+        )
+        self.parser.add_argument(
+            '--websocket_connect_timeout',
+            type=int,
+            help='max time to refuse establishing connection. -1 to infinite',
+            default=None,
+        )
+        self.parser.add_argument(
             '-u',
             '--unix-socket',
             dest='unix_socket',
@@ -186,6 +198,8 @@ class CommandLineInterface(object):
             http_timeout=args.http_timeout,
             ping_interval=args.ping_interval,
             ping_timeout=args.ping_timeout,
+            websocket_timeout=args.websocket_timeout,
+            websocket_connect_timeout=args.websocket_connect_timeout,
             action_logger=AccessLogGenerator(access_log_stream) if access_log_stream else None,
             ws_protocols=args.ws_protocols,
             root_path=args.root_path,
