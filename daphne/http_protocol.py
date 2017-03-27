@@ -350,8 +350,20 @@ class HTTPFactory(http.HTTPFactory):
                         unknown_keys,
                     )
                 )
+            # Accepts allow bytes/text afterwards
             if message.get("accept", None) and protocol.state == protocol.STATE_CONNECTING:
                 protocol.serverAccept()
+            # Rejections must be the only thing
+            if message.get("accept", None) == False and protocol.state == protocol.STATE_CONNECTING:
+                protocol.serverReject()
+                return
+            # You're only allowed one of bytes or text
+            if message.get("bytes", None) and message.get("text", None):
+                raise ValueError(
+                    "Got invalid WebSocket reply message on %s - contains both bytes and text keys" % (
+                        channel,
+                    )
+                )
             if message.get("bytes", None):
                 protocol.serverSend(message["bytes"], True)
             if message.get("text", None):

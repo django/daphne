@@ -175,7 +175,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
 
     def serverReject(self):
         """
-        Called when we get a message saying to accept the connection.
+        Called when we get a message saying to reject the connection.
         """
         self.handshake_deferred.errback(ConnectionDeny(code=403, reason="Access denied"))
         self.cleanup()

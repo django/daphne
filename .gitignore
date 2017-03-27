@@ -6,3 +6,4 @@ build/
 /.tox
 .hypothesis
 .cache
+.eggs
