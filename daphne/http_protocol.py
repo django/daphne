@@ -49,15 +49,18 @@ class WebRequest(http.Request):
     """.replace("\n", "").replace("    ", " ").replace("   ", " ").replace("  ", " ")  # Shorten it a bit, bytes wise
 
     def __init__(self, *args, **kwargs):
-        http.Request.__init__(self, *args, **kwargs)
-        # Easy factory link
-        self.factory = self.channel.factory
-        # Make a name for our reply channel
-        self.reply_channel = self.factory.make_send_channel()
-        # Tell factory we're that channel's client
-        self.last_keepalive = time.time()
-        self.factory.reply_protocols[self.reply_channel] = self
-        self._got_response_start = False
+        try:
+            http.Request.__init__(self, *args, **kwargs)
+            # Easy factory link
+            self.factory = self.channel.factory
+            # Make a name for our reply channel
+            self.reply_channel = self.factory.make_send_channel()
+            # Tell factory we're that channel's client
+            self.last_keepalive = time.time()
+            self.factory.reply_protocols[self.reply_channel] = self
+            self._got_response_start = False
+        except Exception:
+            logger.error(traceback.format_exc())
 
     def process(self):
         try:
@@ -156,11 +159,11 @@ class WebRequest(http.Request):
                     self.factory.channel_layer.send("http.request", {
                         "reply_channel": self.reply_channel,
                         # TODO: Correctly say if it's 1.1 or 1.0
-                        "http_version": "1.1",
+                        "http_version": self.clientproto.split("/")[-1],
                         "method": self.method.decode("ascii"),
                         "path": self.unquote(self.path),
                         "root_path": self.root_path,
-                        "scheme": "http",
+                        "scheme": "https" if self.isSecure() else "http",
                         "query_string": self.query_string,
                         "headers": self.clean_headers,
                         "body": self.content.read(),
