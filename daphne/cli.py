@@ -102,10 +102,6 @@ class CommandLineInterface(object):
             default=30,
         )
         self.parser.add_argument(
-            'channel_layer',
-            help='The ASGI channel layer instance to use as path.to.module:instance.path',
-        )
-        self.parser.add_argument(
             '--ws-protocol',
             nargs='*',
             dest='ws_protocols',
@@ -125,6 +121,17 @@ class CommandLineInterface(object):
                  'client address',
             default=False,
             action='store_true',
+        )
+        self.parser.add_argument(
+            '--force-sync',
+            dest='force_sync',
+            action='store_true',
+            help='Force the server to use synchronous mode on its ASGI channel layer',
+            default=False,
+        )
+        self.parser.add_argument(
+            'channel_layer',
+            help='The ASGI channel layer instance to use as path.to.module:instance.path',
         )
 
         self.server = None
@@ -206,5 +213,6 @@ class CommandLineInterface(object):
             verbosity=args.verbosity,
             proxy_forwarded_address_header='X-Forwarded-For' if args.proxy_headers else None,
             proxy_forwarded_port_header='X-Forwarded-Port' if args.proxy_headers else None,
+            force_sync=args.force_sync,
         )
         self.server.run()

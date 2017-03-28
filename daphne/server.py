@@ -1,4 +1,6 @@
 import logging
+import random
+import string
 import warnings
 
 from twisted.internet import reactor, defer
@@ -25,13 +27,14 @@ class Server(object):
         action_logger=None,
         http_timeout=120,
         websocket_timeout=None,
-        websocket_connect_timeout=None,
+        websocket_connect_timeout=20,
         ping_interval=20,
         ping_timeout=30,
         ws_protocols=None,
         root_path="",
         proxy_forwarded_address_header=None,
         proxy_forwarded_port_header=None,
+        force_sync=False,
         verbosity=1
     ):
         self.channel_layer = channel_layer
@@ -63,14 +66,22 @@ class Server(object):
         # If they did not provide a websocket timeout, default it to the
         # channel layer's group_expiry value if present, or one day if not.
         self.websocket_timeout = websocket_timeout or getattr(channel_layer, "group_expiry", 86400)
+        self.websocket_connect_timeout = websocket_connect_timeout
         self.ws_protocols = ws_protocols
         self.root_path = root_path
+        self.force_sync = force_sync
         self.verbosity = verbosity
 
     def run(self):
+        # Create process-local channel prefixes
+        # TODO: Can we guarantee non-collision better?
+        process_id = "".join(random.choice(string.ascii_letters) for i in range(10))
+        self.send_channel = "daphne.response.%s!" % process_id
+        # Make the factory
         self.factory = HTTPFactory(
             self.channel_layer,
-            self.action_logger,
+            action_logger=self.action_logger,
+            send_channel=self.send_channel,
             timeout=self.http_timeout,
             websocket_timeout=self.websocket_timeout,
             websocket_connect_timeout=self.websocket_connect_timeout,
@@ -93,8 +104,7 @@ class Server(object):
         else:
             logger.info("HTTP/2 support not enabled (install the http2 and tls Twisted extras)")
 
-        # Disabled deliberately for the moment as it's worse performing
-        if "twisted" in self.channel_layer.extensions and False:
+        if "twisted" in self.channel_layer.extensions and not self.force_sync:
             logger.info("Using native Twisted mode on channel layer")
             reactor.callLater(0, self.backend_reader_twisted)
         else:
@@ -115,28 +125,30 @@ class Server(object):
         Runs as an-often-as-possible task with the reactor, unless there was
         no result previously in which case we add a small delay.
         """
-        channels = self.factory.reply_channels()
-        delay = 0.05
+        channels = [self.send_channel]
+        delay = 0
         # Quit if reactor is stopping
         if not reactor.running:
             logger.debug("Backend reader quitting due to reactor stop")
             return
-        # Don't do anything if there's no channels to listen on
-        if channels:
-            delay = 0.01
-            try:
-                channel, message = self.channel_layer.receive(channels, block=False)
-            except Exception as e:
-                logger.error('Error at trying to receive messages: %s' % e)
-                delay = 5.00
+        # Try to receive a message
+        try:
+            channel, message = self.channel_layer.receive(channels, block=False)
+        except Exception as e:
+            # Log the error and wait a bit to retry
+            logger.error('Error trying to receive messages: %s' % e)
+            delay = 5.00
+        else:
+            if channel:
+                # Deal with the message
+                try:
+                    self.factory.dispatch_reply(channel, message)
+                except Exception as e:
+                    logger.error("HTTP/WS send decode error: %s" % e)
             else:
-                if channel:
-                    delay = 0.00
-                    # Deal with the message
-                    try:
-                        self.factory.dispatch_reply(channel, message)
-                    except Exception as e:
-                        logger.error("HTTP/WS send decode error: %s" % e)
+                # If there's no messages, idle a little bit.
+                delay = 0.05
+        # We can't loop inside here as this is synchronous code.
         reactor.callLater(delay, self.backend_reader_sync)
 
     @defer.inlineCallbacks
@@ -145,28 +157,23 @@ class Server(object):
         Runs as an-often-as-possible task with the reactor, unless there was
         no result previously in which case we add a small delay.
         """
+        channels = [self.send_channel]
         while True:
             if not reactor.running:
                 logging.debug("Backend reader quitting due to reactor stop")
                 return
-            channels = self.factory.reply_channels()
-            if channels:
-                try:
-                    channel, message = yield self.channel_layer.receive_twisted(channels)
-                except Exception as e:
-                    logger.error('Error at trying to receive messages: %s' % e)
-                    yield self.sleep(5.00)
-                else:
-                    # Deal with the message
-                    if channel:
-                        try:
-                            self.factory.dispatch_reply(channel, message)
-                        except Exception as e:
-                            logger.error("HTTP/WS send decode error: %s" % e)
-                    else:
-                        yield self.sleep(0.01)
+            try:
+                channel, message = yield self.channel_layer.receive_twisted(channels)
+            except Exception as e:
+                logger.error('Error trying to receive messages: %s' % e)
+                yield self.sleep(5.00)
             else:
-                yield self.sleep(0.05)
+                # Deal with the message
+                if channel:
+                    try:
+                        self.factory.dispatch_reply(channel, message)
+                    except Exception as e:
+                        logger.error("HTTP/WS send decode error: %s" % e)
 
     def sleep(self, delay):
         d = defer.Deferred()

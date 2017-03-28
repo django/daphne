@@ -46,7 +46,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
             # TODO: get autobahn to provide it raw
             query_string = urlencode(request.params, doseq=True).encode("ascii")
             # Make sending channel
-            self.reply_channel = self.channel_layer.new_channel("websocket.send!")
+            self.reply_channel = self.main_factory.make_send_channel()
             # Tell main factory about it
             self.main_factory.reply_protocols[self.reply_channel] = self
             # Get client address if possible

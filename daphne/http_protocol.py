@@ -1,7 +1,9 @@
 from __future__ import unicode_literals
 
 import logging
+import random
 import six
+import string
 import time
 import traceback
 
@@ -51,7 +53,7 @@ class WebRequest(http.Request):
         # Easy factory link
         self.factory = self.channel.factory
         # Make a name for our reply channel
-        self.reply_channel = self.factory.channel_layer.new_channel("http.response!")
+        self.reply_channel = self.factory.make_send_channel()
         # Tell factory we're that channel's client
         self.last_keepalive = time.time()
         self.factory.reply_protocols[self.reply_channel] = self
@@ -300,10 +302,11 @@ class HTTPFactory(http.HTTPFactory):
     routed appropriately.
     """
 
-    def __init__(self, channel_layer, action_logger=None, timeout=120, websocket_timeout=86400, ping_interval=20, ping_timeout=30, ws_protocols=None, root_path="", websocket_connect_timeout=30, proxy_forwarded_address_header=None, proxy_forwarded_port_header=None):
+    def __init__(self, channel_layer, action_logger=None, send_channel=None, timeout=120, websocket_timeout=86400, ping_interval=20, ping_timeout=30, ws_protocols=None, root_path="", websocket_connect_timeout=30, proxy_forwarded_address_header=None, proxy_forwarded_port_header=None):
         http.HTTPFactory.__init__(self)
         self.channel_layer = channel_layer
         self.action_logger = action_logger
+        self.send_channel = send_channel
         self.timeout = timeout
         self.websocket_timeout = websocket_timeout
         self.websocket_connect_timeout = websocket_connect_timeout
@@ -327,17 +330,31 @@ class HTTPFactory(http.HTTPFactory):
         Builds protocol instances. This override is used to ensure we use our
         own Request object instead of the default.
         """
-        protocol = http.HTTPFactory.buildProtocol(self, addr)
-        protocol.requestFactory = WebRequest
-        return protocol
+        try:
+            protocol = http.HTTPFactory.buildProtocol(self, addr)
+            protocol.requestFactory = WebRequest
+            return protocol
+        except Exception as e:
+            logger.error("Cannot build protocol: %s" % traceback.format_exc())
+            raise
+
+    def make_send_channel(self):
+        """
+        Makes a new send channel for a protocol with our process prefix.
+        """
+        protocol_id = "".join(random.choice(string.ascii_letters) for i in range(10))
+        return self.send_channel + protocol_id
 
     def reply_channels(self):
         return self.reply_protocols.keys()
 
     def dispatch_reply(self, channel, message):
-        if channel.startswith("http") and isinstance(self.reply_protocols[channel], WebRequest):
+        if channel not in self.reply_protocols:
+            raise ValueError("Cannot dispatch message on channel %r (unknown)" % channel)
+
+        if isinstance(self.reply_protocols[channel], WebRequest):
             self.reply_protocols[channel].serverResponse(message)
-        elif channel.startswith("websocket") and isinstance(self.reply_protocols[channel], WebSocketProtocol):
+        elif isinstance(self.reply_protocols[channel], WebSocketProtocol):
             # Switch depending on current socket state
             protocol = self.reply_protocols[channel]
             # See if the message is valid
@@ -376,7 +393,7 @@ class HTTPFactory(http.HTTPFactory):
                 else:
                     protocol.serverClose(code=closing_code)
         else:
-            raise ValueError("Cannot dispatch message on channel %r" % channel)
+            raise ValueError("Unknown protocol class")
 
     def log_action(self, protocol, action, details):
         """
