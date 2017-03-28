@@ -159,7 +159,7 @@ class WebRequest(http.Request):
                     self.factory.channel_layer.send("http.request", {
                         "reply_channel": self.reply_channel,
                         # TODO: Correctly say if it's 1.1 or 1.0
-                        "http_version": self.clientproto.split("/")[-1],
+                        "http_version": self.clientproto.split(b"/")[-1].decode("ascii"),
                         "method": self.method.decode("ascii"),
                         "path": self.unquote(self.path),
                         "root_path": self.root_path,
