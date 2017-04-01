@@ -61,6 +61,7 @@ class WebRequest(http.Request):
             self._got_response_start = False
         except Exception:
             logger.error(traceback.format_exc())
+            raise
 
     def process(self):
         try:
@@ -310,6 +311,7 @@ class HTTPFactory(http.HTTPFactory):
         self.channel_layer = channel_layer
         self.action_logger = action_logger
         self.send_channel = send_channel
+        assert self.send_channel is not None
         self.timeout = timeout
         self.websocket_timeout = websocket_timeout
         self.websocket_connect_timeout = websocket_connect_timeout

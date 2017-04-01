@@ -23,9 +23,9 @@ setup(
     packages=find_packages() + ['twisted.plugins'],
     include_package_data=True,
     install_requires=[
-        'asgiref>=1.0.0',
+        'asgiref~=1.1',
         'twisted>=17.1',
-        'autobahn>=0.12',
+        'autobahn>=0.18',
     ],
     extras_require={
         'tests': ['hypothesis', 'tox']

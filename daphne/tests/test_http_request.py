@@ -152,7 +152,7 @@ class TestProxyHandling(unittest.TestCase):
 
     def setUp(self):
         self.channel_layer = ChannelLayer()
-        self.factory = HTTPFactory(self.channel_layer)
+        self.factory = HTTPFactory(self.channel_layer, send_channel="test!")
         self.proto = self.factory.buildProtocol(('127.0.0.1', 0))
         self.tr = proto_helpers.StringTransport()
         self.proto.makeConnection(self.tr)

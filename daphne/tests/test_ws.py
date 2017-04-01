@@ -14,7 +14,7 @@ class TestWebSocketProtocol(TestCase):
 
     def setUp(self):
         self.channel_layer = ChannelLayer()
-        self.factory = HTTPFactory(self.channel_layer)
+        self.factory = HTTPFactory(self.channel_layer, send_channel="test!")
         self.proto = self.factory.buildProtocol(('127.0.0.1', 0))
         self.tr = proto_helpers.StringTransport()
         self.proto.makeConnection(self.tr)
@@ -46,7 +46,7 @@ class TestWebSocketProtocol(TestCase):
              (b'sec-websocket-version', b'13'),
              (b'upgrade', b'websocket')]
         )
-        self.assertTrue(message['reply_channel'].startswith("websocket.send!"))
+        self.assertTrue(message['reply_channel'].startswith("test!"))
 
         # Accept the connection
         self.factory.dispatch_reply(
@@ -107,7 +107,7 @@ class TestWebSocketProtocol(TestCase):
         # Get the resulting message off of the channel layer
         _, message = self.channel_layer.receive(["websocket.connect"])
         self.assertIn((b'origin', b'file://'), message['headers'])
-        self.assertTrue(message['reply_channel'].startswith("websocket.send!"))
+        self.assertTrue(message['reply_channel'].startswith("test!"))
 
         # Accept the connection
         self.factory.dispatch_reply(
@@ -136,7 +136,7 @@ class TestWebSocketProtocol(TestCase):
         # Get the resulting message off of the channel layer
         _, message = self.channel_layer.receive(["websocket.connect"])
         self.assertNotIn(b'origin', [header_tuple[0] for header_tuple in message['headers']])
-        self.assertTrue(message['reply_channel'].startswith("websocket.send!"))
+        self.assertTrue(message['reply_channel'].startswith("test!"))
 
         # Accept the connection
         self.factory.dispatch_reply(

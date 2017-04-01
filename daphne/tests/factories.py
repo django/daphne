@@ -99,7 +99,7 @@ def _run_through_daphne(request, channel_name):
     but it works for now.
     """
     channel_layer = ChannelLayer()
-    factory = HTTPFactory(channel_layer)
+    factory = HTTPFactory(channel_layer, send_channel="test!")
     proto = factory.buildProtocol(('127.0.0.1', 0))
     transport = proto_helpers.StringTransport()
     proto.makeConnection(transport)

@@ -1,3 +1,23 @@
+1.2.0 (2017-04-01)
+------------------
+
+* The new process-specific channel support is now implemented, resulting in
+  significantly less traffic to your channel backend.
+
+* Native twisted blocking support for channel layers that support it is now
+  used. While it is a lot more efficient, it is also sometimes slightly more
+  latent; you can disable it using --force-sync.
+
+* Native SSL termination is now correctly reflected in the ASGI-HTTP `scheme`
+  key.
+
+* accept: False is now a valid way to deny a connection, as well as close: True.
+
+* HTTP version is now correctly sent as one of "1.0", "1.1" or "2".
+
+* More command line options for websocket timeouts
+
+
 1.1.0 (2017-03-18)
 ------------------
 

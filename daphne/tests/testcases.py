@@ -50,7 +50,7 @@ class ASGITestCase(unittest.TestCase):
         # == Assertions about required channel_message fields ==
         reply_channel = channel_message['reply_channel']
         self.assertIsInstance(reply_channel, six.text_type)
-        self.assertTrue(reply_channel.startswith('http.response!'))
+        self.assertTrue(reply_channel.startswith('test!'))
 
         http_version = channel_message['http_version']
         self.assertIsInstance(http_version, six.text_type)
