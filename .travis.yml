@@ -6,11 +6,8 @@ python:
   - "2.7"
   - "3.4"
   - "3.5"
+  - "3.6"
 
-env:
-  - TWISTED_RELEASE="twisted"
-  - TWISTED_RELEASE="twisted==17.1.0"
+install: pip install tox tox-travis
 
-install: pip install $TWISTED_RELEASE -e .[tests]
-
-script: python -m unittest discover
+script: tox
