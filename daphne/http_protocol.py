@@ -354,8 +354,13 @@ class HTTPFactory(http.HTTPFactory):
         return self.reply_protocols.keys()
 
     def dispatch_reply(self, channel, message):
+        # If we don't know about the channel, ignore it (likely a channel we
+        # used to have that's now in a group).
+        # TODO: Find a better way of alerting people when this happens so
+        # they can do more cleanup, that's not an error.
         if channel not in self.reply_protocols:
-            raise ValueError("Cannot dispatch message on channel %r (unknown)" % channel)
+            logger.debug("Message on unknown channel %r - discarding" % channel)
+            return
 
         if isinstance(self.reply_protocols[channel], WebRequest):
             self.reply_protocols[channel].serverResponse(message)
