@@ -27,6 +27,9 @@ def parse_x_forwarded_for(headers,
     # Convert twisted-style headers into dicts
     if isinstance(headers, Headers):
         headers = dict(headers.getAllRawHeaders())
+    else:
+        # convert non twisted headers dict into utf-8
+        headers = {name.encode("utf-8"): values.encode("utf-8") for name, values in headers.items()}
 
     # Lowercase all header names in the dict
     headers = {name.lower(): values for name, values in headers.items()}
