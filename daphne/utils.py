@@ -33,7 +33,7 @@ def parse_x_forwarded_for(headers,
         headers = {name.lower(): values for name, values in headers.items()}
     else:
         # Lowercase and encode header keys
-        headers = {name.lower().encode("utf-8"): values for name, values in headers.items()}
+        headers = {name.lower() if isinstance(name, bytes) else name.lower().encode("utf-8"): values for name, values in headers.items()}
 
     address_header_name = address_header_name.lower().encode("utf-8")
     result = original
