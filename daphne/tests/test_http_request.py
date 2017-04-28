@@ -16,7 +16,7 @@ from daphne.tests import testcases, http_strategies
 from daphne.tests.factories import message_for_request, content_length_header
 
 
-class TestHTTPRequestSpec(testcases.ASGITestCase):
+class TestHTTPRequestSpec(testcases.ASGIHTTPTestCase):
     """
     Tests which try to pour the HTTP request section of the ASGI spec into code.
     The heavy lifting is done by the assert_valid_http_request_message function,

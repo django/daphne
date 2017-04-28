@@ -17,12 +17,17 @@ def http_method():
     return strategies.sampled_from(HTTP_METHODS)
 
 
+def _http_path_portion():
+    alphabet = string.ascii_letters + string.digits + '-._~'
+    return strategies.text(min_size=1, average_size=10, max_size=128, alphabet=alphabet)
+
+
 def http_path():
     """
     Returns a URL path (not encoded).
     """
-    alphabet = string.ascii_letters + string.digits + '-._~/'
-    return strategies.text(min_size=0, max_size=255, alphabet=alphabet).map(lambda s: '/' + s)
+    return strategies.lists(
+        _http_path_portion(), min_size=0, max_size=10).map(lambda s: '/' + '/'.join(s))
 
 
 def http_body():
@@ -31,6 +36,10 @@ def http_body():
     but seems to not cause an issue so far.
     """
     return strategies.text(alphabet=string.printable, min_size=0, average_size=600, max_size=1500)
+
+
+def binary_payload():
+    return strategies.binary(min_size=0, average_size=600, max_size=1500)
 
 
 def valid_bidi(value):
