@@ -84,6 +84,19 @@ def _build_request(method, path, params=None, headers=None, body=None):
     return request
 
 
+def build_websocket_upgrade(path, params, headers):
+    ws_headers = [
+        ('Host', 'somewhere.com'),
+        ('Upgrade', 'websocket'),
+        ('Connection', 'Upgrade'),
+        ('Sec-WebSocket-Key', 'x3JJHMbDL1EzLkh9GBhXDw=='),
+        ('Sec-WebSocket-Protocol', 'chat, superchat'),
+        ('Sec-WebSocket-Version', '13'),
+        ('Origin', 'http://example.com')
+    ]
+    return _build_request('GET', path, params, headers=headers + ws_headers, body=None)
+
+
 def header_line(name, value):
     """
     Given a header name and value, returns the line to use in a HTTP request or response.

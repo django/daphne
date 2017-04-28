@@ -14,7 +14,7 @@ from daphne.http_protocol import HTTPFactory
 from . import factories, http_strategies, testcases
 
 
-class TestHTTPResponseSpec(testcases.ASGITestCase):
+class TestHTTPResponseSpec(testcases.ASGIHTTPTestCase):
 
     def test_minimal_response(self):
         """
