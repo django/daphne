@@ -50,9 +50,11 @@ class WebSocketProtocol(WebSocketServerProtocol):
             # Tell main factory about it
             self.main_factory.reply_protocols[self.reply_channel] = self
             # Get client address if possible
-            if hasattr(self.transport.getPeer(), "host") and hasattr(self.transport.getPeer(), "port"):
-                self.client_addr = [self.transport.getPeer().host, self.transport.getPeer().port]
-                self.server_addr = [self.transport.getHost().host, self.transport.getHost().port]
+            peer = self.transport.getPeer()
+            host = self.transport.getHost()
+            if hasattr(peer, "host") and hasattr(peer, "port"):
+                self.client_addr = [six.text_type(peer.host), peer.port]
+                self.server_addr = [six.text_type(host.host), host.port]
             else:
                 self.client_addr = None
                 self.server_addr = None
