@@ -177,7 +177,7 @@ class TestWebSocketProtocol(testcases.ASGIWebSocketTestCase):
             b"\r\n"
         )
         self.assertEqual(message['path'], "/chat")
-        self.assertEqual(message['query_string'], "")
+        self.assertEqual(message['query_string'], b"")
         self.assertEqual(
             sorted(message['headers']),
             [(b'connection', b'Upgrade'),
