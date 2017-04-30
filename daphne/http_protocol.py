@@ -108,6 +108,8 @@ class WebRequest(http.Request):
                     self.setResponseCode(500)
                     logger.warn("Could not make WebSocket protocol")
                     self.finish()
+                # Give it the raw query string
+                protocol._raw_query_string = self.query_string
                 # Port across transport
                 protocol.set_main_factory(self.factory)
                 transport, self.transport = self.transport, None

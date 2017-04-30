@@ -42,9 +42,6 @@ class WebSocketProtocol(WebSocketServerProtocol):
                 if b"_" in name:
                     continue
                 self.clean_headers.append((name.lower(), value.encode("latin1")))
-            # Reconstruct query string
-            # TODO: get autobahn to provide it raw
-            query_string = urlencode(request.params, doseq=True).encode("ascii")
             # Make sending channel
             self.reply_channel = self.main_factory.make_send_channel()
             # Tell main factory about it
@@ -72,7 +69,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
             self.request_info = {
                 "path": self.unquote(self.path),
                 "headers": self.clean_headers,
-                "query_string": self.unquote(query_string),
+                "query_string": self._raw_query_string,  # Passed by HTTP protocol
                 "client": self.client_addr,
                 "server": self.server_addr,
                 "reply_channel": self.reply_channel,
