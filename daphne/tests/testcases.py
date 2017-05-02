@@ -223,11 +223,8 @@ class ASGIWebSocketTestCase(ASGITestCaseBase):
         query_string = channel_message.get('query_string')
         if query_string:
             # Assert that query_string is a byte string and still url encoded
-            # TODO: It's neither a byte string nor urlencoded
-            # Will fail until https://github.com/django/daphne/issues/110 is resolved.
-            #self.assertIsInstance(query_string, six.binary_type)
-            #self.assertEqual(query_string, parse.urlencode(request_params or []).encode('ascii'))
-            pass
+            self.assertIsInstance(query_string, six.binary_type)
+            self.assertEqual(query_string, parse.urlencode(request_params or []).encode('ascii'))
 
         root_path = channel_message.get('root_path')
         if root_path is not None:
