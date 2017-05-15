@@ -230,7 +230,8 @@ class WebSocketProtocol(WebSocketServerProtocol):
         Call to clean up this socket after it's closed.
         """
         if hasattr(self, "reply_channel"):
-            del self.factory.reply_protocols[self.reply_channel]
+            if self.reply_channel in self.factory.reply_protocols:
+                del self.factory.reply_protocols[self.reply_channel]
 
     def duration(self):
         """
