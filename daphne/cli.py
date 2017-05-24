@@ -98,7 +98,7 @@ class CommandLineInterface(object):
         self.parser.add_argument(
             '--ping-timeout',
             type=int,
-            help='The number of seconds before a WeSocket is closed if no response to a keepalive ping',
+            help='The number of seconds before a WebSocket is closed if no response to a keepalive ping',
             default=30,
         )
         self.parser.add_argument(
