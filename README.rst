@@ -60,7 +60,7 @@ make sure you install the Twisted ``http2`` and ``tls`` extras::
     pip install -U Twisted[tls,http2]
 
 Next, because all current browsers only support HTTP/2 when using TLS, you will
-need to start Daphne with TLS turned on, which can be done using the Twisted endpoint sytax::
+need to start Daphne with TLS turned on, which can be done using the Twisted endpoint syntax::
 
     daphne -e ssl:443:privateKey=key.pem:certKey=crt.pem django_project.asgi:channel_layer
 
