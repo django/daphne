@@ -323,7 +323,7 @@ class HTTPFactory(http.HTTPFactory):
         # We track all sub-protocols for response channel mapping
         self.reply_protocols = {}
         # Make a factory for WebSocket protocols
-        self.ws_factory = WebSocketFactory(self, protocols=ws_protocols)
+        self.ws_factory = WebSocketFactory(self, protocols=ws_protocols, server='Daphne')
         self.ws_factory.setProtocolOptions(
             autoPingTimeout=ping_timeout,
             allowNullOrigin=True,
