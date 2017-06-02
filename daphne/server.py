@@ -37,7 +37,8 @@ class Server(object):
         proxy_forwarded_address_header=None,
         proxy_forwarded_port_header=None,
         force_sync=False,
-        verbosity=1
+        verbosity=1,
+        websocket_handshake_timeout=5
     ):
         self.channel_layer = channel_layer
         self.endpoints = endpoints or []
@@ -69,6 +70,7 @@ class Server(object):
         # channel layer's group_expiry value if present, or one day if not.
         self.websocket_timeout = websocket_timeout or getattr(channel_layer, "group_expiry", 86400)
         self.websocket_connect_timeout = websocket_connect_timeout
+        self.websocket_handshake_timeout = websocket_handshake_timeout
         self.ws_protocols = ws_protocols
         self.root_path = root_path
         self.force_sync = force_sync
@@ -92,7 +94,8 @@ class Server(object):
             ws_protocols=self.ws_protocols,
             root_path=self.root_path,
             proxy_forwarded_address_header=self.proxy_forwarded_address_header,
-            proxy_forwarded_port_header=self.proxy_forwarded_port_header
+            proxy_forwarded_port_header=self.proxy_forwarded_port_header,
+            websocket_handshake_timeout=self.websocket_handshake_timeout
         )
         if self.verbosity <= 1:
             # Redirect the Twisted log to nowhere

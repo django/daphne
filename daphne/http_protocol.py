@@ -308,7 +308,7 @@ class HTTPFactory(http.HTTPFactory):
     routed appropriately.
     """
 
-    def __init__(self, channel_layer, action_logger=None, send_channel=None, timeout=120, websocket_timeout=86400, ping_interval=20, ping_timeout=30, ws_protocols=None, root_path="", websocket_connect_timeout=30, proxy_forwarded_address_header=None, proxy_forwarded_port_header=None):
+    def __init__(self, channel_layer, action_logger=None, send_channel=None, timeout=120, websocket_timeout=86400, ping_interval=20, ping_timeout=30, ws_protocols=None, root_path="", websocket_connect_timeout=30, proxy_forwarded_address_header=None, proxy_forwarded_port_header=None, websocket_handshake_timeout=5):
         http.HTTPFactory.__init__(self)
         self.channel_layer = channel_layer
         self.action_logger = action_logger
@@ -327,6 +327,7 @@ class HTTPFactory(http.HTTPFactory):
         self.ws_factory.setProtocolOptions(
             autoPingTimeout=ping_timeout,
             allowNullOrigin=True,
+            openHandshakeTimeout=websocket_handshake_timeout
         )
         self.ws_factory.protocol = WebSocketProtocol
         self.ws_factory.reply_protocols = self.reply_protocols
