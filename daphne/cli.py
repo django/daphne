@@ -39,14 +39,14 @@ class CommandLineInterface(object):
         self.parser.add_argument(
             '--websocket_timeout',
             type=int,
-            help='max time websocket connected. -1 to infinite.',
+            help='Maximum time to allow a websocket to be connected. -1 for infinite.',
             default=None,
         )
         self.parser.add_argument(
             '--websocket_connect_timeout',
             type=int,
-            help='max time to refuse establishing connection. -1 to infinite',
-            default=None,
+            help='Maximum time to allow a connection to handshake. -1 for infinite',
+            default=5,
         )
         self.parser.add_argument(
             '-u',
