@@ -215,7 +215,7 @@ def build_endpoint_description_strings(
     if unix_socket:
         socket_descriptions.append('unix:%s' % unix_socket)
 
-    if file_descriptor:
+    if file_descriptor is not None:
         socket_descriptions.append('fd:fileno=%d' % int(file_descriptor))
 
     return socket_descriptions
