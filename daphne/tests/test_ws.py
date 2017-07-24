@@ -1,7 +1,7 @@
 # coding: utf8
 from __future__ import unicode_literals
 
-from hypothesis import assume, given, strategies
+from hypothesis import assume, given, strategies, settings
 from twisted.test import proto_helpers
 
 from asgiref.inmemory import ChannelLayer
@@ -66,6 +66,7 @@ class TestHandshake(testcases.ASGIWebSocketTestCase):
         params=http_strategies.query_params(),
         headers=http_strategies.headers(),
     )
+    @settings(perform_health_check=False)
     def test_connection(self, path, params, headers):
         message = WebSocketConnection().connect(path, params, headers)
         self.assert_valid_websocket_connect_message(message, path, params, headers)
