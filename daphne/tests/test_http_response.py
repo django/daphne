@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 from unittest import TestCase
 
 from asgiref.inmemory import ChannelLayer
-from hypothesis import given, settings
+from hypothesis import given
 from twisted.test import proto_helpers
 
 from daphne.http_protocol import HTTPFactory
@@ -72,7 +72,6 @@ class TestHTTPResponseSpec(testcases.ASGIHTTPTestCase):
         headers=http_strategies.headers(),
         body=http_strategies.http_body(),
     )
-    @settings(perform_health_check=False)
     def test_kitchen_sink(self, headers, body):
         """
         This tests tries to let Hypothesis find combinations of variables that result
