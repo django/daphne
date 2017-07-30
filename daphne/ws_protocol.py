@@ -4,7 +4,7 @@ import logging
 import six
 import time
 import traceback
-from six.moves.urllib_parse import unquote, urlencode
+from six.moves.urllib_parse import unquote
 from twisted.internet import defer
 
 from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory, ConnectionDeny
