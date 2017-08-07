@@ -7,3 +7,5 @@ build/
 .hypothesis
 .cache
 .eggs
+test_layer*
+test_consumer*

@@ -2,8 +2,10 @@ import sys
 import argparse
 import logging
 import importlib
-from .server import Server, build_endpoint_description_strings
+from .server import Server
+from .endpoints import build_endpoint_description_strings
 from .access import AccessLogGenerator
+from .utils import import_by_path
 
 
 logger = logging.getLogger(__name__)
@@ -81,7 +83,7 @@ class CommandLineInterface(object):
             '-t',
             '--http-timeout',
             type=int,
-            help='How long to wait for worker server before timing out HTTP connections',
+            help='How long to wait for worker before timing out HTTP connections',
             default=120,
         )
         self.parser.add_argument(
@@ -123,15 +125,18 @@ class CommandLineInterface(object):
             action='store_true',
         )
         self.parser.add_argument(
-            '--force-sync',
-            dest='force_sync',
-            action='store_true',
-            help='Force the server to use synchronous mode on its ASGI channel layer',
-            default=False,
+            '--threads',
+            help='Number of threads to run the application in',
+            type=int,
+            default=2,
         )
         self.parser.add_argument(
             'channel_layer',
             help='The ASGI channel layer instance to use as path.to.module:instance.path',
+        )
+        self.parser.add_argument(
+            'consumer',
+            help='The consumer to dispatch to as path.to.module:instance.path',
         )
 
         self.server = None
@@ -168,13 +173,11 @@ class CommandLineInterface(object):
                 access_log_stream = open(args.access_log, "a", 1)
         elif args.verbosity >= 1:
             access_log_stream = sys.stdout
-        # Import channel layer
+        # Import application and channel_layer
         sys.path.insert(0, ".")
-        module_path, object_path = args.channel_layer.split(":", 1)
-        channel_layer = importlib.import_module(module_path)
-        for bit in object_path.split("."):
-            channel_layer = getattr(channel_layer, bit)
-
+        channel_layer = import_by_path(args.channel_layer)
+        consumer = import_by_path(args.consumer)
+        # Set up port/host bindings
         if not any([args.host, args.port, args.unix_socket, args.file_descriptor, args.socket_strings]):
             # no advanced binding options passed, patch in defaults
             args.host = DEFAULT_HOST
@@ -183,8 +186,7 @@ class CommandLineInterface(object):
             args.port = DEFAULT_PORT
         elif args.port and not args.host:
             args.host = DEFAULT_HOST
-
-        # build endpoint description strings from (optional) cli arguments
+        # Build endpoint description strings from (optional) cli arguments
         endpoints = build_endpoint_description_strings(
             host=args.host,
             port=args.port,
@@ -194,13 +196,14 @@ class CommandLineInterface(object):
         endpoints = sorted(
             args.socket_strings + endpoints
         )
+        # Start the server
         logger.info(
             'Starting server at %s, channel layer %s.' %
             (', '.join(endpoints), args.channel_layer)
         )
-
         self.server = Server(
             channel_layer=channel_layer,
+            consumer=consumer,
             endpoints=endpoints,
             http_timeout=args.http_timeout,
             ping_interval=args.ping_interval,
@@ -213,6 +216,5 @@ class CommandLineInterface(object):
             verbosity=args.verbosity,
             proxy_forwarded_address_header='X-Forwarded-For' if args.proxy_headers else None,
             proxy_forwarded_port_header='X-Forwarded-Port' if args.proxy_headers else None,
-            force_sync=args.force_sync,
         )
         self.server.run()

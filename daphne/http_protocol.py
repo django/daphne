@@ -29,6 +29,8 @@ class WebRequest(http.Request):
     GET and POST out.
     """
 
+    consumer_type = "http"
+
     error_template = """
         <html>
             <head>
@@ -51,17 +53,16 @@ class WebRequest(http.Request):
     def __init__(self, *args, **kwargs):
         try:
             http.Request.__init__(self, *args, **kwargs)
-            # Easy factory link
-            self.factory = self.channel.factory
-            # Make a name for our reply channel
-            self.reply_channel = self.factory.make_send_channel()
-            # Tell factory we're that channel's client
-            self.last_keepalive = time.time()
-            self.factory.reply_protocols[self.reply_channel] = self
-            self._got_response_start = False
+            # Easy server link
+            self.server = self.channel.factory.server
+            self.consumer_channel = None
+            self._response_started = False
+            self.server.add_protocol(self)
         except Exception:
             logger.error(traceback.format_exc())
             raise
+
+    ### Twisted progress callbacks
 
     def process(self):
         try:
@@ -79,15 +80,14 @@ class WebRequest(http.Request):
             else:
                 self.client_addr = None
                 self.server_addr = None
-
-            if self.factory.proxy_forwarded_address_header:
+            # See if we need to get the address from a proxy header instead
+            if self.server.proxy_forwarded_address_header:
                 self.client_addr = parse_x_forwarded_for(
                     self.requestHeaders,
-                    self.factory.proxy_forwarded_address_header,
-                    self.factory.proxy_forwarded_port_header,
+                    self.server.proxy_forwarded_address_header,
+                    self.server.proxy_forwarded_port_header,
                     self.client_addr
                 )
-
             # Check for unicodeish path (or it'll crash when trying to parse)
             try:
                 self.path.decode("ascii")
@@ -102,7 +102,7 @@ class WebRequest(http.Request):
             # Is it WebSocket? IS IT?!
             if upgrade_header and upgrade_header.lower() == b"websocket":
                 # Make WebSocket protocol to hand off to
-                protocol = self.factory.ws_factory.buildProtocol(self.transport.getPeer())
+                protocol = self.server.ws_factory.buildProtocol(self.transport.getPeer())
                 if not protocol:
                     # If protocol creation fails, we signal "internal server error"
                     self.setResponseCode(500)
@@ -111,7 +111,6 @@ class WebRequest(http.Request):
                 # Give it the raw query string
                 protocol._raw_query_string = self.query_string
                 # Port across transport
-                protocol.set_main_factory(self.factory)
                 transport, self.transport = self.transport, None
                 if isinstance(transport, ProtocolWrapper):
                     # i.e. TLS is a wrapping protocol
@@ -127,12 +126,7 @@ class WebRequest(http.Request):
                 data += self.content.read()
                 protocol.dataReceived(data)
                 # Remove our HTTP reply channel association
-                if hasattr(protocol, "reply_channel"):
-                    logger.debug("Upgraded connection %s to WebSocket %s", self.reply_channel, protocol.reply_channel)
-                else:
-                    logger.debug("Connection %s did not get successful WS handshake.", self.reply_channel)
-                del self.factory.reply_protocols[self.reply_channel]
-                self.reply_channel = None
+                logger.debug("Upgraded connection %s to WebSocket", self.client_addr)
                 # Resume the producer so we keep getting data, if it's available as a method
                 # 17.1 version
                 if hasattr(self.channel, "_networkProducer"):
@@ -143,9 +137,11 @@ class WebRequest(http.Request):
 
             # Boring old HTTP.
             else:
+                # Create consumer to handle this connection
+                self.consumer_channel = self.server.create_consumer(self)
                 # Sanitize and decode headers, potentially extracting root path
                 self.clean_headers = []
-                self.root_path = self.factory.root_path
+                self.root_path = self.server.root_path
                 for name, values in self.requestHeaders.getAllRawHeaders():
                     # Prevent CVE-2015-0219
                     if b"_" in name:
@@ -155,12 +151,13 @@ class WebRequest(http.Request):
                             self.root_path = self.unquote(value)
                         else:
                             self.clean_headers.append((name.lower(), value))
-                logger.debug("HTTP %s request for %s", self.method, self.reply_channel)
+                logger.debug("HTTP %s request for %s", self.method, self.consumer_channel)
                 self.content.seek(0, 0)
-                # Send message
-                try:
-                    self.factory.channel_layer.send("http.request", {
-                        "reply_channel": self.reply_channel,
+                # Run consumer
+                self.server.handle_message(
+                    self.consumer_channel,
+                    {
+                        "type": "http.request",
                         # TODO: Correctly say if it's 1.1 or 1.0
                         "http_version": self.clientproto.split(b"/")[-1].decode("ascii"),
                         "method": self.method.decode("ascii"),
@@ -172,13 +169,89 @@ class WebRequest(http.Request):
                         "body": self.content.read(),
                         "client": self.client_addr,
                         "server": self.server_addr,
-                    })
-                except self.factory.channel_layer.ChannelFull:
-                    # Channel is too full; reject request with 503
-                    self.basic_error(503, b"Service Unavailable", "Request queue full.")
+                    },
+                )
         except Exception:
             logger.error(traceback.format_exc())
             self.basic_error(500, b"Internal Server Error", "HTTP processing error")
+
+    def connectionLost(self, reason):
+        """
+        Cleans up reply channel on close.
+        """
+        if self.consumer_channel:
+            self.send_disconnect()
+        logger.debug("HTTP disconnect for %s", self.client_addr)
+        http.Request.connectionLost(self, reason)
+        self.server.discard_protocol(self)
+
+    def finish(self):
+        """
+        Cleans up reply channel on close.
+        """
+        if self.consumer_channel:
+            self.send_disconnect()
+        logger.debug("HTTP close for %s", self.client_addr)
+        http.Request.finish(self)
+        self.server.discard_protocol(self)
+
+    ### Server reply callbacks
+
+    def handle_reply(self, message):
+        """
+        Handles a reply from the client
+        """
+        if message['type'] == "http.response":
+            if self._response_started:
+                raise ValueError("HTTP response has already been started")
+            self._response_started = True
+            if 'status' not in message:
+                raise ValueError("Specifying a status code is required for a Response message.")
+            # Set HTTP status code
+            self.setResponseCode(message['status'])
+            # Write headers
+            for header, value in message.get("headers", {}):
+                # Shim code from old ASGI version, can be removed after a while
+                if isinstance(header, six.text_type):
+                    header = header.encode("latin1")
+                self.responseHeaders.addRawHeader(header, value)
+            logger.debug("HTTP %s response started for %s", message['status'], self.client_addr)
+        elif message['type'] == "http.response.content":
+            if not self._response_started:
+                raise ValueError("HTTP response has not yet been started")
+        else:
+            raise ValueError("Cannot handle message type %s!" % message['type'])
+
+        # Write out body
+        http.Request.write(self, message.get('content', b''))
+
+        # End if there's no more content
+        if not message.get("more_content", False):
+            self.finish()
+            logger.debug("HTTP response complete for %s", self.client_addr)
+            try:
+                self.server.log_action("http", "complete", {
+                    "path": self.uri.decode("ascii"),
+                    "status": self.code,
+                    "method": self.method.decode("ascii"),
+                    "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,
+                    "time_taken": self.duration(),
+                    "size": self.sentLength,
+                })
+            except Exception as e:
+                logging.error(traceback.format_exc())
+        else:
+            logger.debug("HTTP response chunk for %s", self.client_addr)
+
+    def check_timeouts(self):
+        """
+        Called periodically to see if we should timeout something
+        """
+        # Web timeout checking
+        if self.duration() > self.server.http_timeout:
+            self.basic_error(503, b"Service Unavailable", "Application failed to respond within time limit.")
+
+    ### Utility functions
 
     @classmethod
     def unquote(cls, value, plus_as_space=False):
@@ -198,81 +271,17 @@ class WebRequest(http.Request):
 
     def send_disconnect(self):
         """
-        Sends a disconnect message on the http.disconnect channel.
+        Sends a http.disconnect message.
         Useful only really for long-polling.
         """
         # If we don't yet have a path, then don't send as we never opened.
         if self.path:
-            try:
-                self.factory.channel_layer.send("http.disconnect", {
-                    "reply_channel": self.reply_channel,
-                    "path": self.unquote(self.path),
-                })
-            except self.factory.channel_layer.ChannelFull:
-                pass
-
-    def connectionLost(self, reason):
-        """
-        Cleans up reply channel on close.
-        """
-        if self.reply_channel and self.reply_channel in self.channel.factory.reply_protocols:
-            self.send_disconnect()
-            del self.channel.factory.reply_protocols[self.reply_channel]
-        logger.debug("HTTP disconnect for %s", self.reply_channel)
-        http.Request.connectionLost(self, reason)
-
-    def finish(self):
-        """
-        Cleans up reply channel on close.
-        """
-        if self.reply_channel and self.reply_channel in self.channel.factory.reply_protocols:
-            self.send_disconnect()
-            del self.channel.factory.reply_protocols[self.reply_channel]
-        logger.debug("HTTP close for %s", self.reply_channel)
-        http.Request.finish(self)
-
-    def serverResponse(self, message):
-        """
-        Writes a received HTTP response back out to the transport.
-        """
-        if not self._got_response_start:
-            self._got_response_start = True
-            if 'status' not in message:
-                raise ValueError("Specifying a status code is required for a Response message.")
-
-            # Set HTTP status code
-            self.setResponseCode(message['status'])
-            # Write headers
-            for header, value in message.get("headers", {}):
-                # Shim code from old ASGI version, can be removed after a while
-                if isinstance(header, six.text_type):
-                    header = header.encode("latin1")
-                self.responseHeaders.addRawHeader(header, value)
-            logger.debug("HTTP %s response started for %s", message['status'], self.reply_channel)
-        else:
-            if 'status' in message:
-                raise ValueError("Got multiple Response messages for %s!" % self.reply_channel)
-
-        # Write out body
-        http.Request.write(self, message.get('content', b''))
-
-        # End if there's no more content
-        if not message.get("more_content", False):
-            self.finish()
-            logger.debug("HTTP response complete for %s", self.reply_channel)
-            try:
-                self.factory.log_action("http", "complete", {
-                    "path": self.uri.decode("ascii"),
-                    "status": self.code,
-                    "method": self.method.decode("ascii"),
-                    "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,
-                    "time_taken": self.duration(),
-                    "size": self.sentLength,
-                })
-            except Exception as e:
-                logging.error(traceback.format_exc())
-        else:
-            logger.debug("HTTP response chunk for %s", self.reply_channel)
+            self.server.handle_message(
+                self.consumer_channel,
+                {
+                    "type": "http.disconnect",
+                },
+            )
 
     def duration(self):
         """
@@ -298,6 +307,12 @@ class WebRequest(http.Request):
             }).encode("utf8"),
         })
 
+    def __hash__(self):
+        return hash(id(self))
+
+    def __eq__(self, other):
+        return id(self) == id(other)
+
 
 @implementer(IProtocolNegotiationFactory)
 class HTTPFactory(http.HTTPFactory):
@@ -308,30 +323,9 @@ class HTTPFactory(http.HTTPFactory):
     routed appropriately.
     """
 
-    def __init__(self, channel_layer, action_logger=None, send_channel=None, timeout=120, websocket_timeout=86400, ping_interval=20, ping_timeout=30, ws_protocols=None, root_path="", websocket_connect_timeout=30, proxy_forwarded_address_header=None, proxy_forwarded_port_header=None, websocket_handshake_timeout=5):
+    def __init__(self, server):
         http.HTTPFactory.__init__(self)
-        self.channel_layer = channel_layer
-        self.action_logger = action_logger
-        self.send_channel = send_channel
-        assert self.send_channel is not None
-        self.timeout = timeout
-        self.websocket_timeout = websocket_timeout
-        self.websocket_connect_timeout = websocket_connect_timeout
-        self.ping_interval = ping_interval
-        self.proxy_forwarded_address_header = proxy_forwarded_address_header
-        self.proxy_forwarded_port_header = proxy_forwarded_port_header
-        # We track all sub-protocols for response channel mapping
-        self.reply_protocols = {}
-        # Make a factory for WebSocket protocols
-        self.ws_factory = WebSocketFactory(self, protocols=ws_protocols, server='Daphne')
-        self.ws_factory.setProtocolOptions(
-            autoPingTimeout=ping_timeout,
-            allowNullOrigin=True,
-            openHandshakeTimeout=websocket_handshake_timeout
-        )
-        self.ws_factory.protocol = WebSocketProtocol
-        self.ws_factory.reply_protocols = self.reply_protocols
-        self.root_path = root_path
+        self.server = server
 
     def buildProtocol(self, addr):
         """
@@ -352,9 +346,6 @@ class HTTPFactory(http.HTTPFactory):
         """
         protocol_id = "".join(random.choice(string.ascii_letters) for i in range(10))
         return self.send_channel + protocol_id
-
-    def reply_channels(self):
-        return self.reply_protocols.keys()
 
     def dispatch_reply(self, channel, message):
         # If we don't know about the channel, ignore it (likely a channel we
@@ -407,13 +398,6 @@ class HTTPFactory(http.HTTPFactory):
                     protocol.serverClose(code=closing_code)
         else:
             raise ValueError("Unknown protocol class")
-
-    def log_action(self, protocol, action, details):
-        """
-        Dispatches to any registered action logger, if there is one.
-        """
-        if self.action_logger:
-            self.action_logger(protocol, action, details)
 
     def check_timeouts(self):
         """

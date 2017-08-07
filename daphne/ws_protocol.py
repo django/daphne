@@ -23,9 +23,9 @@ class WebSocketProtocol(WebSocketServerProtocol):
     # If we should send no more messages (e.g. we error-closed the socket)
     muted = False
 
-    def set_main_factory(self, main_factory):
-        self.main_factory = main_factory
-        self.channel_layer = self.main_factory.channel_layer
+    def __init__(self, *args, **kwargs):
+        super(WebSocketProtocol, self).__init__(*args, **kwargs)
+        self.server = self.factory.server_class
 
     def onConnect(self, request):
         self.request = request
@@ -239,18 +239,28 @@ class WebSocketProtocol(WebSocketServerProtocol):
         """
         return time.time() - self.socket_opened
 
-    def check_ping(self):
+    def check_timeouts(self):
         """
-        Checks to see if we should send a keepalive ping/deny socket connection
+        Called periodically to see if we should timeout something
         """
+        # Web timeout checking
+        if self.duration() > self.server.websocket_timeout and self.server.websocket_timeout >= 0:
+            self.serverClose()
+        # Ping check
         # If we're still connecting, deny the connection
         if self.state == self.STATE_CONNECTING:
-            if self.duration() > self.main_factory.websocket_connect_timeout:
+            if self.duration() > self.server.websocket_connect_timeout:
                 self.serverReject()
         elif self.state == self.STATE_OPEN:
-            if (time.time() - self.last_data) > self.main_factory.ping_interval:
+            if (time.time() - self.last_data) > self.server.ping_interval:
                 self._sendAutoPing()
                 self.last_data = time.time()
+
+    def __hash__(self):
+        return hash(id(self))
+
+    def __eq__(self, other):
+        return id(self) == id(other)
 
 
 class WebSocketFactory(WebSocketServerFactory):
@@ -260,9 +270,8 @@ class WebSocketFactory(WebSocketServerFactory):
     to get reply ID info.
     """
 
-    def __init__(self, main_factory, *args, **kwargs):
-        self.main_factory = main_factory
-        WebSocketServerFactory.__init__(self, *args, **kwargs)
+    protocol = WebSocketProtocol
 
-    def log_action(self, *args, **kwargs):
-        self.main_factory.log_action(*args, **kwargs)
+    def __init__(self, server_class, *args, **kwargs):
+        self.server_class = server_class
+        WebSocketServerFactory.__init__(self, *args, **kwargs)
