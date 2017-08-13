@@ -121,9 +121,18 @@ class Server(object):
             logger.info("Listening on endpoint %s" % socket_description)
             # Twisted requires str on python2 (not unicode) and str on python3 (not bytes)
             ep = serverFromString(reactor, str(socket_description))
-            self.listeners.append(ep.listen(self.factory))
+            listener = ep.listen(self.factory)
+            listener.addErrback(self.on_listener_error)
+            self.listeners.append(listener)
 
         reactor.run(installSignalHandlers=self.signal_handlers)
+
+    def on_listener_error(self, failure):
+        """
+        Callback function used to process interface listener errors.
+        """
+
+        logger.error(failure.getErrorMessage())
 
     def backend_reader_sync(self):
         """
