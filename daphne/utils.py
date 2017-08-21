@@ -37,7 +37,7 @@ def parse_x_forwarded_for(headers,
         address_value = header_value(headers, address_header_name)
 
         if ',' in address_value:
-            address_value = address_value.split(",")[0].strip()
+            address_value = address_value.split(",")[-1].strip()
 
         result = [address_value, 0]
 
