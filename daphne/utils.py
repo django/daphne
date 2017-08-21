@@ -4,7 +4,7 @@ from twisted.web.http_headers import Headers
 def header_value(headers, header_name):
     value = headers[header_name]
     if isinstance(value, list):
-        value = value[0]
+        value = value[-1]
     return value.decode("utf-8")
 
 
@@ -37,7 +37,7 @@ def parse_x_forwarded_for(headers,
         address_value = header_value(headers, address_header_name)
 
         if ',' in address_value:
-            address_value = address_value.split(",")[-1].strip()
+            address_value = address_value.split(",")[0].strip()
 
         result = [address_value, 0]
 
