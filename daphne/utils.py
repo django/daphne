@@ -4,7 +4,7 @@ from twisted.web.http_headers import Headers
 def header_value(headers, header_name):
     value = headers[header_name]
     if isinstance(value, list):
-        value = value[0]
+        value = value[-1]
     return value.decode("utf-8")
 
 
