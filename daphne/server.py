@@ -36,6 +36,7 @@ class Server(object):
         root_path="",
         proxy_forwarded_address_header=None,
         proxy_forwarded_port_header=None,
+        proxy_forwarded_proto_header=None,
         force_sync=False,
         verbosity=1,
         websocket_handshake_timeout=5
@@ -66,6 +67,7 @@ class Server(object):
         self.ping_timeout = ping_timeout
         self.proxy_forwarded_address_header = proxy_forwarded_address_header
         self.proxy_forwarded_port_header = proxy_forwarded_port_header
+        self.proxy_forwarded_proto_header = proxy_forwarded_proto_header
         # If they did not provide a websocket timeout, default it to the
         # channel layer's group_expiry value if present, or one day if not.
         self.websocket_timeout = websocket_timeout or getattr(channel_layer, "group_expiry", 86400)
@@ -95,6 +97,7 @@ class Server(object):
             root_path=self.root_path,
             proxy_forwarded_address_header=self.proxy_forwarded_address_header,
             proxy_forwarded_port_header=self.proxy_forwarded_port_header,
+            proxy_forwarded_proto_header=self.proxy_forwarded_proto_header,
             websocket_handshake_timeout=self.websocket_handshake_timeout
         )
         if self.verbosity <= 1:
