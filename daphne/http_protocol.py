@@ -81,12 +81,18 @@ class WebRequest(http.Request):
                 self.server_addr = None
 
             if self.factory.proxy_forwarded_address_header:
-                self.client_addr = parse_x_forwarded_for(
+                client, proto = parse_x_forwarded_for(
                     self.requestHeaders,
                     self.factory.proxy_forwarded_address_header,
                     self.factory.proxy_forwarded_port_header,
-                    self.client_addr
+                    original=self.client_addr
                 )
+                self.client_addr = client
+                if proto:
+                    # If we get a proto header, force ssl on or off (affects self.isSecure)
+                    self.setHost(host=self.host.host.encode('utf-8'),
+                                 port=self.host.port,
+                                 ssl=True if proto == 'https' else False)
 
             # Check for unicodeish path (or it'll crash when trying to parse)
             try:
