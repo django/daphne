@@ -22,7 +22,7 @@ def parse_x_forwarded_for(headers,
     @param port_header_name: The name of the expected port header
     @param proto_header_name: The name of the expected protocol header
     @param original_addr: A host/port pair that should be returned if the headers are not in the request
-    @param original_scheme: A scheme hat should be returned if the headers are not in the request
+    @param original_scheme: A scheme that should be returned if the headers are not in the request
     @return: A tuple containing a list [host (string), port (int)] as the first entry and a proto (string) as the second
     """
     if not address_header_name:
