@@ -57,10 +57,11 @@ class WebSocketProtocol(WebSocketServerProtocol):
                 self.server_addr = None
 
             if self.main_factory.proxy_forwarded_address_header:
-                self.client_addr = parse_x_forwarded_for(
+                self.client_addr, = parse_x_forwarded_for(
                     self.http_headers,
                     self.main_factory.proxy_forwarded_address_header,
                     self.main_factory.proxy_forwarded_port_header,
+                    self.main_factory.proxy_forwarded_proto_header,
                     self.client_addr
                 )
 

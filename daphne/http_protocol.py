@@ -80,12 +80,16 @@ class WebRequest(http.Request):
                 self.client_addr = None
                 self.server_addr = None
 
+            self.client_scheme = 'https' if self.isSecure() else 'http'
+
             if self.factory.proxy_forwarded_address_header:
-                self.client_addr = parse_x_forwarded_for(
+                self.client_addr, self.client_scheme = parse_x_forwarded_for(
                     self.requestHeaders,
                     self.factory.proxy_forwarded_address_header,
                     self.factory.proxy_forwarded_port_header,
-                    self.client_addr
+                    self.factory.proxy_forwarded_proto_header,
+                    self.client_addr,
+                    self.client_scheme
                 )
 
             # Check for unicodeish path (or it'll crash when trying to parse)
@@ -166,7 +170,7 @@ class WebRequest(http.Request):
                         "method": self.method.decode("ascii"),
                         "path": self.unquote(self.path),
                         "root_path": self.root_path,
-                        "scheme": "https" if self.isSecure() else "http",
+                        "scheme": self.client_scheme,
                         "query_string": self.query_string,
                         "headers": self.clean_headers,
                         "body": self.content.read(),

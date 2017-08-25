@@ -171,6 +171,7 @@ class TestProxyHandling(unittest.TestCase):
     def test_x_forwarded_for_parsed(self):
         self.factory.proxy_forwarded_address_header = 'X-Forwarded-For'
         self.factory.proxy_forwarded_port_header = 'X-Forwarded-Port'
+        self.factory.proxy_forwarded_proto_header = 'X-Forwarded-Proto'
         self.proto.dataReceived(
             b"GET /te%20st-%C3%A0/?foo=+bar HTTP/1.1\r\n" +
             b"Host: somewhere.com\r\n" +
@@ -185,6 +186,7 @@ class TestProxyHandling(unittest.TestCase):
     def test_x_forwarded_for_port_missing(self):
         self.factory.proxy_forwarded_address_header = 'X-Forwarded-For'
         self.factory.proxy_forwarded_port_header = 'X-Forwarded-Port'
+        self.factory.proxy_forwarded_proto_header = 'X-Forwarded-Proto'
         self.proto.dataReceived(
             b"GET /te%20st-%C3%A0/?foo=+bar HTTP/1.1\r\n" +
             b"Host: somewhere.com\r\n" +
