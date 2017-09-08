@@ -20,20 +20,21 @@ class WebSocketProtocol(WebSocketServerProtocol):
     the websocket channels.
     """
 
+    application_type = "websocket"
+
     # If we should send no more messages (e.g. we error-closed the socket)
     muted = False
 
-    def __init__(self, *args, **kwargs):
-        super(WebSocketProtocol, self).__init__(*args, **kwargs)
-        self.server = self.factory.server_class
-
     def onConnect(self, request):
+        self.server = self.factory.server_class
+        self.server.add_protocol(self)
         self.request = request
-        self.packets_received = 0
         self.protocol_to_accept = None
         self.socket_opened = time.time()
         self.last_data = time.time()
         try:
+            # Make new application instance
+            self.application_queue = self.server.create_application(self)
             # Sanitize and decode headers
             self.clean_headers = []
             for name, value in request.headers.items():
@@ -42,10 +43,6 @@ class WebSocketProtocol(WebSocketServerProtocol):
                 if b"_" in name:
                     continue
                 self.clean_headers.append((name.lower(), value.encode("latin1")))
-            # Make sending channel
-            self.reply_channel = self.main_factory.make_send_channel()
-            # Tell main factory about it
-            self.main_factory.reply_protocols[self.reply_channel] = self
             # Get client address if possible
             peer = self.transport.getPeer()
             host = self.transport.getHost()
@@ -56,23 +53,23 @@ class WebSocketProtocol(WebSocketServerProtocol):
                 self.client_addr = None
                 self.server_addr = None
 
-            if self.main_factory.proxy_forwarded_address_header:
+            if self.server.proxy_forwarded_address_header:
                 self.client_addr = parse_x_forwarded_for(
                     self.http_headers,
-                    self.main_factory.proxy_forwarded_address_header,
-                    self.main_factory.proxy_forwarded_port_header,
+                    self.server.proxy_forwarded_address_header,
+                    self.server.proxy_forwarded_port_header,
                     self.client_addr
                 )
 
             # Make initial request info dict from request (we only have it here)
             self.path = request.path.encode("ascii")
-            self.request_info = {
+            self.connect_message = {
+                "type": "websocket.connect",
                 "path": self.unquote(self.path),
                 "headers": self.clean_headers,
                 "query_string": self._raw_query_string,  # Passed by HTTP protocol
                 "client": self.client_addr,
                 "server": self.server_addr,
-                "reply_channel": self.reply_channel,
                 "order": 0,
             }
         except:
@@ -86,50 +83,33 @@ class WebSocketProtocol(WebSocketServerProtocol):
             if header == b'sec-websocket-protocol':
                 protocols = [x.strip() for x in self.unquote(value).split(",")]
                 for protocol in protocols:
-                    if protocol in self.factory.protocols:
+                    if protocol in self.server.websocket_protocols:
                         ws_protocol = protocol
                         break
 
         # Work out what subprotocol we will accept, if any
-        if ws_protocol and ws_protocol in self.factory.protocols:
+        if ws_protocol and ws_protocol in self.server.websocket_protocols:
             self.protocol_to_accept = ws_protocol
         else:
             self.protocol_to_accept = None
 
         # Send over the connect message
-        try:
-            self.channel_layer.send("websocket.connect", self.request_info)
-        except self.channel_layer.ChannelFull:
-            # You have to consume websocket.connect according to the spec,
-            # so drop the connection.
-            self.muted = True
-            logger.warn("WebSocket force closed for %s due to connect backpressure", self.reply_channel)
-            # Send code 503 "Service Unavailable" with close.
-            raise ConnectionDeny(code=503, reason="Connection queue at capacity")
-        else:
-            self.factory.log_action("websocket", "connecting", {
-                "path": self.request.path,
-                "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,
-            })
+        self.application_queue.put_nowait(self.connect_message)
+        self.server.log_action("websocket", "connecting", {
+            "path": self.request.path,
+            "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,
+        })
 
         # Make a deferred and return it - we'll either call it or err it later on
         self.handshake_deferred = defer.Deferred()
         return self.handshake_deferred
 
-    @classmethod
-    def unquote(cls, value):
-        """
-        Python 2 and 3 compat layer for utf-8 unquoting
-        """
-        if six.PY2:
-            return unquote(value).decode("utf8")
-        else:
-            return unquote(value.decode("ascii"))
+    ### Twisted event handling
 
     def onOpen(self):
         # Send news that this channel is open
-        logger.debug("WebSocket %s open and established", self.reply_channel)
-        self.factory.log_action("websocket", "connected", {
+        logger.debug("WebSocket %s open and established", self.client_addr)
+        self.server.log_action("websocket", "connected", {
             "path": self.request.path,
             "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,
         })
@@ -137,49 +117,78 @@ class WebSocketProtocol(WebSocketServerProtocol):
     def onMessage(self, payload, isBinary):
         # If we're muted, do nothing.
         if self.muted:
-            logger.debug("Muting incoming frame on %s", self.reply_channel)
+            logger.debug("Muting incoming frame on %s", self.client_addr)
             return
-        logger.debug("WebSocket incoming frame on %s", self.reply_channel)
-        self.packets_received += 1
+        logger.debug("WebSocket incoming frame on %s", self.client_addr)
         self.last_data = time.time()
-        try:
-            if isBinary:
-                self.channel_layer.send("websocket.receive", {
-                    "reply_channel": self.reply_channel,
-                    "path": self.unquote(self.path),
-                    "order": self.packets_received,
-                    "bytes": payload,
-                })
+        if isBinary:
+            self.application_queue.put_nowait({
+                "type": "websocket.receive",
+                "bytes": payload,
+            })
+        else:
+            self.application_queue.put_nowait({
+                "type": "websocket.receive",
+                "text": payload.decode("utf8"),
+            })
+
+    def onClose(self, wasClean, code, reason):
+        """
+        Called when Twisted closes the socket.
+        """
+        self.server.discard_protocol(self)
+        logger.debug("WebSocket closed for %s", self.client_addr)
+        if not self.muted:
+            self.application_queue.put_nowait({
+                "type": "websocket.disconnect",
+                "code": code,
+            })
+        self.server.log_action("websocket", "disconnected", {
+            "path": self.request.path,
+            "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,
+        })
+
+    ### Internal event handling
+
+    def handle_reply(self, message):
+        if "type" not in message:
+            raise ValueError("Message has no type defined")
+        if message["type"] == "websocket.accept":
+            self.serverAccept()
+        elif message["type"] == "websocket.close":
+            if self.state == self.STATE_CONNECTING:
+                self.serverReject()
             else:
-                self.channel_layer.send("websocket.receive", {
-                    "reply_channel": self.reply_channel,
-                    "path": self.unquote(self.path),
-                    "order": self.packets_received,
-                    "text": payload.decode("utf8"),
-                })
-        except self.channel_layer.ChannelFull:
-            # You have to consume websocket.receive according to the spec,
-            # so drop the connection.
-            self.muted = True
-            logger.warn("WebSocket force closed for %s due to receive backpressure", self.reply_channel)
-            # Send code 1013 "try again later" with close.
-            self.sendCloseFrame(code=1013, isReply=False)
+                self.serverClose(code=message.get("code", None))
+        elif message["type"] == "websocket.send":
+            if self.state == self.STATE_CONNECTING:
+                raise ValueError("Socket has not been accepted, so cannot send over it")
+            if message.get("bytes", None) and message.get("text", None):
+                raise ValueError(
+                    "Got invalid WebSocket reply message on %s - contains both bytes and text keys" % (
+                        channel,
+                    )
+                )
+            if message.get("bytes", None):
+                self.serverSend(message["bytes"], True)
+            if message.get("text", None):
+                self.serverSend(message["text"], False)
 
     def serverAccept(self):
         """
         Called when we get a message saying to accept the connection.
         """
         self.handshake_deferred.callback(self.protocol_to_accept)
-        logger.debug("WebSocket %s accepted by application", self.reply_channel)
+        logger.debug("WebSocket %s accepted by application", self.client_addr)
 
     def serverReject(self):
         """
         Called when we get a message saying to reject the connection.
         """
         self.handshake_deferred.errback(ConnectionDeny(code=403, reason="Access denied"))
-        self.cleanup()
-        logger.debug("WebSocket %s rejected by application", self.reply_channel)
-        self.factory.log_action("websocket", "rejected", {
+        self.server.discard_protocol(self)
+        logger.debug("WebSocket %s rejected by application", self.client_addr)
+        self.server.log_action("websocket", "rejected", {
             "path": self.request.path,
             "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,
         })
@@ -191,47 +200,30 @@ class WebSocketProtocol(WebSocketServerProtocol):
         if self.state == self.STATE_CONNECTING:
             self.serverAccept()
         self.last_data = time.time()
-        logger.debug("Sent WebSocket packet to client for %s", self.reply_channel)
+        logger.debug("Sent WebSocket packet to client for %s", self.client_addr)
         if binary:
             self.sendMessage(content, binary)
         else:
             self.sendMessage(content.encode("utf8"), binary)
 
-    def serverClose(self, code=True):
+    def serverClose(self, code=None):
         """
         Server-side channel message to close the socket
         """
-        code = 1000 if code is True else code
+        code = 1000 if code is None else code
         self.sendClose(code=code)
 
-    def onClose(self, wasClean, code, reason):
-        self.cleanup()
-        if hasattr(self, "reply_channel"):
-            logger.debug("WebSocket closed for %s", self.reply_channel)
-            try:
-                if not self.muted:
-                    self.channel_layer.send("websocket.disconnect", {
-                        "reply_channel": self.reply_channel,
-                        "code": code,
-                        "path": self.unquote(self.path),
-                        "order": self.packets_received + 1,
-                    })
-            except self.channel_layer.ChannelFull:
-                pass
-            self.factory.log_action("websocket", "disconnected", {
-                "path": self.request.path,
-                "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,
-            })
-        else:
-            logger.debug("WebSocket closed before handshake established")
+    ### Utils
 
-    def cleanup(self):
+    @classmethod
+    def unquote(cls, value):
         """
-        Call to clean up this socket after it's closed.
+        Python 2 and 3 compat layer for utf-8 unquoting
         """
-        if hasattr(self, "reply_channel"):
-            if self.reply_channel in self.factory.reply_protocols:
-                del self.factory.reply_protocols[self.reply_channel]
+        if six.PY2:
+            return unquote(value).decode("utf8")
+        else:
+            return unquote(value.decode("ascii"))
 
     def duration(self):
         """
@@ -275,3 +267,15 @@ class WebSocketFactory(WebSocketServerFactory):
     def __init__(self, server_class, *args, **kwargs):
         self.server_class = server_class
         WebSocketServerFactory.__init__(self, *args, **kwargs)
+
+    def buildProtocol(self, addr):
+        """
+        Builds protocol instances. We use this to inject the factory object into the protocol.
+        """
+        try:
+            protocol = super(WebSocketFactory, self).buildProtocol(addr)
+            protocol.factory = self
+            return protocol
+        except Exception as e:
+            logger.error("Cannot build protocol: %s" % traceback.format_exc())
+            raise

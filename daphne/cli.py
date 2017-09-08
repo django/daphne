@@ -131,12 +131,8 @@ class CommandLineInterface(object):
             default=2,
         )
         self.parser.add_argument(
-            'channel_layer',
-            help='The ASGI channel layer instance to use as path.to.module:instance.path',
-        )
-        self.parser.add_argument(
-            'consumer',
-            help='The consumer to dispatch to as path.to.module:instance.path',
+            'application',
+            help='The application to dispatch to as path.to.module:instance.path',
         )
 
         self.server = None
@@ -161,6 +157,7 @@ class CommandLineInterface(object):
                 0: logging.WARN,
                 1: logging.INFO,
                 2: logging.DEBUG,
+                3: logging.DEBUG,  # Also turns on asyncio debug
             }[args.verbosity],
             format="%(asctime)-15s %(levelname)-8s %(message)s",
         )
@@ -173,10 +170,9 @@ class CommandLineInterface(object):
                 access_log_stream = open(args.access_log, "a", 1)
         elif args.verbosity >= 1:
             access_log_stream = sys.stdout
-        # Import application and channel_layer
+        # Import application
         sys.path.insert(0, ".")
-        channel_layer = import_by_path(args.channel_layer)
-        consumer = import_by_path(args.consumer)
+        application = import_by_path(args.application)
         # Set up port/host bindings
         if not any([args.host, args.port, args.unix_socket, args.file_descriptor, args.socket_strings]):
             # no advanced binding options passed, patch in defaults
@@ -198,12 +194,11 @@ class CommandLineInterface(object):
         )
         # Start the server
         logger.info(
-            'Starting server at %s, channel layer %s.' %
-            (', '.join(endpoints), args.channel_layer)
+            'Starting server at %s' %
+            (', '.join(endpoints), )
         )
         self.server = Server(
-            channel_layer=channel_layer,
-            consumer=consumer,
+            application=application,
             endpoints=endpoints,
             http_timeout=args.http_timeout,
             ping_interval=args.ping_interval,

@@ -10,6 +10,7 @@ import traceback
 from zope.interface import implementer
 
 from six.moves.urllib_parse import unquote, unquote_plus
+from twisted.internet.defer import ensureDeferred
 from twisted.internet.interfaces import IProtocolNegotiationFactory
 from twisted.protocols.policies import ProtocolWrapper
 from twisted.web import http
@@ -29,7 +30,7 @@ class WebRequest(http.Request):
     GET and POST out.
     """
 
-    consumer_type = "http"
+    application_type = "http"
 
     error_template = """
         <html>
@@ -55,7 +56,7 @@ class WebRequest(http.Request):
             http.Request.__init__(self, *args, **kwargs)
             # Easy server link
             self.server = self.channel.factory.server
-            self.consumer_channel = None
+            self.application_queue = None
             self._response_started = False
             self.server.add_protocol(self)
         except Exception:
@@ -137,8 +138,8 @@ class WebRequest(http.Request):
 
             # Boring old HTTP.
             else:
-                # Create consumer to handle this connection
-                self.consumer_channel = self.server.create_consumer(self)
+                # Create application to handle this connection
+                self.application_queue = self.server.create_application(self)
                 # Sanitize and decode headers, potentially extracting root path
                 self.clean_headers = []
                 self.root_path = self.server.root_path
@@ -151,11 +152,10 @@ class WebRequest(http.Request):
                             self.root_path = self.unquote(value)
                         else:
                             self.clean_headers.append((name.lower(), value))
-                logger.debug("HTTP %s request for %s", self.method, self.consumer_channel)
+                logger.debug("HTTP %s request for %s", self.method, self.client_addr)
                 self.content.seek(0, 0)
-                # Run consumer
-                self.server.handle_message(
-                    self.consumer_channel,
+                # Run application against request
+                self.application_queue.put_nowait(
                     {
                         "type": "http.request",
                         # TODO: Correctly say if it's 1.1 or 1.0
@@ -173,13 +173,13 @@ class WebRequest(http.Request):
                 )
         except Exception:
             logger.error(traceback.format_exc())
-            self.basic_error(500, b"Internal Server Error", "HTTP processing error")
+            self.basic_error(500, b"Internal Server Error", "Daphne HTTP processing error")
 
     def connectionLost(self, reason):
         """
         Cleans up reply channel on close.
         """
-        if self.consumer_channel:
+        if self.application_queue:
             self.send_disconnect()
         logger.debug("HTTP disconnect for %s", self.client_addr)
         http.Request.connectionLost(self, reason)
@@ -189,7 +189,7 @@ class WebRequest(http.Request):
         """
         Cleans up reply channel on close.
         """
-        if self.consumer_channel:
+        if self.application_queue:
             self.send_disconnect()
         logger.debug("HTTP close for %s", self.client_addr)
         http.Request.finish(self)
@@ -201,6 +201,8 @@ class WebRequest(http.Request):
         """
         Handles a reply from the client
         """
+        if "type" not in message:
+            raise ValueError("Message has no type defined")
         if message['type'] == "http.response":
             if self._response_started:
                 raise ValueError("HTTP response has already been started")
@@ -216,9 +218,9 @@ class WebRequest(http.Request):
                     header = header.encode("latin1")
                 self.responseHeaders.addRawHeader(header, value)
             logger.debug("HTTP %s response started for %s", message['status'], self.client_addr)
-        elif message['type'] == "http.response.content":
+        elif message['type'] == "http.response.hunk":
             if not self._response_started:
-                raise ValueError("HTTP response has not yet been started")
+                raise ValueError("HTTP response has not yet been started but got %s" % message['type'])
         else:
             raise ValueError("Cannot handle message type %s!" % message['type'])
 
@@ -242,6 +244,12 @@ class WebRequest(http.Request):
                 logging.error(traceback.format_exc())
         else:
             logger.debug("HTTP response chunk for %s", self.client_addr)
+
+    def handle_exception(self, exception):
+        """
+        Called by the server when our application tracebacks
+        """
+        self.basic_error(500, b"Internal Server Error", "Exception inside application.")
 
     def check_timeouts(self):
         """
@@ -276,8 +284,7 @@ class WebRequest(http.Request):
         """
         # If we don't yet have a path, then don't send as we never opened.
         if self.path:
-            self.server.handle_message(
-                self.consumer_channel,
+            self.application_queue.put_nowait(
                 {
                     "type": "http.disconnect",
                 },
@@ -295,7 +302,8 @@ class WebRequest(http.Request):
         """
         Responds with a server-level error page (very basic)
         """
-        self.serverResponse({
+        self.handle_reply({
+            "type": "http.response",
             "status": status,
             "status_text": status_text,
             "headers": [
@@ -339,83 +347,6 @@ class HTTPFactory(http.HTTPFactory):
         except Exception as e:
             logger.error("Cannot build protocol: %s" % traceback.format_exc())
             raise
-
-    def make_send_channel(self):
-        """
-        Makes a new send channel for a protocol with our process prefix.
-        """
-        protocol_id = "".join(random.choice(string.ascii_letters) for i in range(10))
-        return self.send_channel + protocol_id
-
-    def dispatch_reply(self, channel, message):
-        # If we don't know about the channel, ignore it (likely a channel we
-        # used to have that's now in a group).
-        # TODO: Find a better way of alerting people when this happens so
-        # they can do more cleanup, that's not an error.
-        if channel not in self.reply_protocols:
-            logger.debug("Message on unknown channel %r - discarding" % channel)
-            return
-
-        if isinstance(self.reply_protocols[channel], WebRequest):
-            self.reply_protocols[channel].serverResponse(message)
-        elif isinstance(self.reply_protocols[channel], WebSocketProtocol):
-            # Switch depending on current socket state
-            protocol = self.reply_protocols[channel]
-            # See if the message is valid
-            unknown_keys = set(message.keys()) - {"bytes", "text", "close", "accept"}
-            if unknown_keys:
-                raise ValueError(
-                    "Got invalid WebSocket reply message on %s - "
-                    "contains unknown keys %s (looking for either {'accept', 'text', 'bytes', 'close'})" % (
-                        channel,
-                        unknown_keys,
-                    )
-                )
-            # Accepts allow bytes/text afterwards
-            if message.get("accept", None) and protocol.state == protocol.STATE_CONNECTING:
-                protocol.serverAccept()
-            # Rejections must be the only thing
-            if message.get("accept", None) == False and protocol.state == protocol.STATE_CONNECTING:
-                protocol.serverReject()
-                return
-            # You're only allowed one of bytes or text
-            if message.get("bytes", None) and message.get("text", None):
-                raise ValueError(
-                    "Got invalid WebSocket reply message on %s - contains both bytes and text keys" % (
-                        channel,
-                    )
-                )
-            if message.get("bytes", None):
-                protocol.serverSend(message["bytes"], True)
-            if message.get("text", None):
-                protocol.serverSend(message["text"], False)
-
-            closing_code = message.get("close", False)
-            if closing_code:
-                if protocol.state == protocol.STATE_CONNECTING:
-                    protocol.serverReject()
-                else:
-                    protocol.serverClose(code=closing_code)
-        else:
-            raise ValueError("Unknown protocol class")
-
-    def check_timeouts(self):
-        """
-        Runs through all HTTP protocol instances and times them out if they've
-        taken too long (and so their message is probably expired)
-        """
-        for protocol in list(self.reply_protocols.values()):
-            # Web timeout checking
-            if isinstance(protocol, WebRequest) and protocol.duration() > self.timeout:
-                protocol.basic_error(503, b"Service Unavailable", "Worker server failed to respond within time limit.")
-            # WebSocket timeout checking and keepalive ping sending
-            elif isinstance(protocol, WebSocketProtocol):
-                # Timeout check
-                if protocol.duration() > self.websocket_timeout and self.websocket_timeout >= 0:
-                    protocol.serverClose()
-                # Ping check
-                else:
-                    protocol.check_ping()
 
     # IProtocolNegotiationFactory
     def acceptableProtocols(self):

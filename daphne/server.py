@@ -1,16 +1,21 @@
 from __future__ import unicode_literals
 
+# This has to be done first as Twisted is import-order-sensitive with reactors
+from twisted.internet import asyncioreactor
+asyncioreactor.install()
+
+import asyncio
 import collections
 import logging
 import random
 import string
+import traceback
 import warnings
 
 from twisted.internet import reactor, defer
 from twisted.internet.endpoints import serverFromString
 from twisted.logger import globalLogBeginner, STDLibLogObserver
 from twisted.web import http
-from twisted.python.threadpool import ThreadPool
 
 from .http_protocol import HTTPFactory
 from .ws_protocol import WebSocketFactory
@@ -22,13 +27,12 @@ class Server(object):
 
     def __init__(
         self,
-        channel_layer,
-        consumer,
+        application,
         endpoints=None,
         signal_handlers=True,
         action_logger=None,
         http_timeout=120,
-        websocket_timeout=None,
+        websocket_timeout=86400,
         websocket_connect_timeout=20,
         ping_interval=20,
         ping_timeout=30,
@@ -39,10 +43,9 @@ class Server(object):
         verbosity=1,
         websocket_handshake_timeout=5
     ):
-        self.channel_layer = channel_layer
-        self.consumer = consumer
+        self.application = application
         self.endpoints = endpoints or []
-        if len(self.endpoints) == 0:
+        if not self.endpoints:
             raise UserWarning("No endpoints. This server will not listen on anything.")
         self.listeners = []
         self.signal_handlers = signal_handlers
@@ -52,30 +55,20 @@ class Server(object):
         self.ping_timeout = ping_timeout
         self.proxy_forwarded_address_header = proxy_forwarded_address_header
         self.proxy_forwarded_port_header = proxy_forwarded_port_header
-        # If they did not provide a websocket timeout, default it to the
-        # channel layer's group_expiry value if present, or one day if not.
-        self.websocket_timeout = websocket_timeout or getattr(channel_layer, "group_expiry", 86400)
+        self.websocket_timeout = websocket_timeout
         self.websocket_connect_timeout = websocket_connect_timeout
         self.websocket_handshake_timeout = websocket_handshake_timeout
-        self.ws_protocols = ws_protocols
+        self.websocket_protocols = ws_protocols
         self.root_path = root_path
         self.verbosity = verbosity
 
     def run(self):
-        # Make the thread pool to run consumers in
-        # TODO: Configurable numbers of threads
-        self.pool = ThreadPool(name="consumers")
-        # Make the mapping of consumer instances to consumer channels
-        self.consumer_instances = {}
         # A set of current Twisted protocol instances to manage
         self.protocols = set()
-        # Create process-local channel prefixes
-        # TODO: Can we guarantee non-collision better?
-        process_id = "".join(random.choice(string.ascii_letters) for i in range(10))
-        self.consumer_channel_prefix = "daphne.%s!" % process_id
+        self.application_instances = {}
         # Make the factory
         self.http_factory = HTTPFactory(self)
-        self.ws_factory = WebSocketFactory(self, protocols=self.ws_protocols, server='Daphne')
+        self.ws_factory = WebSocketFactory(self, protocols=self.websocket_protocols, server='Daphne')
         self.ws_factory.setProtocolOptions(
             autoPingTimeout=self.ping_timeout,
             allowNullOrigin=True,
@@ -93,18 +86,24 @@ class Server(object):
         else:
             logger.info("HTTP/2 support not enabled (install the http2 and tls Twisted extras)")
 
-        # Kick off the various background loops
-        reactor.callLater(0, self.backend_reader)
+        # Kick off the timeout loop
+        reactor.callLater(1, self.application_checker)
         reactor.callLater(2, self.timeout_checker)
 
         for socket_description in self.endpoints:
             logger.info("Listening on endpoint %s" % socket_description)
-            # Twisted requires str on python2 (not unicode) and str on python3 (not bytes)
             ep = serverFromString(reactor, str(socket_description))
             self.listeners.append(ep.listen(self.http_factory))
 
-        self.pool.start()
-        reactor.addSystemEventTrigger("before", "shutdown", self.pool.stop)
+        # Set the asyncio reactor's event loop as global
+        # TODO: Should we instead pass the global one into the reactor?
+        asyncio.set_event_loop(reactor._asyncioEventloop)
+
+        # Verbosity 3 turns on asyncio debug to find those blocking yields
+        if self.verbosity >= 3:
+            asyncio.get_event_loop().set_debug(True)
+
+        reactor.addSystemEventTrigger("before", "shutdown", self.kill_all_applications)
         reactor.run(installSignalHandlers=self.signal_handlers)
 
     ### Protocol handling
@@ -115,82 +114,85 @@ class Server(object):
         self.protocols.add(protocol)
 
     def discard_protocol(self, protocol):
+        # Ensure it's not in the protocol-tracking set
         self.protocols.discard(protocol)
+        # Make sure any application future that's running is cancelled
+        if protocol in self.application_instances:
+            self.application_instances[protocol].cancel()
+            del self.application_instances[protocol]
 
     ### Internal event/message handling
 
-    def create_consumer(self, protocol):
+    def create_application(self, protocol):
         """
-        Creates a new consumer instance that fronts a Protocol instance
+        Creates a new application instance that fronts a Protocol instance
         for one of our supported protocols. Pass it the protocol,
         and it will work out the type, supply appropriate callables, and
-        put it into the server's consumer pool.
-
-        It returns the consumer channel name, which is how you should refer
-        to the consumer instance.
+        return you the application's input queue
         """
-        # Make sure the protocol defines a consumer type
-        assert protocol.consumer_type is not None
-        # Make it a consumer channel name
-        protocol_id = "".join(random.choice(string.ascii_letters) for i in range(10))
-        consumer_channel = self.consumer_channel_prefix + protocol_id
-        # Make an instance of the consumer
-        consumer_instance = self.consumer(
-            type=protocol.consumer_type,
+        # Make sure the protocol defines a application type
+        assert protocol.application_type is not None
+        # Make sure the protocol has not had another application made for it
+        assert protocol not in self.application_instances
+        # Make an instance of the application
+        input_queue = asyncio.Queue()
+        application_instance = asyncio.ensure_future(self.application(
+            type=protocol.application_type,
+            next=input_queue.get,
             reply=lambda message: self.handle_reply(protocol, message),
-            channel_layer=self.channel_layer,
-            consumer_channel=consumer_channel,
-        )
-        # Assign it by channel and return it
-        self.consumer_instances[consumer_channel] = consumer_instance
-        return consumer_channel
+        ), loop=asyncio.get_event_loop())
+        self.application_instances[protocol] = application_instance
+        return input_queue
 
-    def handle_message(self, consumer_channel, message):
+    async def handle_reply(self, protocol, message):
         """
-        Schedules the application instance to handle the given message.
+        Coroutine that jumps the reply message from asyncio to Twisted
         """
-        self.pool.callInThread(self.consumer_instances[consumer_channel], message)
-
-    def handle_reply(self, protocol, message):
-        """
-        Schedules the reply to be handled by the protocol in the main thread
-        """
-        reactor.callFromThread(reactor.callLater, 0, protocol.handle_reply, message)
-
-    ### External event/message handling
-
-    def backend_reader(self):
-        """
-        Runs as an-often-as-possible task with the reactor, unless there was
-        no result previously in which case we add a small delay.
-        """
-        channels = [self.consumer_channel_prefix]
-        delay = 0
-        # Quit if reactor is stopping
-        if not reactor.running:
-            logger.debug("Backend reader quitting due to reactor stop")
-            return
-        # Try to receive a message
-        try:
-            channel, message = self.channel_layer.receive(channels, block=False)
-        except Exception as e:
-            # Log the error and wait a bit to retry
-            logger.error('Error trying to receive messages: %s' % e)
-            delay = 5.00
-        else:
-            if channel:
-                # Deal with the message
-                try:
-                    self.handle_message(channel, message)
-                except Exception as e:
-                    logger.error("Error handling external message: %s" % e)
-            else:
-                # If there's no messages, idle a little bit.
-                delay = 0.05
-        # We can't loop inside here as this is synchronous code.
-        reactor.callLater(delay, self.backend_reader)
+        reactor.callLater(0, protocol.handle_reply, message)
 
     ### Utility
+
+    def application_checker(self):
+        """
+        Goes through the set of current application Futures and cleans up
+        any that are done/prints exceptions for any that errored.
+        """
+        for protocol, application_instance in list(self.application_instances.items()):
+            if application_instance.done():
+                exception = application_instance.exception()
+                if exception:
+                    logging.error(
+                        "Exception inside application: {}\n{}{}".format(
+                            exception,
+                            "".join(traceback.format_tb(
+                                exception.__traceback__,
+                            )),
+                            "  {}".format(exception),
+                        )
+                    )
+                    protocol.handle_exception(exception)
+                try:
+                    del self.application_instances[protocol]
+                except KeyError:
+                    # The protocol might have already got here before us. That's fine.
+                    pass
+        reactor.callLater(1, self.application_checker)
+
+    def kill_all_applications(self):
+        """
+        Kills all application coroutines before reactor exit.
+        """
+        # Send cancel to all coroutines
+        wait_for = []
+        for application_instance in self.application_instances.values():
+            if not application_instance.done():
+                application_instance.cancel()
+                wait_for.append(application_instance)
+        logging.info("Killed %i pending application instances" % len(wait_for))
+        # Make Twisted wait until they're all dead
+        wait_deferred = defer.Deferred.fromFuture(asyncio.gather(*wait_for))
+        wait_deferred.addErrback(lambda x: None)
+        return wait_deferred
 
     def timeout_checker(self):
         """
