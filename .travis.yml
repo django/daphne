@@ -1,4 +1,5 @@
 sudo: false
+dist: trusty
 
 language: python
 
@@ -8,6 +9,24 @@ python:
   - "3.5"
   - "3.6"
 
-install: pip install tox tox-travis
+env:
+  - DJANGO="Django>=1.8,<1.9"
+  - DJANGO="Django>=1.9,<1.10"
+  - DJANGO="Django>=1.10,<1.11"
+  - DJANGO="Django>=1.11,<2.0"
 
-script: tox
+cache:
+  directories:
+  - $HOME/.cache/pip/wheels
+
+install:
+  - nvm install 7
+  - pip install -U pip wheel setuptools
+  - pip install $DJANGO -e .[tests]
+  - pip freeze
+
+script:
+  - python runtests.py
+#  - cd js_client && npm install --progress=false && npm test && cd ..
+  - flake8
+  - isort --check-only --recursive channels

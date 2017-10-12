@@ -1,41 +1,33 @@
-import os
-
 from setuptools import find_packages, setup
-
-from daphne import __version__
-
-# We use the README as the long_description
-readme_path = os.path.join(os.path.dirname(__file__), "README.rst")
-with open(readme_path) as fp:
-    long_description = fp.read()
+from channels import __version__
 
 setup(
-    name='daphne',
+    name='channels',
     version=__version__,
-    url='https://github.com/django/daphne',
+    url='http://github.com/django/channels',
     author='Django Software Foundation',
     author_email='foundation@djangoproject.com',
-    description='Django ASGI (HTTP/WebSocket) server',
-    long_description=long_description,
+    description="Brings event-driven capabilities to Django with a channel system. Django 1.8 and up only.",
     license='BSD',
-    zip_safe=False,
-    package_dir={'twisted': 'daphne/twisted'},
-    packages=find_packages() + ['twisted.plugins'],
+    packages=find_packages(exclude=['tests']),
     include_package_data=True,
     install_requires=[
+        'Django>=1.8',
         'asgiref~=1.1',
-        'twisted>=17.1',
-        'autobahn>=0.18',
+        'daphne~=1.3',
     ],
     extras_require={
-        'tests': ['hypothesis', 'tox']
+        'tests': [
+            'coverage',
+            'flake8>=2.0,<3.0',
+            'isort',
+        ],
+        'tests:python_version < "3.0"': ['mock'],
     },
-    entry_points={'console_scripts': [
-        'daphne = daphne.cli:CommandLineInterface.entrypoint',
-    ]},
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Web Environment',
+        'Framework :: Django',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
@@ -45,7 +37,6 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
         'Topic :: Internet :: WWW/HTTP',
     ],
 )

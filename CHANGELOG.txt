@@ -1,272 +1,421 @@
-1.2.0 (2017-04-01)
+Full release notes, with more details and upgrade information, are available at:
+https://channels.readthedocs.io/en/latest/releases
+
+
+1.1.8 (2017-09-15)
 ------------------
 
-* The new process-specific channel support is now implemented, resulting in
-  significantly less traffic to your channel backend.
+* Reverted recent JS fixes for subprotocols on some phones as they do not work
+  in Chrome.
 
-* Native twisted blocking support for channel layers that support it is now
-  used. While it is a lot more efficient, it is also sometimes slightly more
-  latent; you can disable it using --force-sync.
 
-* Native SSL termination is now correctly reflected in the ASGI-HTTP `scheme`
-  key.
+1.1.7 (2017-09-14)
+------------------
 
-* accept: False is now a valid way to deny a connection, as well as close: True.
+* Fixed compatability with Django 1.10 and below
 
-* HTTP version is now correctly sent as one of "1.0", "1.1" or "2".
+* JS library: Fixed error with 1006 error code
 
-* More command line options for websocket timeouts
+
+1.1.6 (2017-06-28)
+------------------
+
+* The ``runserver`` ``server_cls`` override no longer fails with more modern
+  Django versions that pass an ``ipv6`` parameter.
+
+
+1.1.5 (2017-06-16)
+------------------
+
+* The Daphne dependency requirement was bumped to 1.3.0.
+
+
+1.1.4 (2017-06-15)
+------------------
+
+* Pending messages correctly handle retries in backlog situations
+
+* Workers in threading mode now respond to ctrl-C and gracefully exit.
+
+* ``request.meta['QUERY_STRING']`` is now correctly encoded at all times.
+
+* Test client improvements
+
+* ``ChannelServerLiveTestCase`` added, allows an equivalent of the Django
+  ``LiveTestCase``.
+
+* Decorator added to check ``Origin`` headers (``allowed_hosts_only``)
+
+* New ``TEST_CONFIG`` setting in ``CHANNEL_LAYERS`` that allows varying of
+  the channel layer for tests (e.g. using a different Redis install)
+
+
+1.1.3 (2017-04-05)
+------------------
+
+* ``enforce_ordering`` now works correctly with the new-style process-specific
+  channels
+
+* ASGI channel layer versions are now explicitly checked for version compatability
+
+
+1.1.2 (2017-04-01)
+------------------
+
+* Session name hash changed to SHA-1 to satisfy FIPS-140-2. Due to this,
+  please force all WebSockets to reconnect after the upgrade.
+
+* `scheme` key in ASGI-HTTP messages now translates into `request.is_secure()`
+  correctly.
+
+* WebsocketBridge now exposes the underlying WebSocket as `.socket`
+
+
+1.1.1 (2017-03-19)
+------------------
+
+* Fixed JS packaging issue
 
 
 1.1.0 (2017-03-18)
 ------------------
 
-* HTTP/2 termination is now supported natively. The Twisted dependency has been
-  increased to at least 17.1 as a result; for more information about setting up
-  HTTP/2, see the README.
+* Channels now includes a JavaScript wrapper that wraps reconnection and
+  multiplexing for you on the client side.
 
-* X-Forwarded-For decoding support understands IPv6 addresses, and picks the
-  most remote (leftmost) entry if there are multiple relay hosts.
+* Test classes have been moved from ``channels.tests`` to ``channels.test``.
 
-* Fixed an error where `disconnect` messages would still try and get sent even
-  if the client never finished a request.
+* Bindings now support non-integer fields for primary keys on models.
+
+* The ``enforce_ordering`` decorator no longer suffers a race condition where
+  it would drop messages under high load.
+
+* ``runserver`` no longer errors if the ``staticfiles`` app is not enabled in Django.
 
 
-1.0.3 (2017-02-12)
+1.0.3 (2017-02-01)
 ------------------
 
-* IPv6 addresses are correctly accepted as bind targets on the command line
+* Database connections are no longer force-closed after each test is run.
 
-* Twisted 17.1 compatability fixes for WebSocket receiving/keepalive and
-  proxy header detection.
+* Channel sessions are not re-saved if they're empty even if they're marked as
+  modified, allowing logout to work correctly.
+
+* WebsocketDemultiplexer now correctly does sessions for the second/third/etc.
+  connect and disconnect handlers.
+
+* Request reading timeouts now correctly return 408 rather than erroring out.
+
+* The ``rundelay`` delay server now only polls the database once per second,
+  and this interval is configurable with the ``--sleep`` option.
 
 
-1.0.2 (2017-02-01)
+1.0.2 (2017-01-12)
 ------------------
 
-* The "null" WebSocket origin (including file:// and no value) is now accepted
-  by Daphne and passed onto the application to accept/deny.
+* Websockets can now be closed from anywhere using the new ``WebsocketCloseException``.
+  There is also a generic ``ChannelSocketException`` so you can do custom behaviours.
 
-* Listening on file descriptors works properly again.
+* Calling ``Channel.send`` or ``Group.send`` from outside a consumer context
+  (i.e. in tests or management commands) will once again send the message immediately.
 
-* The DeprecationError caused by not passing endpoints into a Server class
-  directly is now a warning instead.
+* The base implementation of databinding now correctly only calls ``group_names(instance)``,
+  as documented.
 
 
 1.0.1 (2017-01-09)
 ------------------
 
-* Endpoint unicode strings now work correctly on Python 2 and Python 3
+* WebSocket generic views now accept connections by default in their connect
+  handler for better backwards compatibility.
 
 
 1.0.0 (2017-01-08)
 ------------------
 
-* BREAKING CHANGE: Daphne now requires acceptance of WebSocket connections
-  before it finishes the socket handshake and relays incoming packets.
-  You must upgrade to at least Channels 1.0.0 as well; see
-  http://channels.readthedocs.io/en/latest/releases/1.0.0.html for more.
+* BREAKING CHANGE: WebSockets must now be explicitly accepted or denied.
+  See https://channels.readthedocs.io/en/latest/releases/1.0.0.html for more.
 
-* http.disconnect now has a `path` key
+* BREAKING CHANGE: Demultiplexers have been overhauled to directly dispatch
+  messages rather than using channels to new consumers. Consult the docs on
+  generic consumers for more: https://channels.readthedocs.io/en/latest/generics.html
 
-* WebSockets can now be closed with a specific code
+* BREAKING CHANGE: Databinding now operates from implicit group membership,
+  where your code just has to say what groups would be used and Channels will
+  work out if it's a creation, modification or removal from a client's
+  perspective, including with permissions.
 
-* X-Forwarded-For header support; defaults to X-Forwarded-For, override with
-  --proxy-headers on the commandline.
+* Delay protocol server ships with Channels providing a specification on how
+  to delay jobs until later and a reference implementation.
 
-* Twisted endpoint description string support with `-e` on the command line
-  (allowing for SNI/ACME support, among other things)
+* Serializers can now specify fields as `__all__` to auto-include all fields.
 
-* Logging/error verbosity fixes and access log flushes properly
+* Various other small fixes.
 
-
-0.15.0 (2016-08-28)
+0.17.3 (2016-10-12)
 -------------------
 
-* Connections now force-close themselves after pings fail for a certain
-  timeframe, controllable via the new --ping-timeout option.
+* channel_session now also rehydrates the http session with an option
 
-* Badly-formatted websocket response messages now log to console in
-  all situations
+* request.META['PATH_INFO'] is now present
 
-* Compatability with Twisted 16.3 and up
+* runserver shows Daphne log messages
+
+* runserver --nothreading only starts a single worker thread
+
+* Databinding changed to call group_names dynamically and imply changed/created from that;
+  other small changes to databinding, and more changes likely.
 
 
-0.14.3 (2016-07-21)
+0.17.2 (2016-08-04)
 -------------------
 
-* File descriptors can now be passed on the commandline for process managers
-  that pass sockets along like this.
+* New CHANNELS_WS_PROTOCOLS setting if you want Daphne to accept certain
+  subprotocols
 
-* websocket.disconnect messages now come with a "code" attribute matching the
-  WebSocket spec.
+* WebsocketBindingWithMembers allows serialization of non-fields on instances
 
-* A memory leak in request logging has been fixed.
+* Class-based consumers have an .as_route() method that lets you skip using
+  route_class
+
+* Bindings now work if loaded after app ready state
 
 
-0.14.2 (2016-07-07)
+0.17.1 (2016-07-22)
 -------------------
 
-* Marked as incompatible with twisted 16.3 and above until we work out why
-  it stops incoming websocket messages working
+* Bindings now require that `fields` is defined on the class body so all fields
+  are not sent by default. To restore old behaviour, set it to ['__all__']
+
+* Bindings can now be declared after app.ready() has been called and still work.
+
+* Binding payloads now include the model name as `appname.modelname`.
+
+* A worker_ready signal now gets triggered when `runworker` starts consuming
+  messages. It does not fire from within `runserver`.
 
 
-0.14.1 (2016-07-06)
+0.17.0 (2016-07-19)
 -------------------
 
-* Consumption of websocket.receive is also now required.
+* Data Binding framework is added, which allows easy tying of model changes
+  to WebSockets (and other protocols) and vice-versa.
+
+* Standardised WebSocket/JSON multiplexing introduced
+
+* WebSocket generic consumers now have a 'close' argument on send/group_send
 
 
-0.14.0 (2016-07-06)
+0.16.1 (2016-07-12)
 -------------------
 
-* Consumption of websocket.connect is now required (channels 0.16 enforces
-  this); getting backpressure on it now results in the socket being
-  force closed.
+* WebsocketConsumer now has a http_user option for auto user sessions.
+
+* consumer_started and consumer_finished signals are now available under
+  channels.signals.
+
+* Database connections are closed whenever a consumer finishes.
 
 
-0.13.1 (2016-06-28)
+0.16.0 (2016-07-06)
 -------------------
 
-* Bad WebSocket handshakes now return 400 and an error messages
-  rather than 500 with no content.
+* websocket.connect and websocket.receive are now consumed by a no-op consumer
+  by default if you don't specify anything to consume it, to bring Channels in
+  line with the ASGI rules on WebSocket backpressure.
+
+* You no longer need to call super's setUp in ChannelTestCase.
 
 
-0.13.0 (2016-06-22)
+0.15.1 (2016-06-29)
 -------------------
 
-* Query strings are now sent as bytestrings and the application is responsible
-  for decoding. Ensure you're running Channels 0.15 or higher.
+* Class based consumers now have a self.kwargs
+
+* Fixed bug where empty streaming responses did not send headers or status code
 
 
-0.12.2 (2016-06-21)
+0.15.0 (2016-06-22)
 -------------------
 
-* Plus signs in query string are now handled by Daphne, not Django-by-mistake.
-  Ensure you're running Channels 0.14.3 or higher.
-
-* New --root-path and DAPHNE_ROOT_PATH options for setting root path.
+* Query strings are now decoded entirely by Django. Must be used with Daphne
+  0.13 or higher.
 
 
-0.12.1 (2016-05-18)
+0.14.3 (2016-06-21)
 -------------------
 
-* Fixed bug where a non-ASCII byte in URL paths would crash the HTTP parser
-  without a response; now returns 400, and hardening in place to catch most
-  other errors and return a 500.
+* + signs in query strings are no longer double-decoded
 
-* WebSocket header format now matches HTTP header format and the ASGI spec.
-  No update needed to channels library, but user code may need updating.
+* Message now has .values(), .keys() and .items() to match dict
 
 
-0.12.0 (2016-05-07)
+0.14.2 (2016-06-16)
 -------------------
 
-* Backpressure on http.request now causes incoming requests to drop with 503.
-  Websockets will drop connection/disconnection messages/received frames if
-  backpressure is encountered; options are coming soon to instead drop the
-  connection if this happens.
+* Class based consumers now have built-in channel_session and
+  channel_session_user support
 
 
-0.11.4 (2016-05-04)
+0.14.1 (2016-06-09)
 -------------------
 
-* Don't try to send TCP host info in message for unix sockets
+* Fix unicode issues with test client under Python 2.7
 
 
-0.11.3 (2016-04-27)
+0.14.0 (2016-05-25)
 -------------------
 
-* Don't decode + as a space in URLs
+* Class-based consumer pattern and WebSocket consumer now come with Channels
+  (see docs for more details)
+
+* Better testing utilities including a higher-level Client abstraction with
+  optional HTTP/WebSocket HttpClient variant.
 
 
-0.11.2 (2016-04-27)
+0.13.1 (2016-05-13)
 -------------------
 
-* Correctly encode all path params for WebSockets
+* enforce_ordering now queues future messages in a channel rather than
+  spinlocking worker processes to achieve delays.
+
+* ConsumeLater no longer duplicates messages when they're requeued below the
+  limit.
 
 
-0.11.1 (2016-04-26)
+0.13.0 (2016-05-07)
 -------------------
 
-* Fix bugs with WebSocket path parsing under Python 2
+* Backpressure is now implemented, meaning responses will pause sending if
+  the client does not read them fast enough.
+
+* DatabaseChannelLayer has been removed; it was not sensible.
 
 
-0.11.0 (2016-04-26)
+0.12.0 (2016-04-26)
 -------------------
 
-* HTTP paths and query strings are now pre-decoded before going to ASGI
+* HTTP paths and query strings are now expected to be sent over ASGI as
+  unescaped unicode. Daphne 0.11.0 is updated to send things in this format.
+
+* request.FILES reading bug fixed
 
 
-0.10.3 (2016-04-05)
+0.11.0 (2016-04-05)
 -------------------
 
-* Error on badly formatted websocket reply messages
+* ChannelTestCase base testing class for easier testing of consumers
+
+* Routing rewrite to improve speed with nested includes and remove need for ^ operator
+
+* Timeouts reading very slow request bodies
 
 
-0.10.2 (2016-04-03)
+0.10.3 (2016-03-29)
 -------------------
 
-* Access logging in NCSAish format now printed to stdout, configurable to
-  another file using --access-log=filename
+* Better error messages for wrongly-constructed routing lists
+
+* Error when trying to use signed cookie backend with channel_session
+
+* ASGI group_expiry implemented on database channel backend
 
 
-0.10.1 (2016-03-29)
+0.10.2 (2016-03-23)
 -------------------
 
-* WebSockets now close after they've been open for longer than the channel
-  layer group expiry (86400 seconds by default for most layers).
+* Regular expressions for routing include() can now be Unicode under Python 3
 
-* Binding to UNIX sockets is now possible (use the -u argument)
+* Last-resort error handling for HTTP request exceptions inside Django's core
+  code. If DEBUG is on, shows plain text tracebacks; if it is off, shows
+  "Internal Server Error".
 
-* WebSockets now send keepalive pings if they've had no data for a certain
-  amount of time (20 seconds by default, set with --ping-interval)
+
+0.10.1 (2016-03-22)
+-------------------
+
+* Regular expressions for HTTP paths can now be Unicode under Python 3
+
+* route() and include() now importable directly from `channels`
+
+* FileResponse send speed improved for all code (previously just for staticfiles)
 
 
 0.10.0 (2016-03-21)
 -------------------
 
-* Multiple cookies are now set correctly
+* New routing system
 
-* Follows new ASGI single-response-channel spec for !
+* Updated to match new ASGI single-reader-channel name spec
 
-* Follows new ASGI header encoding spec for HTTP
+* Updated to match new ASGI HTTP header encoding spec
 
 
-0.9.3 (2016-03-08)
+0.9.5 (2016-03-10)
 ------------------
 
-* WebSocket query strings are correctly encoded
+* `runworker` now has an --alias option to specify a different channel layer
+
+* `runserver` correctly falls back to WSGI mode if no channel layers configured
 
 
-0.9.2 (2016-03-02)
+0.9.4 (2016-03-08)
 ------------------
 
-* HTTP requests now time out after a configurable amount of time and return 503
-  (default is 2 minutes)
+* Worker processes now exit gracefully (finish their current processing) when
+  sent SIGTERM or SIGINT.
+
+* `runserver` now has a shorter than standard HTTP timeout configured
+  of 60 seconds.
 
 
-0.9.1 (2016-03-01)
+0.9.3 (2016-02-28)
 ------------------
 
-* Main thread actually idles rather than sitting at 100%
+* Static file serving is significantly faster thanks to larger chunk size
 
-* WebSocket packets have an "order" attribute attached
+* `runworker` now refuses to start if an in memory layer is configured
 
-* WebSocket upgrade header detection is now case insensitive
+
+0.9.2 (2016-02-28)
+------------------
+
+* ASGI spec updated to include `order` field for WebSocket messages
+
+* `enforce_ordering` decorator introduced
+
+* DatabaseChannelLayer now uses transactions to stop duplicated messages
+
+
+0.9.1 (2016-02-21)
+------------------
+
+* Fix packaging issues with previous release
 
 
 0.9 (2016-02-21)
 ----------------
 
-* Signal handlers can now be disabled if you want to run inside a thread
-  (e.g. inside Django autoreloader)
+* Staticfiles support in runserver
 
-* Logging hooks that can be used to allow calling code to show requests
-  and other events.
+* Runserver logs requests and WebSocket connections to console
 
-* Headers are now transmitted for websocket.connect
+* Runserver autoreloads correctly
 
-* http.disconnect messages are now sent
+* --noasgi option on runserver to use the old WSGI-based server
 
-* Request handling speed significantly improved 
+* --noworker option on runserver to make it not launch worker threads
+
+* Streaming responses work correctly
+
+* Authentication decorators work again with new ASGI spec
+
+* channel_session_user_from_http decorator introduced
+
+* HTTP Long Poll support (raise ResponseLater)
+
+* Handle non-latin1 request body encoding
+
+* ASGI conformance tests for built-in database backend
+
+* Moved some imports around for more sensible layout

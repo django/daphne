@@ -1,9 +1,16 @@
 *.egg-info
-*.pyc
-__pycache__
 dist/
 build/
-/.tox
-.hypothesis
-.cache
-.eggs
+docs/_build
+__pycache__/
+*.sqlite3
+.tox/
+*.swp
+*.pyc
+.coverage.*
+TODO
+node_modules
+
+# IDE and Tooling files
+.idea/*
+*~
