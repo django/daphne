@@ -5,7 +5,10 @@ def header_value(headers, header_name):
     value = headers[header_name]
     if isinstance(value, list):
         value = value[0]
-    return value.decode("utf-8")
+    # decode to urf-8 if value is bytes
+    if isinstance(value, bytes):
+        value = value.decode("utf-8")
+    return value
 
 
 def parse_x_forwarded_for(headers,
@@ -28,12 +31,14 @@ def parse_x_forwarded_for(headers,
     if not address_header_name:
         return (original_addr, original_scheme)
 
-    # Convert twisted-style headers into dicts
     if isinstance(headers, Headers):
+        # Convert twisted-style headers into a dict
         headers = dict(headers.getAllRawHeaders())
-
-    # Lowercase all header names in the dict
-    headers = {name.lower(): values for name, values in headers.items()}
+        # Lowercase all header keys
+        headers = {name.lower(): values for name, values in headers.items()}
+    else:
+        # Lowercase (and encode to utf-8 where needed) non-twisted header keys
+        headers = {name.lower() if isinstance(name, bytes) else name.lower().encode("utf-8"): values for name, values in headers.items()}
 
     address_header_name = address_header_name.lower().encode("utf-8")
     result_addr = original_addr
