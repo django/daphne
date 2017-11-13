@@ -91,7 +91,7 @@ class Server(object):
         reactor.callLater(2, self.timeout_checker)
 
         for socket_description in self.endpoints:
-            logger.info("Listening on endpoint %s" % socket_description)
+            logger.info("Listening on endpoint %s", socket_description)
             ep = serverFromString(reactor, str(socket_description))
             self.listeners.append(ep.listen(self.http_factory))
 
@@ -123,25 +123,23 @@ class Server(object):
 
     ### Internal event/message handling
 
-    def create_application(self, protocol):
+    def create_application(self, protocol, scope):
         """
         Creates a new application instance that fronts a Protocol instance
         for one of our supported protocols. Pass it the protocol,
         and it will work out the type, supply appropriate callables, and
         return you the application's input queue
         """
-        # Make sure the protocol defines a application type
-        assert protocol.application_type is not None
         # Make sure the protocol has not had another application made for it
         assert protocol not in self.application_instances
         # Make an instance of the application
         input_queue = asyncio.Queue()
-        application_instance = asyncio.ensure_future(self.application(
-            type=protocol.application_type,
-            next=input_queue.get,
-            reply=lambda message: self.handle_reply(protocol, message),
+        application_instance = self.application(scope=scope)
+        # Run it, and stash the future for later checking
+        self.application_instances[protocol] = asyncio.ensure_future(application_instance(
+            receive=input_queue.get,
+            send=lambda message: self.handle_reply(protocol, message),
         ), loop=asyncio.get_event_loop())
-        self.application_instances[protocol] = application_instance
         return input_queue
 
     async def handle_reply(self, protocol, message):
@@ -188,7 +186,7 @@ class Server(object):
             if not application_instance.done():
                 application_instance.cancel()
                 wait_for.append(application_instance)
-        logging.info("Killed %i pending application instances" % len(wait_for))
+        logging.info("Killed %i pending application instances", len(wait_for))
         # Make Twisted wait until they're all dead
         wait_deferred = defer.Deferred.fromFuture(asyncio.gather(*wait_for))
         wait_deferred.addErrback(lambda x: None)
@@ -199,7 +197,7 @@ class Server(object):
         Called periodically to enforce timeout rules on all connections.
         Also checks pings at the same time.
         """
-        for protocol in self.protocols:
+        for protocol in list(self.protocols):
             protocol.check_timeouts()
         reactor.callLater(2, self.timeout_checker)
 

@@ -33,8 +33,6 @@ class WebSocketProtocol(WebSocketServerProtocol):
         self.socket_opened = time.time()
         self.last_data = time.time()
         try:
-            # Make new application instance
-            self.application_queue = self.server.create_application(self)
             # Sanitize and decode headers
             self.clean_headers = []
             for name, value in request.headers.items():
@@ -60,41 +58,31 @@ class WebSocketProtocol(WebSocketServerProtocol):
                     self.server.proxy_forwarded_port_header,
                     self.client_addr
                 )
-
-            # Make initial request info dict from request (we only have it here)
+            # Decode websocket subprotocol options
+            subprotocols = []
+            for header, value in self.clean_headers:
+                if header == b'sec-websocket-protocol':
+                    subprotocols = [x.strip() for x in self.unquote(value).split(",")]
+            # Make new application instance with scope
             self.path = request.path.encode("ascii")
-            self.connect_message = {
-                "type": "websocket.connect",
+            self.application_queue = self.server.create_application(self, {
+                "type": "websocket",
                 "path": self.unquote(self.path),
                 "headers": self.clean_headers,
                 "query_string": self._raw_query_string,  # Passed by HTTP protocol
                 "client": self.client_addr,
                 "server": self.server_addr,
+                "subprotocols": subprotocols,
                 "order": 0,
-            }
+            })
         except:
             # Exceptions here are not displayed right, just 500.
             # Turn them into an ERROR log.
             logger.error(traceback.format_exc())
             raise
 
-        ws_protocol = None
-        for header, value in self.clean_headers:
-            if header == b'sec-websocket-protocol':
-                protocols = [x.strip() for x in self.unquote(value).split(",")]
-                for protocol in protocols:
-                    if protocol in self.server.websocket_protocols:
-                        ws_protocol = protocol
-                        break
-
-        # Work out what subprotocol we will accept, if any
-        if ws_protocol and ws_protocol in self.server.websocket_protocols:
-            self.protocol_to_accept = ws_protocol
-        else:
-            self.protocol_to_accept = None
-
         # Send over the connect message
-        self.application_queue.put_nowait(self.connect_message)
+        self.application_queue.put_nowait({"type": "websocket.connect"})
         self.server.log_action("websocket", "connecting", {
             "path": self.request.path,
             "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,
@@ -154,7 +142,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
         if "type" not in message:
             raise ValueError("Message has no type defined")
         if message["type"] == "websocket.accept":
-            self.serverAccept()
+            self.serverAccept(message.get("subprotocol", None))
         elif message["type"] == "websocket.close":
             if self.state == self.STATE_CONNECTING:
                 self.serverReject()
@@ -174,11 +162,23 @@ class WebSocketProtocol(WebSocketServerProtocol):
             if message.get("text", None):
                 self.serverSend(message["text"], False)
 
-    def serverAccept(self):
+    def handle_exception(self, exception):
+        """
+        Called by the server when our application tracebacks
+        """
+        if hasattr(self, "handshake_deferred"):
+            # If the handshake is still ongoing, we need to emit a HTTP error
+            # code rather than a WebSocket one.
+            self.handshake_deferred.errback(ConnectionDeny(code=500, reason="Internal server error"))
+        else:
+            self.sendCloseFrame(code=1011)
+
+    def serverAccept(self, subprotocol=None):
         """
         Called when we get a message saying to accept the connection.
         """
-        self.handshake_deferred.callback(self.protocol_to_accept)
+        self.handshake_deferred.callback(subprotocol)
+        del self.handshake_deferred
         logger.debug("WebSocket %s accepted by application", self.client_addr)
 
     def serverReject(self):
@@ -186,6 +186,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
         Called when we get a message saying to reject the connection.
         """
         self.handshake_deferred.errback(ConnectionDeny(code=403, reason="Access denied"))
+        del self.handshake_deferred
         self.server.discard_protocol(self)
         logger.debug("WebSocket %s rejected by application", self.client_addr)
         self.server.log_action("websocket", "rejected", {

@@ -30,8 +30,6 @@ class WebRequest(http.Request):
     GET and POST out.
     """
 
-    application_type = "http"
-
     error_template = """
         <html>
             <head>
@@ -138,8 +136,6 @@ class WebRequest(http.Request):
 
             # Boring old HTTP.
             else:
-                # Create application to handle this connection
-                self.application_queue = self.server.create_application(self)
                 # Sanitize and decode headers, potentially extracting root path
                 self.clean_headers = []
                 self.root_path = self.server.root_path
@@ -154,21 +150,25 @@ class WebRequest(http.Request):
                             self.clean_headers.append((name.lower(), value))
                 logger.debug("HTTP %s request for %s", self.method, self.client_addr)
                 self.content.seek(0, 0)
+                # Work out the application scope and create application
+                self.application_queue = self.server.create_application(self, {
+                    "type": "http",
+                    # TODO: Correctly say if it's 1.1 or 1.0
+                    "http_version": self.clientproto.split(b"/")[-1].decode("ascii"),
+                    "method": self.method.decode("ascii"),
+                    "path": self.unquote(self.path),
+                    "root_path": self.root_path,
+                    "scheme": "https" if self.isSecure() else "http",
+                    "query_string": self.query_string,
+                    "headers": self.clean_headers,
+                    "client": self.client_addr,
+                    "server": self.server_addr,
+                })
                 # Run application against request
                 self.application_queue.put_nowait(
                     {
                         "type": "http.request",
-                        # TODO: Correctly say if it's 1.1 or 1.0
-                        "http_version": self.clientproto.split(b"/")[-1].decode("ascii"),
-                        "method": self.method.decode("ascii"),
-                        "path": self.unquote(self.path),
-                        "root_path": self.root_path,
-                        "scheme": "https" if self.isSecure() else "http",
-                        "query_string": self.query_string,
-                        "headers": self.clean_headers,
                         "body": self.content.read(),
-                        "client": self.client_addr,
-                        "server": self.server_addr,
                     },
                 )
         except Exception:

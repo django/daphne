@@ -42,7 +42,7 @@ class CommandLineInterface(object):
             '--websocket_timeout',
             type=int,
             help='Maximum time to allow a websocket to be connected. -1 for infinite.',
-            default=None,
+            default=86400,
         )
         self.parser.add_argument(
             '--websocket_connect_timeout',
