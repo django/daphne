@@ -4,8 +4,7 @@ Contains a test case class to allow verifying ASGI messages
 from __future__ import unicode_literals
 
 from collections import defaultdict
-import six
-from six.moves.urllib import parse
+from urllib import parse
 import socket
 import unittest
 
@@ -33,19 +32,19 @@ class ASGITestCaseBase(unittest.TestCase):
         self.assertEqual(set(), present_keys - required_keys - optional_keys)
 
     def assert_valid_reply_channel(self, reply_channel):
-        self.assertIsInstance(reply_channel, six.text_type)
+        self.assertIsInstance(reply_channel, str)
         # The reply channel is decided by the server.
         self.assertTrue(reply_channel.startswith('test!'))
 
     def assert_valid_path(self, path, request_path):
-        self.assertIsInstance(path, six.text_type)
+        self.assertIsInstance(path, str)
         self.assertEqual(path, request_path)
         # Assert that it's already url decoded
         self.assertEqual(path, parse.unquote(path))
 
     def assert_valid_address_and_port(self, host):
         address, port = host
-        self.assertIsInstance(address, six.text_type)
+        self.assertIsInstance(address, str)
         self.assert_is_ip_address(address)
         self.assertIsInstance(port, int)
 
@@ -74,17 +73,17 @@ class ASGIHTTPTestCase(ASGITestCaseBase):
         self.assert_valid_path(channel_message['path'], request_path)
 
         http_version = channel_message['http_version']
-        self.assertIsInstance(http_version, six.text_type)
+        self.assertIsInstance(http_version, str)
         self.assertIn(http_version, ['1.0', '1.1', '1.2'])
 
         method = channel_message['method']
-        self.assertIsInstance(method, six.text_type)
+        self.assertIsInstance(method, str)
         self.assertTrue(method.isupper())
         self.assertEqual(channel_message['method'], request_method)
 
         query_string = channel_message['query_string']
         # Assert that query_string is a byte string and still url encoded
-        self.assertIsInstance(query_string, six.binary_type)
+        self.assertIsInstance(query_string, bytes)
         self.assertEqual(query_string, parse.urlencode(request_params or []).encode('ascii'))
 
         # Ordering of header names is not important, but the order of values for a header
@@ -107,22 +106,22 @@ class ASGIHTTPTestCase(ASGITestCaseBase):
 
         scheme = channel_message.get('scheme')
         if scheme is not None:
-            self.assertIsInstance(scheme, six.text_type)
+            self.assertIsInstance(scheme, str)
             self.assertTrue(scheme)  # May not be empty
 
         root_path = channel_message.get('root_path')
         if root_path is not None:
-            self.assertIsInstance(root_path, six.text_type)
+            self.assertIsInstance(root_path, str)
 
         body = channel_message.get('body')
         # Ensure we test for presence of 'body' if a request body was given
         if request_body is not None or body is not None:
-            self.assertIsInstance(body, six.binary_type)
+            self.assertIsInstance(body, str)
             self.assertEqual(body, (request_body or '').encode('ascii'))
 
         body_channel = channel_message.get('body_channel')
         if body_channel is not None:
-            self.assertIsInstance(body_channel, six.text_type)
+            self.assertIsInstance(body_channel, str)
             self.assertIn('?', body_channel)
 
         client = channel_message.get('client')
@@ -137,7 +136,7 @@ class ASGIHTTPTestCase(ASGITestCaseBase):
         self.assertTrue(message)
         self.assertTrue(response.startswith(b'HTTP'))
 
-        status_code_bytes = six.text_type(message['status']).encode('ascii')
+        status_code_bytes = str(message['status']).encode('ascii')
         self.assertIn(status_code_bytes, response)
 
         if 'content' in message:

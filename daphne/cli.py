@@ -20,6 +20,8 @@ class CommandLineInterface(object):
 
     description = "Django HTTP/WebSocket server"
 
+    server_class = Server
+
     def __init__(self):
         self.parser = argparse.ArgumentParser(
             description=self.description,
@@ -125,12 +127,6 @@ class CommandLineInterface(object):
             action='store_true',
         )
         self.parser.add_argument(
-            '--threads',
-            help='Number of threads to run the application in',
-            type=int,
-            default=2,
-        )
-        self.parser.add_argument(
             'application',
             help='The application to dispatch to as path.to.module:instance.path',
         )
@@ -197,7 +193,7 @@ class CommandLineInterface(object):
             'Starting server at %s' %
             (', '.join(endpoints), )
         )
-        self.server = Server(
+        self.server = self.server_class(
             application=application,
             endpoints=endpoints,
             http_timeout=args.http_timeout,
