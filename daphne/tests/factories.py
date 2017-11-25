@@ -14,7 +14,7 @@ def message_for_request(method, path, params=None, headers=None, body=None):
     that through daphne and returns the emitted channel message.
     """
     request = _build_request(method, path, params, headers, body)
-    message, factory, transport = _run_through_daphne(request, 'http.request')
+    message, factory, transport = _run_through_daphne(request, "http.request")
     return message
 
 
@@ -27,9 +27,9 @@ def response_for_message(message):
     message_for_request) because we need a valid reply channel. I'm sure
     this can be streamlined, but it works for now.
     """
-    request = _build_request('GET', '/')
-    request_message, factory, transport = _run_through_daphne(request, 'http.request')
-    factory.dispatch_reply(request_message['reply_channel'], message)
+    request = _build_request("GET", "/")
+    request_message, factory, transport = _run_through_daphne(request, "http.request")
+    factory.dispatch_reply(request_message["reply_channel"], message)
     return transport.value()
 
 
@@ -65,43 +65,43 @@ def _build_request(method, path, params=None, headers=None, body=None):
     if six.PY3:
         quoted_path = parse.quote(path)
         if params:
-            quoted_path += '?' + parse.urlencode(params)
-        quoted_path = quoted_path.encode('ascii')
+            quoted_path += "?" + parse.urlencode(params)
+        quoted_path = quoted_path.encode("ascii")
     else:
-        quoted_path = parse.quote(path.encode('utf8'))
+        quoted_path = parse.quote(path.encode("utf8"))
         if params:
-            quoted_path += b'?' + parse.urlencode(params)
+            quoted_path += b"?" + parse.urlencode(params)
 
-    request = method.encode('ascii') + b' ' + quoted_path + b" HTTP/1.1\r\n"
+    request = method.encode("ascii") + b" " + quoted_path + b" HTTP/1.1\r\n"
     for name, value in headers:
         request += header_line(name, value)
 
-    request += b'\r\n'
+    request += b"\r\n"
 
     if body:
-        request += body.encode('ascii')
+        request += body.encode("ascii")
 
     return request
 
 
 def build_websocket_upgrade(path, params, headers):
     ws_headers = [
-        ('Host', 'somewhere.com'),
-        ('Upgrade', 'websocket'),
-        ('Connection', 'Upgrade'),
-        ('Sec-WebSocket-Key', 'x3JJHMbDL1EzLkh9GBhXDw=='),
-        ('Sec-WebSocket-Protocol', 'chat, superchat'),
-        ('Sec-WebSocket-Version', '13'),
-        ('Origin', 'http://example.com')
+        ("Host", "somewhere.com"),
+        ("Upgrade", "websocket"),
+        ("Connection", "Upgrade"),
+        ("Sec-WebSocket-Key", "x3JJHMbDL1EzLkh9GBhXDw=="),
+        ("Sec-WebSocket-Protocol", "chat, superchat"),
+        ("Sec-WebSocket-Version", "13"),
+        ("Origin", "http://example.com")
     ]
-    return _build_request('GET', path, params, headers=headers + ws_headers, body=None)
+    return _build_request("GET", path, params, headers=headers + ws_headers, body=None)
 
 
 def header_line(name, value):
     """
     Given a header name and value, returns the line to use in a HTTP request or response.
     """
-    return name.encode('ascii') + b': ' + value.encode('ascii') + b"\r\n"
+    return name.encode("ascii") + b": " + value.encode("ascii") + b"\r\n"
 
 
 def _run_through_daphne(request, channel_name):
@@ -113,7 +113,7 @@ def _run_through_daphne(request, channel_name):
     """
     channel_layer = ChannelLayer()
     factory = HTTPFactory(channel_layer, send_channel="test!")
-    proto = factory.buildProtocol(('127.0.0.1', 0))
+    proto = factory.buildProtocol(("127.0.0.1", 0))
     transport = proto_helpers.StringTransport()
     proto.makeConnection(transport)
     proto.dataReceived(request)
@@ -125,4 +125,4 @@ def content_length_header(body):
     """
     Returns an appropriate Content-Length HTTP header for a given body.
     """
-    return 'Content-Length', six.text_type(len(body))
+    return "Content-Length", six.text_type(len(body))

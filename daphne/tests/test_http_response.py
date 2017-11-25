@@ -20,15 +20,15 @@ class TestHTTPResponseSpec(testcases.ASGIHTTPTestCase):
         """
         Smallest viable example. Mostly verifies that our response building works.
         """
-        message = {'status': 200}
+        message = {"status": 200}
         response = factories.response_for_message(message)
         self.assert_valid_http_response_message(message, response)
-        self.assertIn(b'200 OK', response)
+        self.assertIn(b"200 OK", response)
         # Assert that the response is the last of the chunks.
         # N.b. at the time of writing, Daphne did not support multiple response chunks,
         # but still sends with Transfer-Encoding: chunked if no Content-Length header
         # is specified (and maybe even if specified).
-        self.assertTrue(response.endswith(b'0\r\n\r\n'))
+        self.assertTrue(response.endswith(b"0\r\n\r\n"))
 
     def test_status_code_required(self):
         """
@@ -48,21 +48,21 @@ class TestHTTPResponseSpec(testcases.ASGIHTTPTestCase):
         of them have meaning that is respected by Twisted. E.g. setting 204 (No Content)
         as a status code results in Twisted discarding the body.
         """
-        message = {'status': 201}  # 'Created'
+        message = {"status": 201}  # 'Created'
         response = factories.response_for_message(message)
         self.assert_valid_http_response_message(message, response)
-        self.assertIn(b'201 Created', response)
+        self.assertIn(b"201 Created", response)
 
     @given(body=http_strategies.http_body())
     def test_body_is_transmitted(self, body):
-        message = {'status': 200, 'content': body.encode('ascii')}
+        message = {"status": 200, "content": body.encode("ascii")}
         response = factories.response_for_message(message)
         self.assert_valid_http_response_message(message, response)
 
     @given(headers=http_strategies.headers())
     def test_headers(self, headers):
         # The ASGI spec requires us to lowercase our header names
-        message = {'status': 200, 'headers': [(name.lower(), value) for name, value in headers]}
+        message = {"status": 200, "headers": [(name.lower(), value) for name, value in headers]}
         response = factories.response_for_message(message)
         # The assert_ method does the heavy lifting of checking that headers are
         # as expected.
@@ -80,9 +80,9 @@ class TestHTTPResponseSpec(testcases.ASGIHTTPTestCase):
         so there's not a lot going on here.
         """
         message = {
-            'status': 202,  # 'Accepted'
-            'headers': [(name.lower(), value) for name, value in headers],
-            'content': body.encode('ascii')
+            "status": 202,  # 'Accepted'
+            "headers": [(name.lower(), value) for name, value in headers],
+            "content": body.encode("ascii")
         }
         response = factories.response_for_message(message)
         self.assert_valid_http_response_message(message, response)
@@ -96,7 +96,7 @@ class TestHTTPResponse(TestCase):
     def setUp(self):
         self.channel_layer = ChannelLayer()
         self.factory = HTTPFactory(self.channel_layer, send_channel="test!")
-        self.proto = self.factory.buildProtocol(('127.0.0.1', 0))
+        self.proto = self.factory.buildProtocol(("127.0.0.1", 0))
         self.tr = proto_helpers.StringTransport()
         self.proto.makeConnection(self.tr)
 
@@ -115,7 +115,7 @@ class TestHTTPResponse(TestCase):
 
         # Send back an example response
         self.factory.dispatch_reply(
-            message['reply_channel'],
+            message["reply_channel"],
             {
                 "status": 200,
                 "status_text": b"OK",
@@ -125,4 +125,4 @@ class TestHTTPResponse(TestCase):
 
         # Get the disconnection notification
         _, disconnect_message = self.channel_layer.receive(["http.disconnect"])
-        self.assertEqual(disconnect_message['path'], "/te st-à/")
+        self.assertEqual(disconnect_message["path"], "/te st-à/")

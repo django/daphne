@@ -23,8 +23,8 @@ def header_value(headers, header_name):
 
 
 def parse_x_forwarded_for(headers,
-                          address_header_name='X-Forwarded-For',
-                          port_header_name='X-Forwarded-Port',
+                          address_header_name="X-Forwarded-For",
+                          port_header_name="X-Forwarded-Port",
                           original=None):
     """
     Parses an X-Forwarded-For header and returns a host/port pair as a list.
@@ -50,7 +50,7 @@ def parse_x_forwarded_for(headers,
     if address_header_name in headers:
         address_value = header_value(headers, address_header_name)
 
-        if ',' in address_value:
+        if "," in address_value:
             address_value = address_value.split(",")[0].strip()
 
         result = [address_value, 0]

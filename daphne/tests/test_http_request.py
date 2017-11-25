@@ -28,7 +28,7 @@ class TestHTTPRequestSpec(testcases.ASGIHTTPTestCase):
         """
         Smallest viable example. Mostly verifies that our request building works.
         """
-        request_method, request_path = 'GET', '/'
+        request_method, request_path = "GET", "/"
         message = message_for_request(request_method, request_path)
 
         self.assert_valid_http_request_message(message, request_method, request_path)
@@ -41,7 +41,7 @@ class TestHTTPRequestSpec(testcases.ASGIHTTPTestCase):
         """
         Tests a typical HTTP GET request, with a path and query parameters
         """
-        request_method = 'GET'
+        request_method = "GET"
         message = message_for_request(request_method, request_path, request_params)
 
         self.assert_valid_http_request_message(
@@ -55,7 +55,7 @@ class TestHTTPRequestSpec(testcases.ASGIHTTPTestCase):
         """
         Tests a typical POST request, submitting some data in a body.
         """
-        request_method = 'POST'
+        request_method = "POST"
         headers = [content_length_header(request_body)]
         message = message_for_request(
             request_method, request_path, headers=headers, body=request_body)
@@ -69,7 +69,7 @@ class TestHTTPRequestSpec(testcases.ASGIHTTPTestCase):
         """
         Tests that HTTP header fields are handled as specified
         """
-        request_method, request_path = 'OPTIONS', '/te st-à/'
+        request_method, request_path = "OPTIONS", "/te st-à/"
         message = message_for_request(request_method, request_path, headers=request_headers)
 
         self.assert_valid_http_request_message(
@@ -85,7 +85,7 @@ class TestHTTPRequestSpec(testcases.ASGIHTTPTestCase):
         header_name = request_headers[0][0]
         duplicated_headers = [(header_name, header[1]) for header in request_headers]
 
-        request_method, request_path = 'OPTIONS', '/te st-à/'
+        request_method, request_path = "OPTIONS", "/te st-à/"
         message = message_for_request(request_method, request_path, headers=duplicated_headers)
 
         self.assert_valid_http_request_message(
@@ -114,24 +114,24 @@ class TestHTTPRequestSpec(testcases.ASGIHTTPTestCase):
             message, request_method, request_path, request_params, request_headers, request_body)
 
     def test_headers_are_lowercased_and_stripped(self):
-        request_method, request_path = 'GET', '/'
-        headers = [('MYCUSTOMHEADER', '   foobar    ')]
+        request_method, request_path = "GET", "/"
+        headers = [("MYCUSTOMHEADER", "   foobar    ")]
         message = message_for_request(request_method, request_path, headers=headers)
 
         self.assert_valid_http_request_message(
             message, request_method, request_path, request_headers=headers)
         # Note that Daphne returns a list of tuples here, which is fine, because the spec
         # asks to treat them interchangeably.
-        assert message['headers'] == [(b'mycustomheader', b'foobar')]
+        assert message["headers"] == [(b"mycustomheader", b"foobar")]
 
     @given(daphne_path=http_strategies.http_path())
     def test_root_path_header(self, daphne_path):
         """
         Tests root_path handling.
         """
-        request_method, request_path = 'GET', '/'
+        request_method, request_path = "GET", "/"
         # Daphne-Root-Path must be URL encoded when submitting as HTTP header field
-        headers = [('Daphne-Root-Path', parse.quote(daphne_path.encode('utf8')))]
+        headers = [("Daphne-Root-Path", parse.quote(daphne_path.encode("utf8")))]
         message = message_for_request(request_method, request_path, headers=headers)
 
         # Daphne-Root-Path is not included in the returned 'headers' section. So we expect
@@ -140,7 +140,7 @@ class TestHTTPRequestSpec(testcases.ASGIHTTPTestCase):
         self.assert_valid_http_request_message(
             message, request_method, request_path, request_headers=expected_headers)
         # And what we're looking for, root_path being set.
-        assert message['root_path'] == daphne_path
+        assert message["root_path"] == daphne_path
 
 
 class TestProxyHandling(unittest.TestCase):
@@ -153,7 +153,7 @@ class TestProxyHandling(unittest.TestCase):
     def setUp(self):
         self.channel_layer = ChannelLayer()
         self.factory = HTTPFactory(self.channel_layer, send_channel="test!")
-        self.proto = self.factory.buildProtocol(('127.0.0.1', 0))
+        self.proto = self.factory.buildProtocol(("127.0.0.1", 0))
         self.tr = proto_helpers.StringTransport()
         self.proto.makeConnection(self.tr)
 
@@ -167,11 +167,11 @@ class TestProxyHandling(unittest.TestCase):
         )
         # Get the resulting message off of the channel layer
         _, message = self.channel_layer.receive(["http.request"])
-        self.assertEqual(message['client'], ['192.168.1.1', 54321])
+        self.assertEqual(message["client"], ["192.168.1.1", 54321])
 
     def test_x_forwarded_for_parsed(self):
-        self.factory.proxy_forwarded_address_header = 'X-Forwarded-For'
-        self.factory.proxy_forwarded_port_header = 'X-Forwarded-Port'
+        self.factory.proxy_forwarded_address_header = "X-Forwarded-For"
+        self.factory.proxy_forwarded_port_header = "X-Forwarded-Port"
         self.proto.dataReceived(
             b"GET /te%20st-%C3%A0/?foo=+bar HTTP/1.1\r\n" +
             b"Host: somewhere.com\r\n" +
@@ -181,11 +181,11 @@ class TestProxyHandling(unittest.TestCase):
         )
         # Get the resulting message off of the channel layer
         _, message = self.channel_layer.receive(["http.request"])
-        self.assertEqual(message['client'], ['10.1.2.3', 80])
+        self.assertEqual(message["client"], ["10.1.2.3", 80])
 
     def test_x_forwarded_for_port_missing(self):
-        self.factory.proxy_forwarded_address_header = 'X-Forwarded-For'
-        self.factory.proxy_forwarded_port_header = 'X-Forwarded-Port'
+        self.factory.proxy_forwarded_address_header = "X-Forwarded-For"
+        self.factory.proxy_forwarded_port_header = "X-Forwarded-Port"
         self.proto.dataReceived(
             b"GET /te%20st-%C3%A0/?foo=+bar HTTP/1.1\r\n" +
             b"Host: somewhere.com\r\n" +
@@ -194,4 +194,4 @@ class TestProxyHandling(unittest.TestCase):
         )
         # Get the resulting message off of the channel layer
         _, message = self.channel_layer.receive(["http.request"])
-        self.assertEqual(message['client'], ['10.1.2.3', 0])
+        self.assertEqual(message["client"], ["10.1.2.3", 0])

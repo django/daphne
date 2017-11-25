@@ -118,9 +118,9 @@ class WebRequest(http.Request):
                     transport.protocol = protocol
                 protocol.makeConnection(transport)
                 # Re-inject request
-                data = self.method + b' ' + self.uri + b' HTTP/1.1\x0d\x0a'
+                data = self.method + b" " + self.uri + b" HTTP/1.1\x0d\x0a"
                 for h in self.requestHeaders.getAllRawHeaders():
-                    data += h[0] + b': ' + b",".join(h[1]) + b'\x0d\x0a'
+                    data += h[0] + b": " + b",".join(h[1]) + b"\x0d\x0a"
                 data += b"\x0d\x0a"
                 data += self.content.read()
                 protocol.dataReceived(data)
@@ -203,29 +203,29 @@ class WebRequest(http.Request):
         """
         if "type" not in message:
             raise ValueError("Message has no type defined")
-        if message['type'] == "http.response":
+        if message["type"] == "http.response":
             if self._response_started:
                 raise ValueError("HTTP response has already been started")
             self._response_started = True
-            if 'status' not in message:
+            if "status" not in message:
                 raise ValueError("Specifying a status code is required for a Response message.")
             # Set HTTP status code
-            self.setResponseCode(message['status'])
+            self.setResponseCode(message["status"])
             # Write headers
             for header, value in message.get("headers", {}):
                 # Shim code from old ASGI version, can be removed after a while
                 if isinstance(header, six.text_type):
                     header = header.encode("latin1")
                 self.responseHeaders.addRawHeader(header, value)
-            logger.debug("HTTP %s response started for %s", message['status'], self.client_addr)
-        elif message['type'] == "http.response.hunk":
+            logger.debug("HTTP %s response started for %s", message["status"], self.client_addr)
+        elif message["type"] == "http.response.hunk":
             if not self._response_started:
-                raise ValueError("HTTP response has not yet been started but got %s" % message['type'])
+                raise ValueError("HTTP response has not yet been started but got %s" % message["type"])
         else:
-            raise ValueError("Cannot handle message type %s!" % message['type'])
+            raise ValueError("Cannot handle message type %s!" % message["type"])
 
         # Write out body
-        http.Request.write(self, message.get('content', b''))
+        http.Request.write(self, message.get("content", b""))
 
         # End if there's no more content
         if not message.get("more_content", False):
@@ -356,9 +356,9 @@ class HTTPFactory(http.HTTPFactory):
         using ALPN, so that doesn't go here: anyone wanting websockets will
         negotiate HTTP/1.1 and then do the upgrade dance.
         """
-        baseProtocols = [b'http/1.1']
+        baseProtocols = [b"http/1.1"]
 
         if http.H2_ENABLED:
-            baseProtocols.insert(0, b'h2')
+            baseProtocols.insert(0, b"h2")
 
         return baseProtocols

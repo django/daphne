@@ -61,7 +61,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
             # Decode websocket subprotocol options
             subprotocols = []
             for header, value in self.clean_headers:
-                if header == b'sec-websocket-protocol':
+                if header == b"sec-websocket-protocol":
                     subprotocols = [x.strip() for x in self.unquote(value).split(",")]
             # Make new application instance with scope
             self.path = request.path.encode("ascii")

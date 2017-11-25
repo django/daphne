@@ -7,10 +7,10 @@ import string
 
 from hypothesis import strategies
 
-HTTP_METHODS = ['OPTIONS', 'GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'TRACE', 'CONNECT']
+HTTP_METHODS = ["OPTIONS", "GET", "HEAD", "POST", "PUT", "DELETE", "TRACE", "CONNECT"]
 
 # Unicode characters of the "Letter" category
-letters = strategies.characters(whitelist_categories=('Lu', 'Ll', 'Lt', 'Lm', 'Lo', 'Nl'))
+letters = strategies.characters(whitelist_categories=("Lu", "Ll", "Lt", "Lm", "Lo", "Nl"))
 
 
 def http_method():
@@ -18,7 +18,7 @@ def http_method():
 
 
 def _http_path_portion():
-    alphabet = string.ascii_letters + string.digits + '-._~'
+    alphabet = string.ascii_letters + string.digits + "-._~"
     return strategies.text(min_size=1, average_size=10, max_size=128, alphabet=alphabet)
 
 
@@ -27,7 +27,7 @@ def http_path():
     Returns a URL path (not encoded).
     """
     return strategies.lists(
-        _http_path_portion(), min_size=0, max_size=10).map(lambda s: '/' + '/'.join(s))
+        _http_path_portion(), min_size=0, max_size=10).map(lambda s: "/" + "/".join(s))
 
 
 def http_body():
@@ -50,7 +50,7 @@ def valid_bidi(value):
     direction of text point of view. This little helper just rejects those.
     """
     try:
-        value.encode('idna')
+        value.encode("idna")
     except UnicodeError:
         return False
     else:
@@ -67,12 +67,12 @@ def international_domain_name():
     Returns a byte string of a domain name, IDNA-encoded.
     """
     return strategies.lists(
-        _domain_label(), min_size=2, average_size=2).map(lambda s: ('.'.join(s)).encode('idna'))
+        _domain_label(), min_size=2, average_size=2).map(lambda s: (".".join(s)).encode("idna"))
 
 
 def _query_param():
     return strategies.text(alphabet=letters, min_size=1, average_size=10, max_size=255).\
-        map(lambda s: s.encode('utf8'))
+        map(lambda s: s.encode("utf8"))
 
 
 def query_params():
@@ -94,7 +94,7 @@ def header_name():
     and 20 characters long
     """
     return strategies.text(
-        alphabet=string.ascii_letters + string.digits + '-', min_size=1, max_size=30)
+        alphabet=string.ascii_letters + string.digits + "-", min_size=1, max_size=30)
 
 
 def header_value():
@@ -105,8 +105,8 @@ def header_value():
     https://en.wikipedia.org/wiki/List_of_HTTP_header_fields
     """
     return strategies.text(
-        alphabet=string.ascii_letters + string.digits + string.punctuation + ' /t',
-        min_size=1, average_size=40, max_size=8190).filter(lambda s: len(s.encode('utf8')) < 8190)
+        alphabet=string.ascii_letters + string.digits + string.punctuation + " /t",
+        min_size=1, average_size=40, max_size=8190).filter(lambda s: len(s.encode("utf8")) < 8190)
 
 
 def headers():

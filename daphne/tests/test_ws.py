@@ -19,7 +19,7 @@ class WebSocketConnection(object):
 
         self.channel_layer = ChannelLayer()
         self.factory = HTTPFactory(self.channel_layer, send_channel="test!")
-        self.proto = self.factory.buildProtocol(('127.0.0.1', 0))
+        self.proto = self.factory.buildProtocol(("127.0.0.1", 0))
         self.transport = proto_helpers.StringTransport()
         self.proto.makeConnection(self.transport)
 
@@ -28,7 +28,7 @@ class WebSocketConnection(object):
         Low-level method to let Daphne handle HTTP/WebSocket data
         """
         self.proto.dataReceived(request)
-        _, self.last_message = self.channel_layer.receive(['websocket.connect'])
+        _, self.last_message = self.channel_layer.receive(["websocket.connect"])
         return self.last_message
 
     def send(self, content):
@@ -38,12 +38,12 @@ class WebSocketConnection(object):
         if self.last_message is None:
             # Auto-connect for convenience.
             self.connect()
-        self.factory.dispatch_reply(self.last_message['reply_channel'], content)
+        self.factory.dispatch_reply(self.last_message["reply_channel"], content)
         response = self.transport.value()
         self.transport.clear()
         return response
 
-    def connect(self, path='/', params=None, headers=None):
+    def connect(self, path="/", params=None, headers=None):
         """
         High-level method to perform the WebSocket handshake
         """
@@ -78,21 +78,21 @@ class TestSendCloseAccept(testcases.ASGIWebSocketTestCase):
     """
 
     def test_empty_accept(self):
-        response = WebSocketConnection().send({'accept': True})
+        response = WebSocketConnection().send({"accept": True})
         self.assert_websocket_upgrade(response)
 
     @given(text=http_strategies.http_body())
     def test_accept_and_text(self, text):
-        response = WebSocketConnection().send({'accept': True, 'text': text})
-        self.assert_websocket_upgrade(response, text.encode('ascii'))
+        response = WebSocketConnection().send({"accept": True, "text": text})
+        self.assert_websocket_upgrade(response, text.encode("ascii"))
 
     @given(data=http_strategies.binary_payload())
     def test_accept_and_bytes(self, data):
-        response = WebSocketConnection().send({'accept': True, 'bytes': data})
+        response = WebSocketConnection().send({"accept": True, "bytes": data})
         self.assert_websocket_upgrade(response, data)
 
     def test_accept_false(self):
-        response = WebSocketConnection().send({'accept': False})
+        response = WebSocketConnection().send({"accept": False})
         self.assert_websocket_denied(response)
 
     def test_accept_false_with_text(self):
@@ -102,10 +102,10 @@ class TestSendCloseAccept(testcases.ASGIWebSocketTestCase):
         We can't easily use Hypothesis to generate data for this test because it's
         hard to detect absence of the body if e.g. Hypothesis would generate a 'GET'
         """
-        text = 'foobar'
-        response = WebSocketConnection().send({'accept': False, 'text': text})
+        text = "foobar"
+        response = WebSocketConnection().send({"accept": False, "text": text})
         self.assert_websocket_denied(response)
-        self.assertNotIn(text.encode('ascii'), response)
+        self.assertNotIn(text.encode("ascii"), response)
 
     def test_accept_false_with_bytes(self):
         """
@@ -114,8 +114,8 @@ class TestSendCloseAccept(testcases.ASGIWebSocketTestCase):
         We can't easily use Hypothesis to generate data for this test because it's
         hard to detect absence of the body if e.g. Hypothesis would generate a 'GET'
         """
-        data = b'foobar'
-        response = WebSocketConnection().send({'accept': False, 'bytes': data})
+        data = b"foobar"
+        response = WebSocketConnection().send({"accept": False, "bytes": data})
         self.assert_websocket_denied(response)
         self.assertNotIn(data, response)
 
@@ -123,35 +123,35 @@ class TestSendCloseAccept(testcases.ASGIWebSocketTestCase):
     def test_just_text(self, text):
         assume(len(text) > 0)
         # If content is sent, accept=True is implied.
-        response = WebSocketConnection().send({'text': text})
-        self.assert_websocket_upgrade(response, text.encode('ascii'))
+        response = WebSocketConnection().send({"text": text})
+        self.assert_websocket_upgrade(response, text.encode("ascii"))
 
     @given(data=http_strategies.binary_payload())
     def test_just_bytes(self, data):
         assume(len(data) > 0)
         # If content is sent, accept=True is implied.
-        response = WebSocketConnection().send({'bytes': data})
+        response = WebSocketConnection().send({"bytes": data})
         self.assert_websocket_upgrade(response, data)
 
     def test_close_boolean(self):
-        response = WebSocketConnection().send({'close': True})
+        response = WebSocketConnection().send({"close": True})
         self.assert_websocket_denied(response)
 
     @given(number=strategies.integers(min_value=1))
     def test_close_integer(self, number):
-        response = WebSocketConnection().send({'close': number})
+        response = WebSocketConnection().send({"close": number})
         self.assert_websocket_denied(response)
 
     @given(text=http_strategies.http_body())
     def test_close_with_text(self, text):
         assume(len(text) > 0)
-        response = WebSocketConnection().send({'close': True, 'text': text})
-        self.assert_websocket_upgrade(response, text.encode('ascii'), expect_close=True)
+        response = WebSocketConnection().send({"close": True, "text": text})
+        self.assert_websocket_upgrade(response, text.encode("ascii"), expect_close=True)
 
     @given(data=http_strategies.binary_payload())
     def test_close_with_data(self, data):
         assume(len(data) > 0)
-        response = WebSocketConnection().send({'close': True, 'bytes': data})
+        response = WebSocketConnection().send({"close": True, "bytes": data})
         self.assert_websocket_upgrade(response, data, expect_close=True)
 
 
@@ -177,34 +177,34 @@ class TestWebSocketProtocol(testcases.ASGIWebSocketTestCase):
             b"Origin: http://example.com\r\n"
             b"\r\n"
         )
-        self.assertEqual(message['path'], "/chat")
-        self.assertEqual(message['query_string'], b"")
+        self.assertEqual(message["path"], "/chat")
+        self.assertEqual(message["query_string"], b"")
         self.assertEqual(
-            sorted(message['headers']),
-            [(b'connection', b'Upgrade'),
-             (b'host', b'somewhere.com'),
-             (b'origin', b'http://example.com'),
-             (b'sec-websocket-key', b'x3JJHMbDL1EzLkh9GBhXDw=='),
-             (b'sec-websocket-protocol', b'chat, superchat'),
-             (b'sec-websocket-version', b'13'),
-             (b'upgrade', b'websocket')]
+            sorted(message["headers"]),
+            [(b"connection", b"Upgrade"),
+             (b"host", b"somewhere.com"),
+             (b"origin", b"http://example.com"),
+             (b"sec-websocket-key", b"x3JJHMbDL1EzLkh9GBhXDw=="),
+             (b"sec-websocket-protocol", b"chat, superchat"),
+             (b"sec-websocket-version", b"13"),
+             (b"upgrade", b"websocket")]
         )
-        self.assert_valid_websocket_connect_message(message, '/chat')
+        self.assert_valid_websocket_connect_message(message, "/chat")
 
         # Accept the connection
-        response = self.connection.send({'accept': True})
+        response = self.connection.send({"accept": True})
         self.assert_websocket_upgrade(response)
 
         # Send some text
-        response = self.connection.send({'text': "Hello World!"})
+        response = self.connection.send({"text": "Hello World!"})
         self.assertEqual(response, b"\x81\x0cHello World!")
 
         # Send some bytes
-        response = self.connection.send({'bytes': b"\xaa\xbb\xcc\xdd"})
+        response = self.connection.send({"bytes": b"\xaa\xbb\xcc\xdd"})
         self.assertEqual(response, b"\x82\x04\xaa\xbb\xcc\xdd")
 
         # Close the connection
-        response = self.connection.send({'close': True})
+        response = self.connection.send({"close": True})
         self.assertEqual(response, b"\x88\x02\x03\xe8")
 
     def test_connection_with_file_origin_is_accepted(self):
@@ -219,11 +219,11 @@ class TestWebSocketProtocol(testcases.ASGIWebSocketTestCase):
             b"Origin: file://\r\n"
             b"\r\n"
         )
-        self.assertIn((b'origin', b'file://'), message['headers'])
-        self.assert_valid_websocket_connect_message(message, '/chat')
+        self.assertIn((b"origin", b"file://"), message["headers"])
+        self.assert_valid_websocket_connect_message(message, "/chat")
 
         # Accept the connection
-        response = self.connection.send({'accept': True})
+        response = self.connection.send({"accept": True})
         self.assert_websocket_upgrade(response)
 
     def test_connection_with_no_origin_is_accepted(self):
@@ -238,9 +238,9 @@ class TestWebSocketProtocol(testcases.ASGIWebSocketTestCase):
             b"\r\n"
         )
 
-        self.assertNotIn(b'origin', [header_tuple[0] for header_tuple in message['headers']])
-        self.assert_valid_websocket_connect_message(message, '/chat')
+        self.assertNotIn(b"origin", [header_tuple[0] for header_tuple in message["headers"]])
+        self.assert_valid_websocket_connect_message(message, "/chat")
 
         # Accept the connection
-        response = self.connection.send({'accept': True})
+        response = self.connection.send({"accept": True})
         self.assert_websocket_upgrade(response)

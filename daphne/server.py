@@ -68,7 +68,7 @@ class Server(object):
         self.application_instances = {}
         # Make the factory
         self.http_factory = HTTPFactory(self)
-        self.ws_factory = WebSocketFactory(self, protocols=self.websocket_protocols, server='Daphne')
+        self.ws_factory = WebSocketFactory(self, protocols=self.websocket_protocols, server="Daphne")
         self.ws_factory.setProtocolOptions(
             autoPingTimeout=self.ping_timeout,
             allowNullOrigin=True,
