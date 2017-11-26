@@ -27,18 +27,16 @@ def http_path():
     Returns a URL path (not encoded).
     """
     return strategies.lists(
-        _http_path_portion(), min_size=0, max_size=10).map(lambda s: "/" + "/".join(s))
+        _http_path_portion(),
+        min_size=0,
+        max_size=10,
+    ).map(lambda s: "/" + "/".join(s))
 
 
 def http_body():
     """
-    Returns random printable ASCII characters. This may be exceeding what HTTP allows,
-    but seems to not cause an issue so far.
+    Returns random binary body data.
     """
-    return strategies.text(alphabet=string.printable, min_size=0, average_size=600, max_size=1500)
-
-
-def binary_payload():
     return strategies.binary(min_size=0, average_size=600, max_size=1500)
 
 
@@ -59,7 +57,11 @@ def valid_bidi(value):
 
 def _domain_label():
     return strategies.text(
-        alphabet=letters, min_size=1, average_size=6, max_size=63).filter(valid_bidi)
+        alphabet=letters,
+        min_size=1,
+        average_size=6,
+        max_size=63,
+    ).filter(valid_bidi)
 
 
 def international_domain_name():
@@ -67,12 +69,19 @@ def international_domain_name():
     Returns a byte string of a domain name, IDNA-encoded.
     """
     return strategies.lists(
-        _domain_label(), min_size=2, average_size=2).map(lambda s: (".".join(s)).encode("idna"))
+        _domain_label(),
+        min_size=2,
+        average_size=2,
+    ).map(lambda s: (".".join(s)).encode("idna"))
 
 
 def _query_param():
-    return strategies.text(alphabet=letters, min_size=1, average_size=10, max_size=255).\
-        map(lambda s: s.encode("utf8"))
+    return strategies.text(
+        alphabet=letters,
+        min_size=1,
+        average_size=10,
+        max_size=255,
+    ).map(lambda s: s.encode("utf8"))
 
 
 def query_params():
@@ -82,8 +91,10 @@ def query_params():
     ensures that the total urlencoded query string is not longer than 1500 characters.
     """
     return strategies.lists(
-        strategies.tuples(_query_param(), _query_param()), min_size=0, average_size=5).\
-        filter(lambda x: len(parse.urlencode(x)) < 1500)
+        strategies.tuples(_query_param(), _query_param()),
+        min_size=0,
+        average_size=5,
+    ).filter(lambda x: len(parse.urlencode(x)) < 1500)
 
 
 def header_name():
@@ -94,7 +105,10 @@ def header_name():
     and 20 characters long
     """
     return strategies.text(
-        alphabet=string.ascii_letters + string.digits + "-", min_size=1, max_size=30)
+        alphabet=string.ascii_letters + string.digits + "-",
+        min_size=1,
+        max_size=30,
+    )
 
 
 def header_value():
@@ -106,7 +120,10 @@ def header_value():
     """
     return strategies.text(
         alphabet=string.ascii_letters + string.digits + string.punctuation + " /t",
-        min_size=1, average_size=40, max_size=8190).filter(lambda s: len(s.encode("utf8")) < 8190)
+        min_size=1,
+        average_size=40,
+        max_size=8190,
+    ).filter(lambda s: len(s.encode("utf8")) < 8190)
 
 
 def headers():
@@ -118,4 +135,7 @@ def headers():
     """
     return strategies.lists(
         strategies.tuples(header_name(), header_value()),
-        min_size=0, average_size=10, max_size=100)
+        min_size=0,
+        average_size=10,
+        max_size=100,
+    )

@@ -1,11 +1,9 @@
 # coding: utf8
-from __future__ import unicode_literals
-from unittest import TestCase
-import six
 
 from twisted.web.http_headers import Headers
+from unittest import TestCase
 
-from ..utils import parse_x_forwarded_for
+from daphne.utils import parse_x_forwarded_for
 
 
 class TestXForwardedForHttpParsing(TestCase):
@@ -20,7 +18,7 @@ class TestXForwardedForHttpParsing(TestCase):
         })
         result = parse_x_forwarded_for(headers)
         self.assertEqual(result, ["10.1.2.3", 1234])
-        self.assertIsInstance(result[0], six.text_type)
+        self.assertIsInstance(result[0], str)
 
     def test_address_only(self):
         headers = Headers({
@@ -94,7 +92,7 @@ class TestXForwardedForWsParsing(TestCase):
             ["1043::a321:0001", 0]
         )
 
-    def test_multiple_proxys(self):
+    def test_multiple_proxies(self):
         headers = {
             b"X-Forwarded-For": b"10.1.2.3, 10.1.2.4",
         }

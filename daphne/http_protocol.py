@@ -127,12 +127,7 @@ class WebRequest(http.Request):
                 # Remove our HTTP reply channel association
                 logger.debug("Upgraded connection %s to WebSocket", self.client_addr)
                 # Resume the producer so we keep getting data, if it's available as a method
-                # 17.1 version
-                if hasattr(self.channel, "_networkProducer"):
-                    self.channel._networkProducer.resumeProducing()
-                # 16.x version
-                elif hasattr(self.channel, "resumeProducing"):
-                    self.channel.resumeProducing()
+                self.channel._networkProducer.resumeProducing()
 
             # Boring old HTTP.
             else:

@@ -106,6 +106,12 @@ class Server(object):
         reactor.addSystemEventTrigger("before", "shutdown", self.kill_all_applications)
         reactor.run(installSignalHandlers=self.signal_handlers)
 
+    def stop(self):
+        """
+        Force-stops the server.
+        """
+        reactor.stop()
+
     ### Protocol handling
 
     def add_protocol(self, protocol):
@@ -159,16 +165,20 @@ class Server(object):
             if application_instance.done():
                 exception = application_instance.exception()
                 if exception:
-                    logging.error(
-                        "Exception inside application: {}\n{}{}".format(
-                            exception,
-                            "".join(traceback.format_tb(
-                                exception.__traceback__,
-                            )),
-                            "  {}".format(exception),
+                    if isinstance(exception, KeyboardInterrupt):
+                        # Protocol is asking the server to exit (likely during test)
+                        self.stop()
+                    else:
+                        logging.error(
+                            "Exception inside application: {}\n{}{}".format(
+                                exception,
+                                "".join(traceback.format_tb(
+                                    exception.__traceback__,
+                                )),
+                                "  {}".format(exception),
+                            )
                         )
-                    )
-                    protocol.handle_exception(exception)
+                        protocol.handle_exception(exception)
                 try:
                     del self.application_instances[protocol]
                 except KeyError:
