@@ -30,11 +30,13 @@ setup(
     setup_requires=[
         "pytest-runner",
     ],
-    tests_require=[
-        "hypothesis",
-        "tox",
-        "pytest",
-    ],
+    extras_require={
+        "tests": [
+            "hypothesis",
+            "tox",
+            "pytest",
+        ],
+    },
     entry_points={"console_scripts": [
         "daphne = daphne.cli:CommandLineInterface.entrypoint",
     ]},
