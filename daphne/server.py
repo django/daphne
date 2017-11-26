@@ -152,7 +152,7 @@ class Server(object):
         """
         Coroutine that jumps the reply message from asyncio to Twisted
         """
-        reactor.callLater(0, protocol.handle_reply, message)
+        protocol.handle_reply(message)
 
     ### Utility
 

@@ -82,7 +82,19 @@ class DaphneTestCase(unittest.TestCase):
                 conn.endheaders(message_body=body)
             else:
                 conn.endheaders()
-            response = conn.getresponse()
+            try:
+                response = conn.getresponse()
+            except socket.timeout:
+                # See if they left an exception for us to load
+                try:
+                    exception_result = TestApplication.load_result()
+                except OSError:
+                    raise RuntimeError("Daphne timed out handling request, no result file")
+                else:
+                    if "exception" in exception_result:
+                        raise exception_result["exception"]
+                    else:
+                        raise RuntimeError("Daphne timed out handling request, no exception found: %r" % exception_result)
         finally:
             # Shut down daphne
             process.terminate()
@@ -106,6 +118,20 @@ class DaphneTestCase(unittest.TestCase):
             responses=[{"type": "http.response", "status": 200, "content": b"OK"}],
         )
         return inner_result["scope"], inner_result["messages"]
+
+    def run_daphne_response(self, response_messages):
+        """
+        Convenience method for just testing response handling.
+        Returns (scope, messages)
+        """
+        _, response = self.run_daphne(
+            method="GET",
+            path="/",
+            params={},
+            body=b"",
+            responses=response_messages,
+        )
+        return response
 
     def tearDown(self):
         """
@@ -154,36 +180,6 @@ class DaphneTestCase(unittest.TestCase):
         self.assert_is_ip_address(address)
         self.assertIsInstance(port, int)
 
-
-# class ASGIHTTPTestCase(ASGITestCaseBase):
-#     """
-#     Test case with helpers for verifying HTTP channel messages
-#     """
-
-
-#     def assert_valid_http_response_message(self, message, response):
-#         self.assertTrue(message)
-#         self.assertTrue(response.startswith(b"HTTP"))
-
-#         status_code_bytes = str(message["status"]).encode("ascii")
-#         self.assertIn(status_code_bytes, response)
-
-#         if "content" in message:
-#             self.assertIn(message["content"], response)
-
-#         # Check that headers are in the given order.
-#         # N.b. HTTP spec only enforces that the order of header values is kept, but
-#         # the ASGI spec requires that order of all headers is kept. This code
-#         # checks conformance with the stricter ASGI spec.
-#         if "headers" in message:
-#             for name, value in message["headers"]:
-#                 expected_header = factories.header_line(name, value)
-#                 # Daphne or Twisted turn our lower cased header names ('foo-bar') into title
-#                 # case ('Foo-Bar'). So technically we want to to match that the header name is
-#                 # present while ignoring casing, and want to ensure the value is present without
-#                 # altered casing. The approach below does this well enough.
-#                 self.assertIn(expected_header.lower(), response.lower())
-#                 self.assertIn(value.encode("ascii"), response)
 
 
 # class ASGIWebSocketTestCase(ASGITestCaseBase):

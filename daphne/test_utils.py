@@ -1,5 +1,5 @@
-import msgpack
 import os
+import pickle
 import tempfile
 
 
@@ -19,12 +19,15 @@ class TestApplication:
     async def __call__(self, send, receive):
         # Load setup info
         setup = self.load_setup()
+        # Receive input and send output
         try:
             for _ in range(setup["receive_messages"]):
                 self.messages.append(await receive())
             for message in setup["response_messages"]:
                 await send(message)
-        finally:
+        except Exception as e:
+            self.save_exception(e)
+        else:
             self.save_result()
 
     @classmethod
@@ -33,13 +36,13 @@ class TestApplication:
         Stores setup information.
         """
         with open(cls.setup_storage, "wb") as fh:
-            fh.write(msgpack.packb(
+            pickle.dump(
                 {
                     "response_messages": response_messages,
                     "receive_messages": receive_messages,
                 },
-                use_bin_type=True,
-            ))
+                fh,
+            )
 
     @classmethod
     def load_setup(cls):
@@ -47,7 +50,7 @@ class TestApplication:
         Returns setup details.
         """
         with open(cls.setup_storage, "rb") as fh:
-            return msgpack.unpackb(fh.read(), encoding="utf-8")
+            return pickle.load(fh)
 
     def save_result(self):
         """
@@ -55,13 +58,26 @@ class TestApplication:
         We could use pickle here, but that seems wrong, still, somehow.
         """
         with open(self.result_storage, "wb") as fh:
-            fh.write(msgpack.packb(
+            pickle.dump(
                 {
                     "scope": self.scope,
                     "messages": self.messages,
                 },
-                use_bin_type=True,
-            ))
+                fh,
+            )
+
+    def save_exception(self, exception):
+        """
+        Saves details of what happened to the result storage.
+        We could use pickle here, but that seems wrong, still, somehow.
+        """
+        with open(self.result_storage, "wb") as fh:
+            pickle.dump(
+                {
+                    "exception": exception,
+                },
+                fh,
+            )
 
     @classmethod
     def load_result(cls):
@@ -69,7 +85,7 @@ class TestApplication:
         Returns result details.
         """
         with open(cls.result_storage, "rb") as fh:
-            return msgpack.unpackb(fh.read(), encoding="utf-8")
+            return pickle.load(fh)
 
     @classmethod
     def clear_storage(cls):
