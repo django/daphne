@@ -130,7 +130,7 @@ class TestHTTPRequestSpec(DaphneTestCase):
         """
         Tests a typical HTTP POST request, with a path and body.
         """
-        scope, messages = self.run_daphne_request("POST", request_path, data=request_body)
+        scope, messages = self.run_daphne_request("POST", request_path, body=request_body)
         self.assert_valid_http_scope(scope, "POST", request_path)
         self.assert_valid_http_request_message(messages[0], body=request_body)
 
@@ -145,123 +145,124 @@ class TestHTTPRequestSpec(DaphneTestCase):
         self.assert_valid_http_scope(scope, "OPTIONS", request_path, headers=request_headers)
         self.assert_valid_http_request_message(messages[0], body=b"")
 
-    # @given(request_headers=http_strategies.headers())
-    # def test_duplicate_headers(self, request_headers):
-    #     """
-    #     Tests that duplicate header values are preserved
-    #     """
-    #     assume(len(request_headers) >= 2)
-    #     # Set all header field names to the same value
-    #     header_name = request_headers[0][0]
-    #     duplicated_headers = [(header_name, header[1]) for header in request_headers]
+    @given(request_headers=http_strategies.headers())
+    @settings(max_examples=5, deadline=2000)
+    def test_duplicate_headers(self, request_headers):
+        """
+        Tests that duplicate header values are preserved
+        """
+        # Make sure there's duplicate headers
+        assume(len(request_headers) >= 2)
+        header_name = request_headers[0][0]
+        duplicated_headers = [(header_name, header[1]) for header in request_headers]
+        # Run the request
+        request_path = "/te st-à/"
+        scope, messages = self.run_daphne_request("OPTIONS", request_path, headers=duplicated_headers)
+        self.assert_valid_http_scope(scope, "OPTIONS", request_path, headers=duplicated_headers)
+        self.assert_valid_http_request_message(messages[0], body=b"")
 
-    #     request_method, request_path = "OPTIONS", "/te st-à/"
-    #     message = message_for_request(request_method, request_path, headers=duplicated_headers)
+    @given(
+        request_method=http_strategies.http_method(),
+        request_path=http_strategies.http_path(),
+        request_params=http_strategies.query_params(),
+        request_headers=http_strategies.headers(),
+        request_body=http_strategies.http_body(),
+    )
+    @settings(max_examples=5, deadline=2000)
+    def test_kitchen_sink(
+            self,
+            request_method,
+            request_path,
+            request_params,
+            request_headers,
+            request_body,
+        ):
+        """
+        Throw everything at channels that we dare. The idea is that if a combination
+        of method/path/headers/body would break the spec, hypothesis will eventually find it.
+        """
+        scope, messages = self.run_daphne_request(
+            request_method,
+            request_path,
+            params=request_params,
+            headers=request_headers,
+            body=request_body,
+        )
+        self.assert_valid_http_scope(
+            scope,
+            request_method,
+            request_path,
+            params=request_params,
+            headers=request_headers,
+        )
+        self.assert_valid_http_request_message(messages[0], body=request_body)
 
-    #     self.assert_valid_http_request_message(
-    #         message, request_method, request_path, request_headers=duplicated_headers)
+    def test_headers_are_lowercased_and_stripped(self):
+        """
+        Make sure headers are normalized as the spec says they are.
+        """
+        headers = [("MYCUSTOMHEADER", "   foobar    ")]
+        scope, messages = self.run_daphne_request("GET", "/", headers=headers)
+        self.assert_valid_http_scope(scope, "GET", "/", headers=headers)
+        self.assert_valid_http_request_message(messages[0], body=b"")
+        # Note that Daphne returns a list of tuples here, which is fine, because the spec
+        # asks to treat them interchangeably.
+        assert scope["headers"] == [[b"mycustomheader", b"foobar"]]
 
-    # @given(
-    #     request_method=http_strategies.http_method(),
-    #     request_path=http_strategies.http_path(),
-    #     request_params=http_strategies.query_params(),
-    #     request_headers=http_strategies.headers(),
-    #     request_body=http_strategies.http_body(),
-    # )
-    # # This test is slow enough that on Travis, hypothesis sometimes complains.
-    # @settings(suppress_health_check=[HealthCheck.too_slow])
-    # def test_kitchen_sink(
-    #         self, request_method, request_path, request_params, request_headers, request_body):
-    #     """
-    #     Throw everything at channels that we dare. The idea is that if a combination
-    #     of method/path/headers/body would break the spec, hypothesis will eventually find it.
-    #     """
-    #     request_headers.append(content_length_header(request_body))
-    #     message = message_for_request(
-    #         request_method, request_path, request_params, request_headers, request_body)
+    @given(daphne_path=http_strategies.http_path())
+    @settings(max_examples=5, deadline=2000)
+    def test_root_path_header(self, daphne_path):
+        """
+        Tests root_path handling.
+        """
+        # Daphne-Root-Path must be URL encoded when submitting as HTTP header field
+        headers = [("Daphne-Root-Path", parse.quote(daphne_path.encode("utf8")))]
+        scope, messages = self.run_daphne_request("GET", "/", headers=headers)
+        # Daphne-Root-Path is not included in the returned 'headers' section. So we expect
+        # empty headers.
+        self.assert_valid_http_scope(scope, "GET", "/", headers=[])
+        self.assert_valid_http_request_message(messages[0], body=b"")
+        # And what we're looking for, root_path being set.
+        assert scope["root_path"] == daphne_path
 
-    #     self.assert_valid_http_request_message(
-    #         message, request_method, request_path, request_params, request_headers, request_body)
+    def test_x_forwarded_for_ignored(self):
+        """
+        Make sure that, by default, X-Forwarded-For is ignored.
+        """
+        headers = [
+            ["X-Forwarded-For", "10.1.2.3"],
+            ["X-Forwarded-Port", "80"],
+        ]
+        scope, messages = self.run_daphne_request("GET", "/", headers=headers)
+        self.assert_valid_http_scope(scope, "GET", "/", headers=headers)
+        self.assert_valid_http_request_message(messages[0], body=b"")
+        # It should NOT appear in the client scope item
+        self.assertNotEqual(scope["client"], ["10.1.2.3", 80])
 
-    # def test_headers_are_lowercased_and_stripped(self):
-    #     request_method, request_path = "GET", "/"
-    #     headers = [("MYCUSTOMHEADER", "   foobar    ")]
-    #     message = message_for_request(request_method, request_path, headers=headers)
+    def test_x_forwarded_for_parsed(self):
+        """
+        When X-Forwarded-For is enabled, make sure it is respected.
+        """
+        headers = [
+            ["X-Forwarded-For", "10.1.2.3"],
+            ["X-Forwarded-Port", "80"],
+        ]
+        scope, messages = self.run_daphne_request("GET", "/", headers=headers, xff=True)
+        self.assert_valid_http_scope(scope, "GET", "/", headers=headers)
+        self.assert_valid_http_request_message(messages[0], body=b"")
+        # It should now appear in the client scope item
+        self.assertEqual(scope["client"], ["10.1.2.3", 80])
 
-    #     self.assert_valid_http_request_message(
-    #         message, request_method, request_path, request_headers=headers)
-    #     # Note that Daphne returns a list of tuples here, which is fine, because the spec
-    #     # asks to treat them interchangeably.
-    #     assert message["headers"] == [(b"mycustomheader", b"foobar")]
-
-    # @given(daphne_path=http_strategies.http_path())
-    # def test_root_path_header(self, daphne_path):
-    #     """
-    #     Tests root_path handling.
-    #     """
-    #     request_method, request_path = "GET", "/"
-    #     # Daphne-Root-Path must be URL encoded when submitting as HTTP header field
-    #     headers = [("Daphne-Root-Path", parse.quote(daphne_path.encode("utf8")))]
-    #     message = message_for_request(request_method, request_path, headers=headers)
-
-    #     # Daphne-Root-Path is not included in the returned 'headers' section. So we expect
-    #     # empty headers.
-    #     expected_headers = []
-    #     self.assert_valid_http_request_message(
-    #         message, request_method, request_path, request_headers=expected_headers)
-    #     # And what we're looking for, root_path being set.
-    #     assert message["root_path"] == daphne_path
-
-
-# class TestProxyHandling(unittest.TestCase):
-#     """
-#     Tests that concern interaction of Daphne with proxies.
-
-#     They live in a separate test case, because they're not part of the spec.
-#     """
-
-#     def setUp(self):
-#         self.channel_layer = ChannelLayer()
-#         self.factory = HTTPFactory(self.channel_layer, send_channel="test!")
-#         self.proto = self.factory.buildProtocol(("127.0.0.1", 0))
-#         self.tr = proto_helpers.StringTransport()
-#         self.proto.makeConnection(self.tr)
-
-#     def test_x_forwarded_for_ignored(self):
-#         self.proto.dataReceived(
-#             b"GET /te%20st-%C3%A0/?foo=+bar HTTP/1.1\r\n" +
-#             b"Host: somewhere.com\r\n" +
-#             b"X-Forwarded-For: 10.1.2.3\r\n" +
-#             b"X-Forwarded-Port: 80\r\n" +
-#             b"\r\n"
-#         )
-#         # Get the resulting message off of the channel layer
-#         _, message = self.channel_layer.receive(["http.request"])
-#         self.assertEqual(message["client"], ["192.168.1.1", 54321])
-
-#     def test_x_forwarded_for_parsed(self):
-#         self.factory.proxy_forwarded_address_header = "X-Forwarded-For"
-#         self.factory.proxy_forwarded_port_header = "X-Forwarded-Port"
-#         self.proto.dataReceived(
-#             b"GET /te%20st-%C3%A0/?foo=+bar HTTP/1.1\r\n" +
-#             b"Host: somewhere.com\r\n" +
-#             b"X-Forwarded-For: 10.1.2.3\r\n" +
-#             b"X-Forwarded-Port: 80\r\n" +
-#             b"\r\n"
-#         )
-#         # Get the resulting message off of the channel layer
-#         _, message = self.channel_layer.receive(["http.request"])
-#         self.assertEqual(message["client"], ["10.1.2.3", 80])
-
-#     def test_x_forwarded_for_port_missing(self):
-#         self.factory.proxy_forwarded_address_header = "X-Forwarded-For"
-#         self.factory.proxy_forwarded_port_header = "X-Forwarded-Port"
-#         self.proto.dataReceived(
-#             b"GET /te%20st-%C3%A0/?foo=+bar HTTP/1.1\r\n" +
-#             b"Host: somewhere.com\r\n" +
-#             b"X-Forwarded-For: 10.1.2.3\r\n" +
-#             b"\r\n"
-#         )
-#         # Get the resulting message off of the channel layer
-#         _, message = self.channel_layer.receive(["http.request"])
-#         self.assertEqual(message["client"], ["10.1.2.3", 0])
+    def test_x_forwarded_for_no_port(self):
+        """
+        When X-Forwarded-For is enabled but only the host is passed, make sure
+        that at least makes it through.
+        """
+        headers = [
+            ["X-Forwarded-For", "10.1.2.3"],
+        ]
+        scope, messages = self.run_daphne_request("GET", "/", headers=headers, xff=True)
+        self.assert_valid_http_scope(scope, "GET", "/", headers=headers)
+        self.assert_valid_http_request_message(messages[0], body=b"")
+        # It should now appear in the client scope item
+        self.assertEqual(scope["client"], ["10.1.2.3", 0])

@@ -1,5 +1,5 @@
 from urllib import parse
-import requests
+from http.client import HTTPConnection
 import socket
 import subprocess
 import time
@@ -34,7 +34,7 @@ class DaphneTestCase(unittest.TestCase):
         finally:
             s.close()
 
-    def run_daphne(self, method, path, params, data, responses, headers=None, timeout=1):
+    def run_daphne(self, method, path, params, body, responses, headers=None, timeout=1, xff=False):
         """
         Runs Daphne with the given request callback (given the base URL)
         and response messages.
@@ -52,7 +52,11 @@ class DaphneTestCase(unittest.TestCase):
         else:
             raise RuntimeError("Cannot find a free port to test on")
         # Launch daphne on that port
-        process = subprocess.Popen(["daphne", "-p", str(port), "daphne.test_utils:TestApplication"])
+        daphne_args = ["daphne", "-p", str(port), "-v", "0"]
+        if xff:
+            # Optionally enable X-Forwarded-For support.
+            daphne_args += ["--proxy-headers"]
+        process = subprocess.Popen(daphne_args + ["daphne.test_utils:TestApplication"])
         try:
             for _ in range(100):
                 time.sleep(0.1)
@@ -60,9 +64,25 @@ class DaphneTestCase(unittest.TestCase):
                     break
             else:
                 raise RuntimeError("Daphne never came up.")
-            # Send it the request
-            url = "http://127.0.0.1:%i%s" % (port, path)
-            response = requests.request(method, url, params=params, data=data, headers=headers, timeout=timeout)
+            # Send it the request. We have to do this the long way to allow
+            # duplicate headers.
+            conn = HTTPConnection("127.0.0.1", port, timeout=timeout)
+            # Make sure path is urlquoted and add any params
+            path = parse.quote(path)
+            if params:
+                path += "?" + parse.urlencode(params, doseq=True)
+            conn.putrequest(method, path, skip_accept_encoding=True, skip_host=True)
+            # Manually send over headers (encoding any non-safe values as best we can)
+            if headers:
+                for header_name, header_value in headers:
+                    conn.putheader(header_name.encode("utf8"), header_value.encode("utf8"))
+            # Send body if provided.
+            if body:
+                conn.putheader("Content-Length", str(len(body)))
+                conn.endheaders(message_body=body)
+            else:
+                conn.endheaders()
+            response = conn.getresponse()
         finally:
             # Shut down daphne
             process.terminate()
@@ -71,19 +91,18 @@ class DaphneTestCase(unittest.TestCase):
         # Return the inner result and the response
         return inner_result, response
 
-    def run_daphne_request(self, method, path, params=None, data=None, headers=None):
+    def run_daphne_request(self, method, path, params=None, body=None, headers=None, xff=False):
         """
         Convenience method for just testing request handling.
         Returns (scope, messages)
         """
-        if headers is not None:
-            headers = dict(headers)
         inner_result, _ = self.run_daphne(
             method=method,
             path=path,
             params=params,
-            data=data,
+            body=body,
             headers=headers,
+            xff=xff,
             responses=[{"type": "http.response", "status": 200, "content": b"OK"}],
         )
         return inner_result["scope"], inner_result["messages"]
