@@ -11,10 +11,7 @@ from http_base import DaphneTestCase, DaphneTestingInstance
 
 class TestWebsocket(DaphneTestCase):
     """
-    Tests which try to pour the HTTP request section of the ASGI spec into code.
-    The heavy lifting is done by the assert_valid_http_request_message function,
-    the tests mostly serve to wire up hypothesis so that it exercise it's power to find
-    edge cases.
+    Tests WebSocket handshake, send and receive.
     """
 
     def assert_valid_websocket_scope(
