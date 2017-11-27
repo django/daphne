@@ -207,7 +207,7 @@ class TestHTTPRequestSpec(DaphneTestCase):
         self.assert_valid_http_request_message(messages[0], body=b"")
         # Note that Daphne returns a list of tuples here, which is fine, because the spec
         # asks to treat them interchangeably.
-        assert scope["headers"] == [[b"mycustomheader", b"foobar"]]
+        assert [list(x) for x in scope["headers"]] == [[b"mycustomheader", b"foobar"]]
 
     @given(daphne_path=http_strategies.http_path())
     @settings(max_examples=5, deadline=2000)

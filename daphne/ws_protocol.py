@@ -73,7 +73,6 @@ class WebSocketProtocol(WebSocketServerProtocol):
                 "client": self.client_addr,
                 "server": self.server_addr,
                 "subprotocols": subprotocols,
-                "order": 0,
             })
         except:
             # Exceptions here are not displayed right, just 500.

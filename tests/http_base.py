@@ -1,21 +1,25 @@
-from urllib import parse
 from http.client import HTTPConnection
+from urllib import parse
 import socket
+import struct
 import subprocess
 import time
 import unittest
 
-from daphne.test_utils import TestApplication
+from daphne.test_application import TestApplication
 
 
-class DaphneTestCase(unittest.TestCase):
+class DaphneTestingInstance:
     """
-    Base class for Daphne integration test cases.
+    Launches an instance of Daphne to test against, with an application
+    object you can read messages from and feed messages to.
 
-    Boots up a copy of Daphne on a test port and sends it a request, and
-    retrieves the response. Uses a custom ASGI application and temporary files
-    to store/retrieve the request/response messages.
+    Works as a context manager.
     """
+
+    def __init__(self, xff=False):
+        self.xff = xff
+        self.host = "127.0.0.1"
 
     def port_in_use(self, port):
         """
@@ -34,39 +38,90 @@ class DaphneTestCase(unittest.TestCase):
         finally:
             s.close()
 
-    def run_daphne(self, method, path, params, body, responses, headers=None, timeout=1, xff=False):
+    def find_free_port(self):
+        """
+        Finds an unused port to test stuff on
+        """
+        for i in range(11200, 11300):
+            if not self.port_in_use(i):
+                return i
+        raise RuntimeError("Cannot find a free port to test on")
+
+    def __enter__(self):
+        # Clear result storage
+        TestApplication.delete_setup()
+        TestApplication.delete_result()
+        # Find a port to listen on
+        self.port = self.find_free_port()
+        daphne_args = ["daphne", "-p", str(self.port), "-v", "0"]
+        # Optionally enable X-Forwarded-For support.
+        if self.xff:
+            daphne_args += ["--proxy-headers"]
+        # Start up process and make sure it begins listening.
+        self.process = subprocess.Popen(daphne_args + ["daphne.test_application:TestApplication"])
+        for _ in range(100):
+            time.sleep(0.1)
+            if self.port_in_use(self.port):
+                return self
+        # Daphne didn't start up. Sadface.
+        self.process.terminate()
+        raise RuntimeError("Daphne never came up.")
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        # Shut down the process
+        self.process.terminate()
+        del self.process
+
+    def get_received(self):
+        """
+        Returns the scope and messages the test application has received
+        so far. Note you'll get all messages since scope start, not just any
+        new ones since the last call.
+
+        Also checks for any exceptions in the application. If there are,
+        raises them.
+        """
+        try:
+            inner_result = TestApplication.load_result()
+        except FileNotFoundError:
+            raise ValueError("No results available yet.")
+        # Check for exception
+        if "exception" in inner_result:
+            raise inner_result["exception"]
+        return inner_result["scope"], inner_result["messages"]
+
+    def add_send_messages(self, messages):
+        """
+        Adds messages for the application to send back.
+        The next time it receives an incoming message, it will reply with these.
+        """
+        TestApplication.save_setup(
+            response_messages=messages,
+        )
+
+
+class DaphneTestCase(unittest.TestCase):
+    """
+    Base class for Daphne integration test cases.
+
+    Boots up a copy of Daphne on a test port and sends it a request, and
+    retrieves the response. Uses a custom ASGI application and temporary files
+    to store/retrieve the request/response messages.
+    """
+
+    ### Plain HTTP helpers
+
+    def run_daphne_http(self, method, path, params, body, responses, headers=None, timeout=1, xff=False):
         """
         Runs Daphne with the given request callback (given the base URL)
         and response messages.
         """
-        # Store setup info
-        TestApplication.clear_storage()
-        TestApplication.save_setup(
-            response_messages=responses,
-        )
-        # Find a free port
-        for i in range(11200, 11300):
-            if not self.port_in_use(i):
-                port = i
-                break
-        else:
-            raise RuntimeError("Cannot find a free port to test on")
-        # Launch daphne on that port
-        daphne_args = ["daphne", "-p", str(port), "-v", "0"]
-        if xff:
-            # Optionally enable X-Forwarded-For support.
-            daphne_args += ["--proxy-headers"]
-        process = subprocess.Popen(daphne_args + ["daphne.test_utils:TestApplication"])
-        try:
-            for _ in range(100):
-                time.sleep(0.1)
-                if self.port_in_use(port):
-                    break
-            else:
-                raise RuntimeError("Daphne never came up.")
+        with DaphneTestingInstance(xff=xff) as test_app:
+            # Add the response messages
+            test_app.add_send_messages(responses)
             # Send it the request. We have to do this the long way to allow
             # duplicate headers.
-            conn = HTTPConnection("127.0.0.1", port, timeout=timeout)
+            conn = HTTPConnection(test_app.host, test_app.port, timeout=timeout)
             # Make sure path is urlquoted and add any params
             path = parse.quote(path)
             if params:
@@ -86,29 +141,17 @@ class DaphneTestCase(unittest.TestCase):
                 response = conn.getresponse()
             except socket.timeout:
                 # See if they left an exception for us to load
-                try:
-                    exception_result = TestApplication.load_result()
-                except OSError:
-                    raise RuntimeError("Daphne timed out handling request, no result file")
-                else:
-                    if "exception" in exception_result:
-                        raise exception_result["exception"]
-                    else:
-                        raise RuntimeError("Daphne timed out handling request, no exception found: %r" % exception_result)
-        finally:
-            # Shut down daphne
-            process.terminate()
-        # Load the information
-        inner_result = TestApplication.load_result()
-        # Return the inner result and the response
-        return inner_result, response
+                test_app.get_received()
+                raise RuntimeError("Daphne timed out handling request, no exception found.")
+            # Return scope, messages, response
+            return test_app.get_received() + (response, )
 
     def run_daphne_request(self, method, path, params=None, body=None, headers=None, xff=False):
         """
         Convenience method for just testing request handling.
         Returns (scope, messages)
         """
-        inner_result, _ = self.run_daphne(
+        scope, messages, _ = self.run_daphne_http(
             method=method,
             path=path,
             params=params,
@@ -117,14 +160,14 @@ class DaphneTestCase(unittest.TestCase):
             xff=xff,
             responses=[{"type": "http.response", "status": 200, "content": b"OK"}],
         )
-        return inner_result["scope"], inner_result["messages"]
+        return scope, messages
 
     def run_daphne_response(self, response_messages):
         """
         Convenience method for just testing response handling.
         Returns (scope, messages)
         """
-        _, response = self.run_daphne(
+        _, _, response = self.run_daphne_http(
             method="GET",
             path="/",
             params={},
@@ -133,11 +176,119 @@ class DaphneTestCase(unittest.TestCase):
         )
         return response
 
+    ### WebSocket helpers
+
+    def websocket_handshake(self, test_app, path="/", params=None, headers=None, subprotocols=None, timeout=1):
+        """
+        Runs a WebSocket handshake negotiation and returns the raw socket
+        object & the selected subprotocol.
+
+        You'll need to inject an accept or reject message before this
+        to let it complete.
+        """
+        # Send it the request. We have to do this the long way to allow
+        # duplicate headers.
+        conn = HTTPConnection(test_app.host, test_app.port, timeout=timeout)
+        # Make sure path is urlquoted and add any params
+        path = parse.quote(path)
+        if params:
+            path += "?" + parse.urlencode(params, doseq=True)
+        conn.putrequest("GET", path, skip_accept_encoding=True, skip_host=True)
+        # Do WebSocket handshake headers + any other headers
+        if headers is None:
+            headers = []
+        headers.extend([
+            ("Host", "example.com"),
+            ("Upgrade", "websocket"),
+            ("Connection", "Upgrade"),
+            ("Sec-WebSocket-Key", "x3JJHMbDL1EzLkh9GBhXDw=="),
+            ("Sec-WebSocket-Version", "13"),
+            ("Origin", "http://example.com")
+        ])
+        if subprotocols:
+            headers.append(("Sec-WebSocket-Protocol", ", ".join(subprotocols)))
+        if headers:
+            for header_name, header_value in headers:
+                conn.putheader(header_name.encode("utf8"), header_value.encode("utf8"))
+        conn.endheaders()
+        # Read out the response
+        try:
+            response = conn.getresponse()
+        except socket.timeout:
+            # See if they left an exception for us to load
+            test_app.get_received()
+            raise RuntimeError("Daphne timed out handling request, no exception found.")
+        # Check we got a good response code
+        if response.status != 101:
+            raise RuntimeError("WebSocket upgrade did not result in status code 101")
+        # Prepare headers for subprotocol searching
+        response_headers = dict(
+            (n.lower(), v)
+            for n, v in response.getheaders()
+        )
+        response.read()
+        assert not response.closed
+        # Return the raw socket and any subprotocol
+        return conn.sock, response_headers.get("sec-websocket-protocol", None)
+
+    def websocket_send_frame(self, sock, value):
+        """
+        Sends a WebSocket text or binary frame. Cannot handle long frames.
+        """
+        # Header and text opcode
+        if isinstance(value, str):
+            frame = b"\x81"
+            value = value.encode("utf8")
+        else:
+            frame = b"\x82"
+        # Length plus masking signal bit
+        frame += struct.pack("!B", len(value) | 0b10000000)
+        # Mask badly
+        frame += b"\0\0\0\0"
+        # Payload
+        frame += value
+        print("sending %r" % frame)
+        sock.sendall(frame)
+
+    def receive_from_socket(self, sock, length, timeout=1):
+        """
+        Receives the given amount of bytes from the socket, or times out.
+        """
+        buf = b""
+        started = time.time()
+        while len(buf) < length:
+            buf += sock.recv(length - len(buf))
+            time.sleep(0.001)
+            if time.time() - started > timeout:
+                raise ValueError("Timed out reading from socket")
+        return buf
+
+    def websocket_receive_frame(self, sock):
+        """
+        Receives a WebSocket frame. Cannot handle long frames.
+        """
+        # Read header byte
+        # TODO: Proper receive buffer handling
+        opcode = self.receive_from_socket(sock, 1)
+        if opcode in [b"\x81", b"\x82"]:
+            # Read length
+            length = struct.unpack("!B", self.receive_from_socket(sock, 1))[0]
+            # Read payload
+            payload = self.receive_from_socket(sock, length)
+            if opcode == b"\x81":
+                payload = payload.decode("utf8")
+            return payload
+        else:
+            raise ValueError("Unknown websocket opcode: %r" % opcode)
+
+    ### Assertions and test management
+
     def tearDown(self):
         """
         Ensures any storage files are cleared.
         """
-        TestApplication.clear_storage()
+        TestApplication.delete_setup()
+        TestApplication.delete_result()
 
     def assert_is_ip_address(self, address):
         """
@@ -179,85 +330,3 @@ class DaphneTestCase(unittest.TestCase):
         self.assertIsInstance(address, str)
         self.assert_is_ip_address(address)
         self.assertIsInstance(port, int)
-
-
-
-# class ASGIWebSocketTestCase(ASGITestCaseBase):
-#     """
-#     Test case with helpers for verifying WebSocket channel messages
-#     """
-
-#     def assert_websocket_upgrade(self, response, body=b"", expect_close=False):
-#         self.assertIn(b"HTTP/1.1 101 Switching Protocols", response)
-#         self.assertIn(b"Sec-WebSocket-Accept: HSmrc0sMlYUkAGmm5OPpG2HaGWk=\r\n", response)
-#         self.assertIn(body, response)
-#         self.assertEqual(expect_close, response.endswith(b"\x88\x02\x03\xe8"))
-
-#     def assert_websocket_denied(self, response):
-#         self.assertIn(b"HTTP/1.1 403", response)
-
-#     def assert_valid_websocket_connect_message(
-#             self, channel_message, request_path="/", request_params=None, request_headers=None):
-#         """
-#         Asserts that a given channel message conforms to the HTTP request section of the ASGI spec.
-#         """
-
-#         self.assertTrue(channel_message)
-
-#         self.assert_presence_of_message_keys(
-#             channel_message.keys(),
-#             {"reply_channel", "path", "headers", "order"},
-#             {"scheme", "query_string", "root_path", "client", "server"})
-
-#         # == Assertions about required channel_message fields ==
-#         self.assert_valid_reply_channel(channel_message["reply_channel"])
-#         self.assert_valid_path(channel_message["path"], request_path)
-
-#         order = channel_message["order"]
-#         self.assertIsInstance(order, int)
-#         self.assertEqual(order, 0)
-
-#         # Ordering of header names is not important, but the order of values for a header
-#         # name is. To assert whether that order is kept, we transform the request
-#         # headers and the channel message headers into a set
-#         # {('name1': 'value1,value2'), ('name2': 'value3')} and check if they're equal.
-#         # Note that unlike for HTTP, Daphne never gives out individual header values; instead we
-#         # get one string per header field with values separated by comma.
-#         transformed_request_headers = defaultdict(list)
-#         for name, value in (request_headers or []):
-#             expected_name = name.lower().strip().encode("ascii")
-#             expected_value = value.strip().encode("ascii")
-#             transformed_request_headers[expected_name].append(expected_value)
-#         final_request_headers = {
-#             (name, b",".join(value)) for name, value in transformed_request_headers.items()
-#         }
-
-#         # Websockets carry a lot of additional header fields, so instead of verifying that
-#         # headers look exactly like expected, we just check that the expected header fields
-#         # and values are present - additional header fields (e.g. Sec-WebSocket-Key) are allowed
-#         # and not tested for.
-#         assert final_request_headers.issubset(set(channel_message["headers"]))
-
-#         # == Assertions about optional channel_message fields ==
-#         scheme = channel_message.get("scheme")
-#         if scheme:
-#             self.assertIsInstance(scheme, six.text_type)
-#             self.assertIn(scheme, ["ws", "wss"])
-
-#         query_string = channel_message.get("query_string")
-#         if query_string:
-#             # Assert that query_string is a byte string and still url encoded
-#             self.assertIsInstance(query_string, six.binary_type)
-#             self.assertEqual(query_string, parse.urlencode(request_params or []).encode("ascii"))
-
-#         root_path = channel_message.get("root_path")
-#         if root_path is not None:
-#             self.assertIsInstance(root_path, six.text_type)
-
-#         client = channel_message.get("client")
-#         if client is not None:
-#             self.assert_valid_address_and_port(channel_message["client"])
-
-#         server = channel_message.get("server")
-#         if server is not None:
-#             self.assert_valid_address_and_port(channel_message["server"])

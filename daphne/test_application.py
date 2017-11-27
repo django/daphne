@@ -1,3 +1,5 @@
+from concurrent.futures import CancelledError
+import logging
 import os
 import pickle
 import tempfile
@@ -17,21 +19,29 @@ class TestApplication:
         self.messages = []
 
     async def __call__(self, send, receive):
-        # Load setup info
-        setup = self.load_setup()
         # Receive input and send output
+        logging.debug("test app coroutine alive")
         try:
-            for _ in range(setup["receive_messages"]):
+            while True:
+                # Receive a message and save it into the result store
                 self.messages.append(await receive())
-            for message in setup["response_messages"]:
-                await send(message)
+                logging.debug("test app received %r", self.messages[-1])
+                self.save_result(self.scope, self.messages)
+                # See if there are any messages to send back
+                setup = self.load_setup()
+                self.delete_setup()
+                for message in setup["response_messages"]:
+                    await send(message)
+                    logging.debug("test app sent %r", message)
         except Exception as e:
-            self.save_exception(e)
-        else:
-            self.save_result()
+            if isinstance(e, CancelledError):
+                # Don't catch task-cancelled errors!
+                raise
+            else:
+                self.save_exception(e)
 
     @classmethod
-    def save_setup(cls, response_messages, receive_messages=1):
+    def save_setup(cls, response_messages):
         """
         Stores setup information.
         """
@@ -39,7 +49,6 @@ class TestApplication:
             pickle.dump(
                 {
                     "response_messages": response_messages,
-                    "receive_messages": receive_messages,
                 },
                 fh,
             )
@@ -49,29 +58,34 @@ class TestApplication:
         """
         Returns setup details.
         """
-        with open(cls.setup_storage, "rb") as fh:
-            return pickle.load(fh)
+        try:
+            with open(cls.setup_storage, "rb") as fh:
+                return pickle.load(fh)
+        except FileNotFoundError:
+            return {"response_messages": []}
 
-    def save_result(self):
+    @classmethod
+    def save_result(cls, scope, messages):
         """
         Saves details of what happened to the result storage.
         We could use pickle here, but that seems wrong, still, somehow.
         """
-        with open(self.result_storage, "wb") as fh:
+        with open(cls.result_storage, "wb") as fh:
             pickle.dump(
                 {
-                    "scope": self.scope,
-                    "messages": self.messages,
+                    "scope": scope,
+                    "messages": messages,
                 },
                 fh,
             )
 
-    def save_exception(self, exception):
+    @classmethod
+    def save_exception(cls, exception):
         """
         Saves details of what happened to the result storage.
         We could use pickle here, but that seems wrong, still, somehow.
         """
-        with open(self.result_storage, "wb") as fh:
+        with open(cls.result_storage, "wb") as fh:
             pickle.dump(
                 {
                     "exception": exception,
@@ -88,14 +102,20 @@ class TestApplication:
             return pickle.load(fh)
 
     @classmethod
-    def clear_storage(cls):
+    def delete_setup(cls):
         """
-        Clears storage files.
+        Clears setup storage files.
         """
         try:
             os.unlink(cls.setup_storage)
         except OSError:
             pass
+
+    @classmethod
+    def delete_result(cls):
+        """
+        Clears result storage files.
+        """
         try:
             os.unlink(cls.result_storage)
         except OSError:
