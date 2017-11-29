@@ -105,7 +105,7 @@ class TestHTTPRequest(DaphneTestCase):
         request_path=http_strategies.http_path(),
         request_params=http_strategies.query_params()
     )
-    @settings(max_examples=5, deadline=2000)
+    @settings(max_examples=5, deadline=5000)
     def test_get_request(self, request_path, request_params):
         """
         Tests a typical HTTP GET request, with a path and query parameters
@@ -118,7 +118,7 @@ class TestHTTPRequest(DaphneTestCase):
         request_path=http_strategies.http_path(),
         request_body=http_strategies.http_body()
     )
-    @settings(max_examples=5, deadline=2000)
+    @settings(max_examples=5, deadline=5000)
     def test_post_request(self, request_path, request_body):
         """
         Tests a typical HTTP POST request, with a path and body.
@@ -128,7 +128,7 @@ class TestHTTPRequest(DaphneTestCase):
         self.assert_valid_http_request_message(messages[0], body=request_body)
 
     @given(request_headers=http_strategies.headers())
-    @settings(max_examples=5, deadline=2000)
+    @settings(max_examples=5, deadline=5000)
     def test_headers(self, request_headers):
         """
         Tests that HTTP header fields are handled as specified
@@ -139,7 +139,7 @@ class TestHTTPRequest(DaphneTestCase):
         self.assert_valid_http_request_message(messages[0], body=b"")
 
     @given(request_headers=http_strategies.headers())
-    @settings(max_examples=5, deadline=2000)
+    @settings(max_examples=5, deadline=5000)
     def test_duplicate_headers(self, request_headers):
         """
         Tests that duplicate header values are preserved
@@ -161,7 +161,7 @@ class TestHTTPRequest(DaphneTestCase):
         request_headers=http_strategies.headers(),
         request_body=http_strategies.http_body(),
     )
-    @settings(max_examples=5, deadline=2000)
+    @settings(max_examples=5, deadline=5000)
     def test_kitchen_sink(
         self,
         request_method,
@@ -203,7 +203,7 @@ class TestHTTPRequest(DaphneTestCase):
         assert [list(x) for x in scope["headers"]] == [[b"mycustomheader", b"foobar"]]
 
     @given(daphne_path=http_strategies.http_path())
-    @settings(max_examples=5, deadline=2000)
+    @settings(max_examples=5, deadline=5000)
     def test_root_path_header(self, daphne_path):
         """
         Tests root_path handling.

@@ -122,7 +122,7 @@ class TestHTTPResponse(DaphneTestCase):
         self.assertEqual(response.read(), b"chunk 1 chunk 2")
 
     @given(body=http_strategies.http_body())
-    @settings(max_examples=5, deadline=2000)
+    @settings(max_examples=5, deadline=5000)
     def test_body(self, body):
         """
         Tries body variants.
@@ -141,7 +141,7 @@ class TestHTTPResponse(DaphneTestCase):
         self.assertEqual(response.read(), body)
 
     @given(headers=http_strategies.headers())
-    @settings(max_examples=5, deadline=2000)
+    @settings(max_examples=5, deadline=5000)
     def test_headers(self, headers):
         # The ASGI spec requires us to lowercase our header names
         response = self.run_daphne_response([
