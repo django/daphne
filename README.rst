@@ -8,8 +8,9 @@ daphne
     :target: https://pypi.python.org/pypi/daphne
 
 Daphne is a HTTP, HTTP2 and WebSocket protocol server for
-`ASGI <https://channels.readthedocs.io/en/latest/asgi.html>`_, and developed
-to power Django Channels.
+`ASGI <https://github.com/django/asgiref/blob/master/specs/asgi.rst>`_ and
+`ASGI-HTTP <https://github.com/django/asgiref/blob/master/specs/www.rst>`_,
+developed to power Django Channels.
 
 It supports automatic negotiation of protocols; there's no need for URL
 prefixing to determine WebSocket endpoints versus HTTP endpoints.
@@ -18,22 +19,21 @@ prefixing to determine WebSocket endpoints versus HTTP endpoints.
 Running
 -------
 
-Simply point Daphne to your ASGI channel layer instance, and optionally
+Simply point Daphne to your ASGI application, and optionally
 set a bind address and port (defaults to localhost, port 8000)::
 
-    daphne -b 0.0.0.0 -p 8001 django_project.asgi:channel_layer
+    daphne -b 0.0.0.0 -p 8001 django_project.asgi:application
 
 If you intend to run daphne behind a proxy server you can use UNIX
 sockets to communicate between the two::
 
-    daphne -u /tmp/daphne.sock django_project.asgi:channel_layer
+    daphne -u /tmp/daphne.sock django_project.asgi:application
 
-If daphne is being run inside a process manager such as
-`Circus <https://github.com/circus-tent/circus/>`_ you might
+If daphne is being run inside a process manager, you might
 want it to bind to a file descriptor passed down from a parent process.
 To achieve this you can use the --fd flag::
 
-    daphne --fd 5 django_project.asgi:channel_layer
+    daphne --fd 5 django_project.asgi:application
 
 If you want more control over the port/socket bindings you can fall back to
 using `twisted's endpoint description strings
@@ -42,18 +42,18 @@ by using the `--endpoint (-e)` flag, which can be used multiple times.
 This line would start a SSL server on port 443, assuming that `key.pem` and `crt.pem`
 exist in the current directory (requires pyopenssl to be installed)::
 
-    daphne -e ssl:443:privateKey=key.pem:certKey=crt.pem django_project.asgi:channel_layer
+    daphne -e ssl:443:privateKey=key.pem:certKey=crt.pem django_project.asgi:application
 
 Endpoints even let you use the ``txacme`` endpoint syntax to get automatic certificates
 from Let's Encrypt, which you can read more about at http://txacme.readthedocs.io/en/stable/.
 
-To see all available command line options run daphne with the *-h* flag.
+To see all available command line options run daphne with the ``-h`` flag.
 
 
 HTTP/2 Support
 --------------
 
-Daphne 1.1 and above supports terminating HTTP/2 connections natively. You'll
+Daphne supports terminating HTTP/2 connections natively. You'll
 need to do a couple of things to get it working, though. First, you need to
 make sure you install the Twisted ``http2`` and ``tls`` extras::
 
@@ -62,13 +62,13 @@ make sure you install the Twisted ``http2`` and ``tls`` extras::
 Next, because all current browsers only support HTTP/2 when using TLS, you will
 need to start Daphne with TLS turned on, which can be done using the Twisted endpoint syntax::
 
-    daphne -e ssl:443:privateKey=key.pem:certKey=crt.pem django_project.asgi:channel_layer
+    daphne -e ssl:443:privateKey=key.pem:certKey=crt.pem django_project.asgi:application
 
 Alternatively, you can use the ``txacme`` endpoint syntax or anything else that
 enables TLS under the hood.
 
 You will also need to be on a system that has **OpenSSL 1.0.2 or greater**; if you are
-using Ubuntu, this means you need at least 16.04.
+using Ubuntu, this means you need at least Ubuntu 16.04.
 
 Now, when you start up Daphne, it should tell you this in the log::
 
@@ -105,13 +105,13 @@ WSGI ``SCRIPT_NAME`` setting, you have two options:
 The header takes precedence if both are set. As with ``SCRIPT_ALIAS``, the value
 should start with a slash, but not end with one; for example::
 
-    daphne --root-path=/forum django_project.asgi:channel_layer
+    daphne --root-path=/forum django_project.asgi:application
 
-Dependencies
-------------
 
-All Channels projects currently support Python 2.7, 3.4 and 3.5. `daphne` requires Twisted 17.1 or
-greater.
+Python Support
+--------------
+
+Daphne requires Python 3.5 or later.
 
 
 Contributing
@@ -119,7 +119,12 @@ Contributing
 
 Please refer to the
 `main Channels contributing docs <https://github.com/django/channels/blob/master/CONTRIBUTING.rst>`_.
-That also contains advice on how to set up the development environment and run the tests.
+
+To run tests, make sure you have installed the ``tests`` extra with the package::
+
+    cd asgiref/
+    pip install -e .[tests]
+    pytest
 
 
 Maintenance and Security
