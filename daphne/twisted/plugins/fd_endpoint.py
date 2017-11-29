@@ -1,9 +1,9 @@
+import socket
+
+from twisted.internet import endpoints
+from twisted.internet.interfaces import IStreamServerEndpointStringParser
 from twisted.plugin import IPlugin
 from zope.interface import implementer
-from twisted.internet.interfaces import IStreamServerEndpointStringParser
-from twisted.internet import endpoints
-
-import socket
 
 
 @implementer(IPlugin, IStreamServerEndpointStringParser)

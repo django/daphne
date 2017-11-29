@@ -1,7 +1,8 @@
 # coding: utf8
 
-from twisted.web.http_headers import Headers
 from unittest import TestCase
+
+from twisted.web.http_headers import Headers
 
 from daphne.utils import parse_x_forwarded_for
 

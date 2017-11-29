@@ -1,8 +1,8 @@
-from concurrent.futures import CancelledError
 import logging
 import os
 import pickle
 import tempfile
+from concurrent.futures import CancelledError
 
 
 class TestApplication:

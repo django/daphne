@@ -1,8 +1,6 @@
-from __future__ import unicode_literals
-
 # This has to be done first as Twisted is import-order-sensitive with reactors
-from twisted.internet import asyncioreactor
-asyncioreactor.install()
+from twisted.internet import asyncioreactor  # isort:skip
+asyncioreactor.install()  # isort:skip
 
 import asyncio
 import collections
@@ -12,9 +10,9 @@ import string
 import traceback
 import warnings
 
-from twisted.internet import reactor, defer
+from twisted.internet import defer, reactor
 from twisted.internet.endpoints import serverFromString
-from twisted.logger import globalLogBeginner, STDLibLogObserver
+from twisted.logger import STDLibLogObserver, globalLogBeginner
 from twisted.web import http
 
 from .http_protocol import HTTPFactory

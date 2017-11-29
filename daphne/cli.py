@@ -1,11 +1,11 @@
-import sys
 import argparse
 import logging
-from .server import Server
-from .endpoints import build_endpoint_description_strings
-from .access import AccessLogGenerator
-from .utils import import_by_path
+import sys
 
+from .access import AccessLogGenerator
+from .endpoints import build_endpoint_description_strings
+from .server import Server
+from .utils import import_by_path
 
 logger = logging.getLogger(__name__)
 

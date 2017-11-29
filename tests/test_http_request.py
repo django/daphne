@@ -3,7 +3,7 @@
 import collections
 from urllib import parse
 
-from hypothesis import given, assume, settings
+from hypothesis import assume, given, settings
 
 import http_strategies
 from http_base import DaphneTestCase

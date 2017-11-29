@@ -1,11 +1,8 @@
-"""
-Assorted Hypothesis strategies useful for generating HTTP requests and responses
-"""
-from __future__ import unicode_literals
-from six.moves.urllib import parse
 import string
 
 from hypothesis import strategies
+
+from six.moves.urllib import parse
 
 HTTP_METHODS = ["OPTIONS", "GET", "HEAD", "POST", "PUT", "DELETE", "TRACE", "CONNECT"]
 

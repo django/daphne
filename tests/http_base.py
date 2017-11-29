@@ -1,10 +1,10 @@
-from http.client import HTTPConnection
-from urllib import parse
 import socket
 import struct
 import subprocess
 import time
 import unittest
+from http.client import HTTPConnection
+from urllib import parse
 
 from daphne.test_application import TestApplication
 

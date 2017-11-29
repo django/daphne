@@ -1,22 +1,20 @@
-from __future__ import unicode_literals
-
 import logging
 import random
-import six
 import string
 import time
 import traceback
 
-from zope.interface import implementer
-
-from six.moves.urllib_parse import unquote, unquote_plus
+import six
 from twisted.internet.defer import ensureDeferred
 from twisted.internet.interfaces import IProtocolNegotiationFactory
 from twisted.protocols.policies import ProtocolWrapper
 from twisted.web import http
+from zope.interface import implementer
+
+from six.moves.urllib_parse import unquote, unquote_plus
 
 from .utils import parse_x_forwarded_for
-from .ws_protocol import WebSocketProtocol, WebSocketFactory
+from .ws_protocol import WebSocketFactory, WebSocketProtocol
 
 logger = logging.getLogger(__name__)
 
