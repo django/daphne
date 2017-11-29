@@ -61,6 +61,7 @@ class Server(object):
         self.websocket_protocols = ws_protocols
         self.root_path = root_path
         self.verbosity = verbosity
+        self.abort_start = False
 
     def run(self):
         # A set of current Twisted protocol instances to manage
@@ -93,7 +94,9 @@ class Server(object):
         for socket_description in self.endpoints:
             logger.info("Listening on endpoint %s", socket_description)
             ep = serverFromString(reactor, str(socket_description))
-            self.listeners.append(ep.listen(self.http_factory))
+            listener = ep.listen(self.http_factory)
+            listener.addErrback(self.listen_error)
+            self.listeners.append(listener)
 
         # Set the asyncio reactor's event loop as global
         # TODO: Should we instead pass the global one into the reactor?
@@ -104,13 +107,21 @@ class Server(object):
             asyncio.get_event_loop().set_debug(True)
 
         reactor.addSystemEventTrigger("before", "shutdown", self.kill_all_applications)
-        reactor.run(installSignalHandlers=self.signal_handlers)
+        if not self.abort_start:
+            reactor.run(installSignalHandlers=self.signal_handlers)
+
+    def listen_error(self, failure):
+        logger.critical("Listen failure: %s", failure.getErrorMessage())
+        self.stop()
 
     def stop(self):
         """
         Force-stops the server.
         """
-        reactor.stop()
+        if reactor.running:
+            reactor.stop()
+        else:
+            self.abort_start = True
 
     ### Protocol handling
 
