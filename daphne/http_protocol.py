@@ -198,7 +198,7 @@ class WebRequest(http.Request):
         """
         if "type" not in message:
             raise ValueError("Message has no type defined")
-        if message["type"] == "http.response":
+        if message["type"] == "http.response.start":
             if self._response_started:
                 raise ValueError("HTTP response has already been started")
             self._response_started = True
@@ -213,32 +213,30 @@ class WebRequest(http.Request):
                     header = header.encode("latin1")
                 self.responseHeaders.addRawHeader(header, value)
             logger.debug("HTTP %s response started for %s", message["status"], self.client_addr)
-        elif message["type"] == "http.response.hunk":
+        elif message["type"] == "http.response.content":
             if not self._response_started:
-                raise ValueError("HTTP response has not yet been started but got %s" % message["type"])
+                raise ValueError("HTTP response has not yet been started but got %s" % message["type"])# Write out body
+            http.Request.write(self, message.get("content", b""))
+
+            # End if there's no more content
+            if not message.get("more_content", False):
+                self.finish()
+                logger.debug("HTTP response complete for %s", self.client_addr)
+                try:
+                    self.server.log_action("http", "complete", {
+                        "path": self.uri.decode("ascii"),
+                        "status": self.code,
+                        "method": self.method.decode("ascii"),
+                        "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,
+                        "time_taken": self.duration(),
+                        "size": self.sentLength,
+                    })
+                except Exception as e:
+                    logging.error(traceback.format_exc())
+            else:
+                logger.debug("HTTP response chunk for %s", self.client_addr)
         else:
             raise ValueError("Cannot handle message type %s!" % message["type"])
-
-        # Write out body
-        http.Request.write(self, message.get("content", b""))
-
-        # End if there's no more content
-        if not message.get("more_content", False):
-            self.finish()
-            logger.debug("HTTP response complete for %s", self.client_addr)
-            try:
-                self.server.log_action("http", "complete", {
-                    "path": self.uri.decode("ascii"),
-                    "status": self.code,
-                    "method": self.method.decode("ascii"),
-                    "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,
-                    "time_taken": self.duration(),
-                    "size": self.sentLength,
-                })
-            except Exception as e:
-                logging.error(traceback.format_exc())
-        else:
-            logger.debug("HTTP response chunk for %s", self.client_addr)
 
     def handle_exception(self, exception):
         """
@@ -298,12 +296,14 @@ class WebRequest(http.Request):
         Responds with a server-level error page (very basic)
         """
         self.handle_reply({
-            "type": "http.response",
+            "type": "http.response.start",
             "status": status,
-            "status_text": status_text,
             "headers": [
                 (b"Content-Type", b"text/html; charset=utf-8"),
             ],
+        })
+        self.handle_reply({
+            "type": "http.response.content",
             "content": (self.error_template % {
                 "title": six.text_type(status) + " " + status_text.decode("ascii"),
                 "body": body,

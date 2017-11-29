@@ -158,7 +158,10 @@ class DaphneTestCase(unittest.TestCase):
             body=body,
             headers=headers,
             xff=xff,
-            responses=[{"type": "http.response", "status": 200, "content": b"OK"}],
+            responses=[
+                {"type": "http.response.start", "status": 200},
+                {"type": "http.response.content", "content": b"OK"},
+            ],
         )
         return scope, messages
 
@@ -247,7 +250,6 @@ class DaphneTestCase(unittest.TestCase):
         frame += b"\0\0\0\0"
         # Payload
         frame += value
-        print("sending %r" % frame)
         sock.sendall(frame)
 
     def receive_from_socket(self, sock, length, timeout=1):

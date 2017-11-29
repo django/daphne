@@ -27,8 +27,11 @@ class TestHTTPResponse(DaphneTestCase):
         """
         response = self.run_daphne_response([
             {
-                "type": "http.response",
+                "type": "http.response.start",
                 "status": 200,
+            },
+            {
+                "type": "http.response.content",
                 "content": b"hello world",
             },
         ])
@@ -45,7 +48,10 @@ class TestHTTPResponse(DaphneTestCase):
         with self.assertRaises(ValueError):
             self.run_daphne_response([
                 {
-                    "type": "http.response",
+                    "type": "http.response.start",
+                },
+                {
+                    "type": "http.response.content",
                     "content": b"hello world",
                 },
             ])
@@ -56,13 +62,64 @@ class TestHTTPResponse(DaphneTestCase):
         """
         response = self.run_daphne_response([
             {
-                "type": "http.response",
+                "type": "http.response.start",
                 "status": 201,
+            },
+            {
+                "type": "http.response.content",
                 "content": b"i made a thing!",
             },
         ])
         self.assertEqual(response.status, 201)
         self.assertEqual(response.read(), b"i made a thing!")
+
+    def test_chunked_response(self):
+        """
+        Tries sending a response in multiple parts.
+        """
+        response = self.run_daphne_response([
+            {
+                "type": "http.response.start",
+                "status": 201,
+            },
+            {
+                "type": "http.response.content",
+                "content": b"chunk 1 ",
+                "more_content": True,
+            },
+            {
+                "type": "http.response.content",
+                "content": b"chunk 2",
+            },
+        ])
+        self.assertEqual(response.status, 201)
+        self.assertEqual(response.read(), b"chunk 1 chunk 2")
+
+    def test_chunked_response_empty(self):
+        """
+        Tries sending a response in multiple parts and an empty end.
+        """
+        response = self.run_daphne_response([
+            {
+                "type": "http.response.start",
+                "status": 201,
+            },
+            {
+                "type": "http.response.content",
+                "content": b"chunk 1 ",
+                "more_content": True,
+            },
+            {
+                "type": "http.response.content",
+                "content": b"chunk 2",
+                "more_content": True,
+            },
+            {
+                "type": "http.response.content",
+            },
+        ])
+        self.assertEqual(response.status, 201)
+        self.assertEqual(response.read(), b"chunk 1 chunk 2")
 
     @given(body=http_strategies.http_body())
     @settings(max_examples=5, deadline=2000)
@@ -72,8 +129,11 @@ class TestHTTPResponse(DaphneTestCase):
         """
         response = self.run_daphne_response([
             {
-                "type": "http.response",
+                "type": "http.response.start",
                 "status": 200,
+            },
+            {
+                "type": "http.response.content",
                 "content": body,
             },
         ])
@@ -86,9 +146,12 @@ class TestHTTPResponse(DaphneTestCase):
         # The ASGI spec requires us to lowercase our header names
         response = self.run_daphne_response([
             {
-                "type": "http.response",
+                "type": "http.response.start",
                 "status": 200,
                 "headers": self.normalize_headers(headers),
+            },
+            {
+                "type": "http.response.content",
             },
         ])
         # Check headers in a sensible way. Ignore transfer-encoding.
