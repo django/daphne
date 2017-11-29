@@ -1,20 +1,16 @@
 import logging
-import random
-import string
 import time
 import traceback
 
 import six
-from twisted.internet.defer import ensureDeferred
 from twisted.internet.interfaces import IProtocolNegotiationFactory
 from twisted.protocols.policies import ProtocolWrapper
 from twisted.web import http
 from zope.interface import implementer
 
-from six.moves.urllib_parse import unquote, unquote_plus
+from six.moves.urllib_parse import unquote
 
 from .utils import parse_x_forwarded_for
-from .ws_protocol import WebSocketFactory, WebSocketProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +134,7 @@ class WebRequest(http.Request):
                         continue
                     for value in values:
                         if name.lower() == b"daphne-root-path":
-                            self.root_path = self.unquote(value)
+                            self.root_path = unquote(value.decode("ascii"))
                         else:
                             self.clean_headers.append((name.lower(), value))
                 logger.debug("HTTP %s request for %s", self.method, self.client_addr)
@@ -149,7 +145,7 @@ class WebRequest(http.Request):
                     # TODO: Correctly say if it's 1.1 or 1.0
                     "http_version": self.clientproto.split(b"/")[-1].decode("ascii"),
                     "method": self.method.decode("ascii"),
-                    "path": self.unquote(self.path),
+                    "path": unquote(self.path.decode("ascii")),
                     "root_path": self.root_path,
                     "scheme": "https" if self.isSecure() else "http",
                     "query_string": self.query_string,
@@ -213,9 +209,9 @@ class WebRequest(http.Request):
             logger.debug("HTTP %s response started for %s", message["status"], self.client_addr)
         elif message["type"] == "http.response.content":
             if not self._response_started:
-                raise ValueError("HTTP response has not yet been started but got %s" % message["type"])# Write out body
+                raise ValueError("HTTP response has not yet been started but got %s" % message["type"])
+            # Write out body
             http.Request.write(self, message.get("content", b""))
-
             # End if there's no more content
             if not message.get("more_content", False):
                 self.finish()
@@ -251,22 +247,6 @@ class WebRequest(http.Request):
             self.basic_error(503, b"Service Unavailable", "Application failed to respond within time limit.")
 
     ### Utility functions
-
-    @classmethod
-    def unquote(cls, value, plus_as_space=False):
-        """
-        Python 2 and 3 compat layer for utf-8 unquoting
-        """
-        if six.PY2:
-            if plus_as_space:
-                return unquote_plus(value).decode("utf8")
-            else:
-                return unquote(value).decode("utf8")
-        else:
-            if plus_as_space:
-                return unquote_plus(value.decode("ascii"))
-            else:
-                return unquote(value.decode("ascii"))
 
     def send_disconnect(self):
         """

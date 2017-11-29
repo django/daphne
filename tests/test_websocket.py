@@ -15,14 +15,14 @@ class TestWebsocket(DaphneTestCase):
     """
 
     def assert_valid_websocket_scope(
-            self,
-            scope,
-            path="/",
-            params=None,
-            headers=None,
-            scheme=None,
-            subprotocols=None,
-        ):
+        self,
+        scope,
+        path="/",
+        params=None,
+        headers=None,
+        scheme=None,
+        subprotocols=None,
+    ):
         """
         Checks that the passed scope is a valid ASGI HTTP scope regarding types
         and some urlencoding things.
@@ -145,11 +145,11 @@ class TestWebsocket(DaphneTestCase):
     )
     @settings(max_examples=5, deadline=2000)
     def test_http_bits(
-            self,
-            request_path,
-            request_params,
-            request_headers,
-        ):
+        self,
+        request_path,
+        request_params,
+        request_headers,
+    ):
         """
         Tests that various HTTP-level bits (query string params, path, headers)
         carry over into the scope.

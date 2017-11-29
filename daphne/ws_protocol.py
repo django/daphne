@@ -6,7 +6,7 @@ import six
 from autobahn.twisted.websocket import ConnectionDeny, WebSocketServerFactory, WebSocketServerProtocol
 from twisted.internet import defer
 
-from six.moves.urllib_parse import unquote, urlencode
+from six.moves.urllib_parse import unquote
 
 from .utils import parse_x_forwarded_for
 
@@ -61,19 +61,23 @@ class WebSocketProtocol(WebSocketServerProtocol):
             subprotocols = []
             for header, value in self.clean_headers:
                 if header == b"sec-websocket-protocol":
-                    subprotocols = [x.strip() for x in self.unquote(value).split(",")]
+                    subprotocols = [
+                        x.strip()
+                        for x in
+                        unquote(value.decode("ascii")).split(",")
+                    ]
             # Make new application instance with scope
             self.path = request.path.encode("ascii")
             self.application_queue = self.server.create_application(self, {
                 "type": "websocket",
-                "path": self.unquote(self.path),
+                "path": unquote(self.path.decode("ascii")),
                 "headers": self.clean_headers,
                 "query_string": self._raw_query_string,  # Passed by HTTP protocol
                 "client": self.client_addr,
                 "server": self.server_addr,
                 "subprotocols": subprotocols,
             })
-        except:
+        except Exception as e:
             # Exceptions here are not displayed right, just 500.
             # Turn them into an ERROR log.
             logger.error(traceback.format_exc())
@@ -152,7 +156,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
             if message.get("bytes", None) and message.get("text", None):
                 raise ValueError(
                     "Got invalid WebSocket reply message on %s - contains both bytes and text keys" % (
-                        channel,
+                        message,
                     )
                 )
             if message.get("bytes", None):
@@ -213,16 +217,6 @@ class WebSocketProtocol(WebSocketServerProtocol):
         self.sendClose(code=code)
 
     ### Utils
-
-    @classmethod
-    def unquote(cls, value):
-        """
-        Python 2 and 3 compat layer for utf-8 unquoting
-        """
-        if six.PY2:
-            return unquote(value).decode("utf8")
-        else:
-            return unquote(value.decode("ascii"))
 
     def duration(self):
         """

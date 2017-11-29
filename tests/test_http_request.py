@@ -15,14 +15,14 @@ class TestHTTPRequest(DaphneTestCase):
     """
 
     def assert_valid_http_scope(
-            self,
-            scope,
-            method,
-            path,
-            params=None,
-            headers=None,
-            scheme=None,
-        ):
+        self,
+        scope,
+        method,
+        path,
+        params=None,
+        headers=None,
+        scheme=None,
+    ):
         """
         Checks that the passed scope is a valid ASGI HTTP scope regarding types
         and some urlencoding things.
@@ -76,11 +76,7 @@ class TestHTTPRequest(DaphneTestCase):
         if server is not None:
             self.assert_valid_address_and_port(server)
 
-    def assert_valid_http_request_message(
-            self,
-            message,
-            body=None,
-        ):
+    def assert_valid_http_request_message(self, message, body=None):
         """
         Asserts that a message is a valid http.request message
         """
@@ -167,13 +163,13 @@ class TestHTTPRequest(DaphneTestCase):
     )
     @settings(max_examples=5, deadline=2000)
     def test_kitchen_sink(
-            self,
-            request_method,
-            request_path,
-            request_params,
-            request_headers,
-            request_body,
-        ):
+        self,
+        request_method,
+        request_path,
+        request_params,
+        request_headers,
+        request_body,
+    ):
         """
         Throw everything at Daphne that we dare. The idea is that if a combination
         of method/path/headers/body would break the spec, hypothesis will eventually find it.
