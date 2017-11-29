@@ -6,6 +6,17 @@ python:
   - "3.5"
   - "3.6"
 
-install: pip install tox tox-travis
+env:
+  - TWISTED="twisted==17.1.0"
+  - TWISTED="twisted"
 
-script: tox
+install:
+  - pip install $TWISTED isort unify flake8 -e .[tests]
+  - pip freeze
+
+script:
+  - pytest
+  - flake8
+  - isort --check-only --recursive daphne tests
+  - unify --check-only --recursive --quote \" daphne tests
+
