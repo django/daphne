@@ -7,7 +7,7 @@ python:
   - "3.6"
 
 env:
-  - TWISTED="twisted==17.1.0"
+  - TWISTED="twisted==17.5.0"
   - TWISTED="twisted"
 
 install:
