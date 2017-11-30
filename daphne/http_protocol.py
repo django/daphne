@@ -207,13 +207,13 @@ class WebRequest(http.Request):
                     header = header.encode("latin1")
                 self.responseHeaders.addRawHeader(header, value)
             logger.debug("HTTP %s response started for %s", message["status"], self.client_addr)
-        elif message["type"] == "http.response.content":
+        elif message["type"] == "http.response.body":
             if not self._response_started:
                 raise ValueError("HTTP response has not yet been started but got %s" % message["type"])
             # Write out body
-            http.Request.write(self, message.get("content", b""))
+            http.Request.write(self, message.get("body", b""))
             # End if there's no more content
-            if not message.get("more_content", False):
+            if not message.get("more_body", False):
                 self.finish()
                 logger.debug("HTTP response complete for %s", self.client_addr)
                 try:
@@ -281,8 +281,8 @@ class WebRequest(http.Request):
             ],
         })
         self.handle_reply({
-            "type": "http.response.content",
-            "content": (self.error_template % {
+            "type": "http.response.body",
+            "body": (self.error_template % {
                 "title": six.text_type(status) + " " + status_text.decode("ascii"),
                 "body": body,
             }).encode("utf8"),

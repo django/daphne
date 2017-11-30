@@ -160,7 +160,7 @@ class DaphneTestCase(unittest.TestCase):
             xff=xff,
             responses=[
                 {"type": "http.response.start", "status": 200},
-                {"type": "http.response.content", "content": b"OK"},
+                {"type": "http.response.body", "body": b"OK"},
             ],
         )
         return scope, messages

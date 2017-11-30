@@ -83,7 +83,7 @@ class TestHTTPRequest(DaphneTestCase):
         # Check overall keys
         self.assert_key_sets(
             required_keys={"type"},
-            optional_keys={"body", "more_content"},
+            optional_keys={"body", "more_body"},
             actual_keys=message.keys(),
         )
         # Check that it is the right type

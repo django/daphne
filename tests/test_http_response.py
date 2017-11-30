@@ -31,8 +31,8 @@ class TestHTTPResponse(DaphneTestCase):
                 "status": 200,
             },
             {
-                "type": "http.response.content",
-                "content": b"hello world",
+                "type": "http.response.body",
+                "body": b"hello world",
             },
         ])
         self.assertEqual(response.status, 200)
@@ -51,8 +51,8 @@ class TestHTTPResponse(DaphneTestCase):
                     "type": "http.response.start",
                 },
                 {
-                    "type": "http.response.content",
-                    "content": b"hello world",
+                    "type": "http.response.body",
+                    "body": b"hello world",
                 },
             ])
 
@@ -66,8 +66,8 @@ class TestHTTPResponse(DaphneTestCase):
                 "status": 201,
             },
             {
-                "type": "http.response.content",
-                "content": b"i made a thing!",
+                "type": "http.response.body",
+                "body": b"i made a thing!",
             },
         ])
         self.assertEqual(response.status, 201)
@@ -83,13 +83,13 @@ class TestHTTPResponse(DaphneTestCase):
                 "status": 201,
             },
             {
-                "type": "http.response.content",
-                "content": b"chunk 1 ",
-                "more_content": True,
+                "type": "http.response.body",
+                "body": b"chunk 1 ",
+                "more_body": True,
             },
             {
-                "type": "http.response.content",
-                "content": b"chunk 2",
+                "type": "http.response.body",
+                "body": b"chunk 2",
             },
         ])
         self.assertEqual(response.status, 201)
@@ -105,17 +105,17 @@ class TestHTTPResponse(DaphneTestCase):
                 "status": 201,
             },
             {
-                "type": "http.response.content",
-                "content": b"chunk 1 ",
-                "more_content": True,
+                "type": "http.response.body",
+                "body": b"chunk 1 ",
+                "more_body": True,
             },
             {
-                "type": "http.response.content",
-                "content": b"chunk 2",
-                "more_content": True,
+                "type": "http.response.body",
+                "body": b"chunk 2",
+                "more_body": True,
             },
             {
-                "type": "http.response.content",
+                "type": "http.response.body",
             },
         ])
         self.assertEqual(response.status, 201)
@@ -133,8 +133,8 @@ class TestHTTPResponse(DaphneTestCase):
                 "status": 200,
             },
             {
-                "type": "http.response.content",
-                "content": body,
+                "type": "http.response.body",
+                "body": body,
             },
         ])
         self.assertEqual(response.status, 200)
@@ -151,7 +151,7 @@ class TestHTTPResponse(DaphneTestCase):
                 "headers": self.normalize_headers(headers),
             },
             {
-                "type": "http.response.content",
+                "type": "http.response.body",
             },
         ])
         # Check headers in a sensible way. Ignore transfer-encoding.
