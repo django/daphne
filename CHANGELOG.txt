@@ -1,3 +1,10 @@
+1.4.1 (2018-01-02)
+------------------
+
+* Bugfix for a bad merge of HTTPFactory for X-Forwarded-Proto causing Daphne
+  to not start.
+
+
 1.4.0 (2018-01-02)
 ------------------
 
