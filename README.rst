@@ -126,7 +126,7 @@ Please refer to the
 
 To run tests, make sure you have installed the ``tests`` extra with the package::
 
-    cd asgiref/
+    cd daphne/
     pip install -e .[tests]
     pytest
 
