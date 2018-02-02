@@ -1,8 +1,7 @@
 import string
+from urllib import parse
 
 from hypothesis import strategies
-
-from six.moves.urllib import parse
 
 HTTP_METHODS = ["OPTIONS", "GET", "HEAD", "POST", "PUT", "DELETE", "TRACE", "CONNECT"]
 

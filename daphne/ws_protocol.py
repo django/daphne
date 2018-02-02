@@ -1,12 +1,10 @@
 import logging
 import time
 import traceback
+from urllib.parse import unquote
 
-import six
 from autobahn.twisted.websocket import ConnectionDeny, WebSocketServerFactory, WebSocketServerProtocol
 from twisted.internet import defer
-
-from six.moves.urllib_parse import unquote
 
 from .utils import parse_x_forwarded_for
 
@@ -44,8 +42,8 @@ class WebSocketProtocol(WebSocketServerProtocol):
             peer = self.transport.getPeer()
             host = self.transport.getHost()
             if hasattr(peer, "host") and hasattr(peer, "port"):
-                self.client_addr = [six.text_type(peer.host), peer.port]
-                self.server_addr = [six.text_type(host.host), host.port]
+                self.client_addr = [str(peer.host), peer.port]
+                self.server_addr = [str(host.host), host.port]
             else:
                 self.client_addr = None
                 self.server_addr = None

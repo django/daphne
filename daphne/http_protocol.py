@@ -1,14 +1,12 @@
 import logging
 import time
 import traceback
+from urllib.parse import unquote
 
-import six
 from twisted.internet.interfaces import IProtocolNegotiationFactory
 from twisted.protocols.policies import ProtocolWrapper
 from twisted.web import http
 from zope.interface import implementer
-
-from six.moves.urllib_parse import unquote
 
 from .utils import parse_x_forwarded_for
 
@@ -68,8 +66,8 @@ class WebRequest(http.Request):
             if hasattr(self.client, "host") and hasattr(self.client, "port"):
                 # client.host and host.host are byte strings in Python 2, but spec
                 # requires unicode string.
-                self.client_addr = [six.text_type(self.client.host), self.client.port]
-                self.server_addr = [six.text_type(self.host.host), self.host.port]
+                self.client_addr = [str(self.client.host), self.client.port]
+                self.server_addr = [str(self.host.host), self.host.port]
             else:
                 self.client_addr = None
                 self.server_addr = None
@@ -202,9 +200,6 @@ class WebRequest(http.Request):
             self.setResponseCode(message["status"])
             # Write headers
             for header, value in message.get("headers", {}):
-                # Shim code from old ASGI version, can be removed after a while
-                if isinstance(header, six.text_type):
-                    header = header.encode("latin1")
                 self.responseHeaders.addRawHeader(header, value)
             logger.debug("HTTP %s response started for %s", message["status"], self.client_addr)
         elif message["type"] == "http.response.body":
@@ -283,7 +278,7 @@ class WebRequest(http.Request):
         self.handle_reply({
             "type": "http.response.body",
             "body": (self.error_template % {
-                "title": six.text_type(status) + " " + status_text.decode("ascii"),
+                "title": str(status) + " " + status_text.decode("ascii"),
                 "body": body,
             }).encode("utf8"),
         })

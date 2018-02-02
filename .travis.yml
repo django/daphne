@@ -17,6 +17,6 @@ install:
 script:
   - pytest
   - flake8
-  - isort --check-only --recursive daphne tests
+  - isort --check-only --diff --recursive daphne tests
   - unify --check-only --recursive --quote \" daphne tests
 
