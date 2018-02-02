@@ -59,14 +59,15 @@ class DaphneTestingInstance:
         # Optionally enable X-Forwarded-For support.
         if self.xff:
             daphne_args += ["--proxy-headers"]
-        # Start up process and make sure it begins listening.
-        self.process = subprocess.Popen(daphne_args + ["daphne.test_application:TestApplication"])
-        for _ in range(30):
-            time.sleep(0.1)
-            if self.port_in_use(self.port):
-                return self
-        # Daphne didn't start up. Sadface.
-        self.process.terminate()
+        # Start up process and make sure it begins listening. Try this 3 times.
+        for _ in range(3):
+            self.process = subprocess.Popen(daphne_args + ["daphne.test_application:TestApplication"])
+            for _ in range(30):
+                time.sleep(0.1)
+                if self.port_in_use(self.port):
+                    return self
+            # Daphne didn't start up. Sadface.
+            self.process.terminate()
         raise RuntimeError("Daphne never came up.")
 
     def __exit__(self, exc_type, exc_value, traceback):
