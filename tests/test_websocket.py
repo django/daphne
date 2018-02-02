@@ -52,12 +52,20 @@ class TestWebsocket(DaphneTestCase):
         # {name: [value1, value2, ...]} and check if they're equal.
         transformed_scope_headers = collections.defaultdict(list)
         for name, value in scope["headers"]:
-            transformed_scope_headers[name].append(value)
+            transformed_scope_headers[name] = []
+            # Make sure to split out any headers collapsed with commas
+            for bit in value.split(b","):
+                if bit.strip():
+                    transformed_scope_headers[name].append(bit.strip())
         transformed_request_headers = collections.defaultdict(list)
         for name, value in (headers or []):
             expected_name = name.lower().strip().encode("ascii")
             expected_value = value.strip().encode("ascii")
-            transformed_request_headers[expected_name].append(expected_value)
+            transformed_request_headers[expected_name] = []
+            # Make sure to split out any headers collapsed with commas
+            for bit in expected_value.split(b","):
+                if bit.strip():
+                    transformed_request_headers[expected_name].append(bit.strip())
         for name, value in transformed_request_headers.items():
             self.assertIn(name, transformed_scope_headers)
             self.assertEqual(value, transformed_scope_headers[name])
