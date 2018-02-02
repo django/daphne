@@ -1,3 +1,4 @@
+import random
 import socket
 import struct
 import subprocess
@@ -42,9 +43,10 @@ class DaphneTestingInstance:
         """
         Finds an unused port to test stuff on
         """
-        for i in range(11200, 11300):
-            if not self.port_in_use(i):
-                return i
+        for _ in range(100):
+            port = random.randint(11200, 11300)
+            if not self.port_in_use(port):
+                return port
         raise RuntimeError("Cannot find a free port to test on")
 
     def __enter__(self):
@@ -59,7 +61,7 @@ class DaphneTestingInstance:
             daphne_args += ["--proxy-headers"]
         # Start up process and make sure it begins listening.
         self.process = subprocess.Popen(daphne_args + ["daphne.test_application:TestApplication"])
-        for _ in range(100):
+        for _ in range(30):
             time.sleep(0.1)
             if self.port_in_use(self.port):
                 return self
