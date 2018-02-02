@@ -35,13 +35,15 @@ class Server(object):
         proxy_forwarded_address_header=None,
         proxy_forwarded_port_header=None,
         verbosity=1,
-        websocket_handshake_timeout=5
+        websocket_handshake_timeout=5,
+        ready_callable=None,
     ):
         self.application = application
         self.endpoints = endpoints or []
         if not self.endpoints:
             raise UserWarning("No endpoints. This server will not listen on anything.")
         self.listeners = []
+        self.listening_addresses = []
         self.signal_handlers = signal_handlers
         self.action_logger = action_logger
         self.http_timeout = http_timeout
@@ -56,6 +58,7 @@ class Server(object):
         self.root_path = root_path
         self.verbosity = verbosity
         self.abort_start = False
+        self.ready_callable = ready_callable
 
     def run(self):
         # A set of current Twisted protocol instances to manage
@@ -89,6 +92,7 @@ class Server(object):
             logger.info("Listening on endpoint %s", socket_description)
             ep = serverFromString(reactor, str(socket_description))
             listener = ep.listen(self.http_factory)
+            listener.addCallback(self.listen_success)
             listener.addErrback(self.listen_error)
             self.listeners.append(listener)
 
@@ -102,7 +106,18 @@ class Server(object):
 
         reactor.addSystemEventTrigger("before", "shutdown", self.kill_all_applications)
         if not self.abort_start:
+            # Trigger the ready flag if we had one
+            if self.ready_callable:
+                self.ready_callable()
+            # Run the reactor
             reactor.run(installSignalHandlers=self.signal_handlers)
+
+    def listen_success(self, port):
+        """
+        Called when a listen succeeds so we can store port details (if there are any)
+        """
+        if hasattr(port, "getHost"):
+            self.listening_addresses.append((port.getHost().host, port.getHost().port))
 
     def listen_error(self, failure):
         logger.critical("Listen failure: %s", failure.getErrorMessage())

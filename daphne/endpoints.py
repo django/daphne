@@ -12,7 +12,7 @@ def build_endpoint_description_strings(
     to use command line args such as host, port, unix sockets etc.
     """
     socket_descriptions = []
-    if host and port:
+    if host and port is not None:
         host = host.strip("[]").replace(":", "\:")
         socket_descriptions.append("tcp:port=%d:interface=%s" % (int(port), host))
     elif any([host, port]):
