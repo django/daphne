@@ -189,7 +189,7 @@ class Server(object):
                         # Protocol is asking the server to exit (likely during test)
                         self.stop()
                     else:
-                        logging.error(
+                        logger.error(
                             "Exception inside application: {}\n{}{}".format(
                                 exception,
                                 "".join(traceback.format_tb(
@@ -216,7 +216,7 @@ class Server(object):
             if not application_instance.done():
                 application_instance.cancel()
                 wait_for.append(application_instance)
-        logging.info("Killed %i pending application instances", len(wait_for))
+        logger.info("Killed %i pending application instances", len(wait_for))
         # Make Twisted wait until they're all dead
         wait_deferred = defer.Deferred.fromFuture(asyncio.gather(*wait_for))
         wait_deferred.addErrback(lambda x: None)

@@ -221,7 +221,7 @@ class WebRequest(http.Request):
                         "size": self.sentLength,
                     })
                 except Exception as e:
-                    logging.error(traceback.format_exc())
+                    logger.error(traceback.format_exc())
             else:
                 logger.debug("HTTP response chunk for %s", self.client_addr)
         else:
