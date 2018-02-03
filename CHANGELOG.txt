@@ -1,3 +1,9 @@
+2.0.1 (2018-02-03)
+------------------
+
+* Updated logging to correctly route exceptions through the main Daphne logger
+
+
 2.0.0 (2018-02-01)
 ------------------
 
