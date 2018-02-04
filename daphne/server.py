@@ -4,8 +4,8 @@ import warnings  # isort:skip
 from twisted.internet import asyncioreactor  # isort:skip
 if "twisted.internet.reactor" in sys.modules:
     warnings.warn(
-        "Something has already installed a Twisted reactor. Attempting to uninstall it; ",
-        "you can fix this warning by importing daphne.server early in your codebase or ",
+        "Something has already installed a Twisted reactor. Attempting to uninstall it; " +
+        "you can fix this warning by importing daphne.server early in your codebase or " +
         "finding the package that imports Twisted and importing it later on."
     )
     del sys.modules["twisted.internet.reactor"]
