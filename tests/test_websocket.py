@@ -1,6 +1,7 @@
 # coding: utf8
 
 import collections
+import time
 from urllib import parse
 
 from hypothesis import given, settings
@@ -242,3 +243,31 @@ class TestWebsocket(DaphneTestCase):
             # Make sure it got our frame
             _, messages = test_app.get_received()
             assert messages[1] == {"type": "websocket.receive", "bytes": b"what is here? \xe2"}
+
+    def test_http_timeout(self):
+        """
+        Tests that the HTTP timeout doesn't kick in for WebSockets
+        """
+        with DaphneTestingInstance(http_timeout=1) as test_app:
+            # Connect
+            test_app.add_send_messages([
+                {
+                    "type": "websocket.accept",
+                }
+            ])
+            sock, _ = self.websocket_handshake(test_app)
+            _, messages = test_app.get_received()
+            self.assert_valid_websocket_connect_message(messages[0])
+            # Wait 2 seconds
+            time.sleep(2)
+            # Prep frame for it to send
+            test_app.add_send_messages([
+                {
+                    "type": "websocket.send",
+                    "text": "cake",
+                }
+            ])
+            # Send it a frame
+            self.websocket_send_frame(sock, "still alive?")
+            # Receive a frame and make sure it's correct
+            assert self.websocket_receive_frame(sock) == "cake"

@@ -118,6 +118,7 @@ class WebRequest(http.Request):
                 protocol.dataReceived(data)
                 # Remove our HTTP reply channel association
                 logger.debug("Upgraded connection %s to WebSocket", self.client_addr)
+                self.server.discard_protocol(self)
                 # Resume the producer so we keep getting data, if it's available as a method
                 self.channel._networkProducer.resumeProducing()
 

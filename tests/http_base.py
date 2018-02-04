@@ -18,8 +18,9 @@ class DaphneTestingInstance:
     Works as a context manager.
     """
 
-    def __init__(self, xff=False):
+    def __init__(self, xff=False, http_timeout=60):
         self.xff = xff
+        self.http_timeout = http_timeout
         self.host = "127.0.0.1"
 
     def port_in_use(self, port):
@@ -59,6 +60,8 @@ class DaphneTestingInstance:
         # Optionally enable X-Forwarded-For support.
         if self.xff:
             daphne_args += ["--proxy-headers"]
+        if self.http_timeout:
+            daphne_args += ["--http-timeout=%i" % self.http_timeout]
         # Start up process and make sure it begins listening. Try this 3 times.
         for _ in range(3):
             self.process = subprocess.Popen(daphne_args + ["daphne.test_application:TestApplication"])
