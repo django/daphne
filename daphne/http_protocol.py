@@ -117,6 +117,9 @@ class WebRequest(http.Request):
                 data += self.content.read()
                 protocol.dataReceived(data)
                 # Remove our HTTP reply channel association
+                # FIXME: Something wrong is happening here.
+                # http protocol won't remove after upgrade to protocol websocket,
+                # which results to http timeout and disconnect websocket.
                 logger.debug("Upgraded connection %s to WebSocket", self.client_addr)
                 # Resume the producer so we keep getting data, if it's available as a method
                 self.channel._networkProducer.resumeProducing()
