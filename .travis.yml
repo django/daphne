@@ -22,7 +22,7 @@ script:
 
 jobs:
   include:
-    - stage: deploy
+    - stage: release
       script: skip
       deploy:
         provider: pypi
