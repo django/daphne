@@ -20,11 +20,15 @@ script:
 - isort --check-only --diff --recursive daphne tests
 - unify --check-only --recursive --quote \" daphne tests
 
-deploy:
-  provider: pypi
-  user: andrewgodwin_bot
-  on:
-    tags: true
-  distributions: sdist bdist_wheel
-  password:
-    secure: IA+dvSmMKN+fT47rgRb6zdmrExhK5QCVEDH8kheC6kAacw80ORBZKo6sMX9GQBJ3BlfhTqrzAhItHkDUxonb579rJDvmlJ7FPg7axZpsY9Fmls6q1rJC/La8iGWx20+ctberejKSH3wSwa0LH0imJXGDoKKzf1DLmk5pEEWjG2QqhKdEtyAcnzOPnDWcRCs+DKfQcMzETH7lMFN8oe3aBhHLLtcg4yA78cN5CeyyH92lmbaVp7k/b1FqXXFgf16bi5tlgLrb6DhmcnNjwLMSHRafNoPCXkWQOwh6gEHeHRR3OsHsBueyJHIikuHNrpmgpAqjYlVQ5WqmfgMlhCfRm9xL+G4G+KK9n8AJNGAszUfxVlPvMTw+nkOSd/bmxKrdCqqYnDIvDLucXJ86TstNzklfAwr3FL+wBlucRtOMLhQlHIaPTXYcNpOuh6B4ELjC+WjDGh8EdRKvcsZz7+5AS5ZaDDccuviMzQFsXVcE2d4HiosbARVrkxJ7j3MWp0OGgWVxXgRO2EQIksbgGSIjI8PqFjBqht2WT6MhVZPCc9XHUlP2CiAR5+QY8JgTIztbEDuhpgr0cRAtiHwJEAxDR9tJR/j/v4X/Pau2ZdR0C0yW77lVgD75spLL0khAnU7q+qgiF0hyQ7gRRVy0tElT0HBenVbzjzHowdJX8lSPjRg=
+jobs:
+  include:
+    - stage: deploy
+      script: skip
+      deploy:
+        provider: pypi
+        user: andrewgodwin_bot
+        on:
+          tags: true
+        distributions: sdist bdist_wheel
+        password:
+          secure: IA+dvSmMKN+fT47rgRb6zdmrExhK5QCVEDH8kheC6kAacw80ORBZKo6sMX9GQBJ3BlfhTqrzAhItHkDUxonb579rJDvmlJ7FPg7axZpsY9Fmls6q1rJC/La8iGWx20+ctberejKSH3wSwa0LH0imJXGDoKKzf1DLmk5pEEWjG2QqhKdEtyAcnzOPnDWcRCs+DKfQcMzETH7lMFN8oe3aBhHLLtcg4yA78cN5CeyyH92lmbaVp7k/b1FqXXFgf16bi5tlgLrb6DhmcnNjwLMSHRafNoPCXkWQOwh6gEHeHRR3OsHsBueyJHIikuHNrpmgpAqjYlVQ5WqmfgMlhCfRm9xL+G4G+KK9n8AJNGAszUfxVlPvMTw+nkOSd/bmxKrdCqqYnDIvDLucXJ86TstNzklfAwr3FL+wBlucRtOMLhQlHIaPTXYcNpOuh6B4ELjC+WjDGh8EdRKvcsZz7+5AS5ZaDDccuviMzQFsXVcE2d4HiosbARVrkxJ7j3MWp0OGgWVxXgRO2EQIksbgGSIjI8PqFjBqht2WT6MhVZPCc9XHUlP2CiAR5+QY8JgTIztbEDuhpgr0cRAtiHwJEAxDR9tJR/j/v4X/Pau2ZdR0C0yW77lVgD75spLL0khAnU7q+qgiF0hyQ7gRRVy0tElT0HBenVbzjzHowdJX8lSPjRg=
