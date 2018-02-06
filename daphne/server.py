@@ -132,7 +132,7 @@ class Server(object):
         """
         if hasattr(port, "getHost"):
             host = port.getHost()
-            if hasattr(host, 'host') and hasattr(host, 'port'):
+            if hasattr(host, "host") and hasattr(host, "port"):
                 self.listening_addresses.append((host.host, host.port))
 
     def listen_error(self, failure):

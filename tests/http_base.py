@@ -1,3 +1,4 @@
+import errno
 import random
 import socket
 import struct
@@ -6,7 +7,6 @@ import time
 import unittest
 from http.client import HTTPConnection
 from urllib import parse
-import errno
 
 from daphne.test_application import TestApplication
 
