@@ -1,3 +1,4 @@
+import errno
 import random
 import socket
 import struct
@@ -31,7 +32,7 @@ class DaphneTestingInstance:
         try:
             s.bind(("127.0.0.1", port))
         except socket.error as e:
-            if e.errno in [13, 98]:
+            if e.errno in [errno.EACCES, errno.EADDRINUSE]:
                 return True
             else:
                 raise

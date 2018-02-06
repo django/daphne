@@ -131,7 +131,9 @@ class Server(object):
         Called when a listen succeeds so we can store port details (if there are any)
         """
         if hasattr(port, "getHost"):
-            self.listening_addresses.append((port.getHost().host, port.getHost().port))
+            host = port.getHost()
+            if hasattr(host, "host") and hasattr(host, "port"):
+                self.listening_addresses.append((host.host, host.port))
 
     def listen_error(self, failure):
         logger.critical("Listen failure: %s", failure.getErrorMessage())
