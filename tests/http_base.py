@@ -1,5 +1,4 @@
-import errno
-import random
+
 import socket
 import struct
 import subprocess
@@ -19,60 +18,38 @@ class DaphneTestingInstance:
     Works as a context manager.
     """
 
-    def __init__(self, xff=False, http_timeout=60):
+    def __init__(self, xff=False, http_timeout=None):
         self.xff = xff
         self.http_timeout = http_timeout
         self.host = "127.0.0.1"
-
-    def port_in_use(self, port):
-        """
-        Tests if a port is in use on the local machine.
-        """
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            s.bind(("127.0.0.1", port))
-        except socket.error as e:
-            if e.errno in [errno.EACCES, errno.EADDRINUSE]:
-                return True
-            else:
-                raise
-        else:
-            return False
-        finally:
-            s.close()
-
-    def find_free_port(self):
-        """
-        Finds an unused port to test stuff on
-        """
-        for _ in range(100):
-            port = random.randint(11200, 11300)
-            if not self.port_in_use(port):
-                return port
-        raise RuntimeError("Cannot find a free port to test on")
 
     def __enter__(self):
         # Clear result storage
         TestApplication.delete_setup()
         TestApplication.delete_result()
-        # Find a port to listen on
-        self.port = self.find_free_port()
-        daphne_args = ["daphne", "-p", str(self.port), "-v", "0"]
+        # Tell Daphne to use port 0 so the OS gives it a free port
+        daphne_args = ["daphne", "-p", "0", "-v", "1"]
         # Optionally enable X-Forwarded-For support.
         if self.xff:
             daphne_args += ["--proxy-headers"]
         if self.http_timeout:
             daphne_args += ["--http-timeout=%i" % self.http_timeout]
-        # Start up process and make sure it begins listening. Try this 3 times.
-        for _ in range(3):
-            self.process = subprocess.Popen(daphne_args + ["daphne.test_application:TestApplication"])
-            for _ in range(30):
-                time.sleep(0.1)
-                if self.port_in_use(self.port):
-                    return self
-            # Daphne didn't start up. Sadface.
-            self.process.terminate()
-        raise RuntimeError("Daphne never came up.")
+        # Start up process
+        self.process = subprocess.Popen(
+            daphne_args + ["daphne.test_application:TestApplication"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        # Read the port from its stdout
+        stdout = b""
+        for line in self.process.stdout:
+            stdout += line
+            if b"Listening on TCP address " in line:
+                self.port = int(line.split(b"TCP address ")[1].split(b":")[1].strip())
+                return self
+        else:
+            # Daphne didn't start up right :(
+            raise RuntimeError("Daphne never listened on a port. Output: \n%s" % stdout)
 
     def __exit__(self, exc_type, exc_value, traceback):
         # Shut down the process

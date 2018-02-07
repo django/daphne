@@ -176,13 +176,13 @@ class CommandLineInterface(object):
         sys.path.insert(0, ".")
         application = import_by_path(args.application)
         # Set up port/host bindings
-        if not any([args.host, args.port, args.unix_socket, args.file_descriptor, args.socket_strings]):
+        if not any([args.host, args.port is not None, args.unix_socket, args.file_descriptor, args.socket_strings]):
             # no advanced binding options passed, patch in defaults
             args.host = DEFAULT_HOST
             args.port = DEFAULT_PORT
-        elif args.host and not args.port:
+        elif args.host and args.port is None:
             args.port = DEFAULT_PORT
-        elif args.port and not args.host:
+        elif args.port is not None and not args.host:
             args.host = DEFAULT_HOST
         # Build endpoint description strings from (optional) cli arguments
         endpoints = build_endpoint_description_strings(

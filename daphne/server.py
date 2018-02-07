@@ -108,7 +108,7 @@ class Server(object):
         reactor.callLater(2, self.timeout_checker)
 
         for socket_description in self.endpoints:
-            logger.info("Listening on endpoint %s", socket_description)
+            logger.info("Configuring endpoint %s", socket_description)
             ep = serverFromString(reactor, str(socket_description))
             listener = ep.listen(self.http_factory)
             listener.addCallback(self.listen_success)
@@ -139,6 +139,7 @@ class Server(object):
             host = port.getHost()
             if hasattr(host, "host") and hasattr(host, "port"):
                 self.listening_addresses.append((host.host, host.port))
+                logger.info("Listening on TCP address %s:%s", port.getHost().host, port.getHost().port)
 
     def listen_error(self, failure):
         logger.critical("Listen failure: %s", failure.getErrorMessage())
