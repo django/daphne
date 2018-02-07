@@ -106,6 +106,12 @@ class CommandLineInterface(object):
             default=30,
         )
         self.parser.add_argument(
+            "--application-close-timeout",
+            type=int,
+            help="The number of seconds an ASGI application has to exit after client disconnect before it is killed",
+            default=10,
+        )
+        self.parser.add_argument(
             "--ws-protocol",
             nargs="*",
             dest="ws_protocols",
@@ -201,6 +207,7 @@ class CommandLineInterface(object):
             ping_timeout=args.ping_timeout,
             websocket_timeout=args.websocket_timeout,
             websocket_connect_timeout=args.websocket_connect_timeout,
+            application_close_timeout=args.application_close_timeout,
             action_logger=AccessLogGenerator(access_log_stream) if access_log_stream else None,
             ws_protocols=args.ws_protocols,
             root_path=args.root_path,

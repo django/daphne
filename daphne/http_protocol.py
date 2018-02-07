@@ -48,7 +48,7 @@ class WebRequest(http.Request):
             self.server = self.channel.factory.server
             self.application_queue = None
             self._response_started = False
-            self.server.add_protocol(self)
+            self.server.protocol_connected(self)
         except Exception:
             logger.error(traceback.format_exc())
             raise
@@ -118,7 +118,7 @@ class WebRequest(http.Request):
                 protocol.dataReceived(data)
                 # Remove our HTTP reply channel association
                 logger.debug("Upgraded connection %s to WebSocket", self.client_addr)
-                self.server.discard_protocol(self)
+                self.server.protocol_disconnected(self)
                 # Resume the producer so we keep getting data, if it's available as a method
                 self.channel._networkProducer.resumeProducing()
 
@@ -171,7 +171,7 @@ class WebRequest(http.Request):
             self.send_disconnect()
         logger.debug("HTTP disconnect for %s", self.client_addr)
         http.Request.connectionLost(self, reason)
-        self.server.discard_protocol(self)
+        self.server.protocol_disconnected(self)
 
     def finish(self):
         """
@@ -181,7 +181,7 @@ class WebRequest(http.Request):
             self.send_disconnect()
         logger.debug("HTTP close for %s", self.client_addr)
         http.Request.finish(self)
-        self.server.discard_protocol(self)
+        self.server.protocol_disconnected(self)
 
     ### Server reply callbacks
 

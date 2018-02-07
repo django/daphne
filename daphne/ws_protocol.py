@@ -24,7 +24,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
 
     def onConnect(self, request):
         self.server = self.factory.server_class
-        self.server.add_protocol(self)
+        self.server.protocol_connected(self)
         self.request = request
         self.protocol_to_accept = None
         self.socket_opened = time.time()
@@ -124,7 +124,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
         """
         Called when Twisted closes the socket.
         """
-        self.server.discard_protocol(self)
+        self.server.protocol_disconnected(self)
         logger.debug("WebSocket closed for %s", self.client_addr)
         if not self.muted:
             self.application_queue.put_nowait({
@@ -187,7 +187,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
         """
         self.handshake_deferred.errback(ConnectionDeny(code=403, reason="Access denied"))
         del self.handshake_deferred
-        self.server.discard_protocol(self)
+        self.server.protocol_disconnected(self)
         logger.debug("WebSocket %s rejected by application", self.client_addr)
         self.server.log_action("websocket", "rejected", {
             "path": self.request.path,
@@ -244,6 +244,9 @@ class WebSocketProtocol(WebSocketServerProtocol):
 
     def __eq__(self, other):
         return id(self) == id(other)
+
+    def __repr__(self):
+        return "<WebSocketProtocol client=%r path=%r>" % (self.client_addr, self.path)
 
 
 class WebSocketFactory(WebSocketServerFactory):

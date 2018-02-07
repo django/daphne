@@ -18,7 +18,9 @@ else:
 
 import asyncio
 import logging
+import time
 import traceback
+from concurrent.futures import CancelledError
 
 from twisted.internet import defer, reactor
 from twisted.internet.endpoints import serverFromString
@@ -50,12 +52,11 @@ class Server(object):
         proxy_forwarded_port_header=None,
         verbosity=1,
         websocket_handshake_timeout=5,
+        application_close_timeout=10,
         ready_callable=None,
     ):
         self.application = application
         self.endpoints = endpoints or []
-        if not self.endpoints:
-            raise UserWarning("No endpoints. This server will not listen on anything.")
         self.listeners = []
         self.listening_addresses = []
         self.signal_handlers = signal_handlers
@@ -68,16 +69,20 @@ class Server(object):
         self.websocket_timeout = websocket_timeout
         self.websocket_connect_timeout = websocket_connect_timeout
         self.websocket_handshake_timeout = websocket_handshake_timeout
+        self.application_close_timeout = application_close_timeout
         self.websocket_protocols = ws_protocols
         self.root_path = root_path
         self.verbosity = verbosity
         self.abort_start = False
         self.ready_callable = ready_callable
+        # Check our construction is actually sensible
+        if not self.endpoints:
+            logger.error("No endpoints. This server will not listen on anything.")
+            sys.exit(1)
 
     def run(self):
-        # A set of current Twisted protocol instances to manage
-        self.protocols = set()
-        self.application_instances = {}
+        # A dict of protocol: {"application_instance":, "connected":, "disconnected":} dicts
+        self.connections = {}
         # Make the factory
         self.http_factory = HTTPFactory(self)
         self.ws_factory = WebSocketFactory(self, protocols=self.websocket_protocols, server="Daphne")
@@ -150,18 +155,17 @@ class Server(object):
 
     ### Protocol handling
 
-    def add_protocol(self, protocol):
-        if protocol in self.protocols:
+    def protocol_connected(self, protocol):
+        """
+        Adds a protocol as a current connection.
+        """
+        if protocol in self.connections:
             raise RuntimeError("Protocol %r was added to main list twice!" % protocol)
-        self.protocols.add(protocol)
+        self.connections[protocol] = {"connected": time.time()}
 
-    def discard_protocol(self, protocol):
-        # Ensure it's not in the protocol-tracking set
-        self.protocols.discard(protocol)
-        # Make sure any application future that's running is cancelled
-        if protocol in self.application_instances:
-            self.application_instances[protocol].cancel()
-            del self.application_instances[protocol]
+    def protocol_disconnected(self, protocol):
+        # Set its disconnected time (the loops will come and clean it up)
+        self.connections[protocol]["disconnected"] = time.time()
 
     ### Internal event/message handling
 
@@ -173,12 +177,12 @@ class Server(object):
         return you the application's input queue
         """
         # Make sure the protocol has not had another application made for it
-        assert protocol not in self.application_instances
+        assert "application_instance" not in self.connections[protocol]
         # Make an instance of the application
         input_queue = asyncio.Queue()
         application_instance = self.application(scope=scope)
         # Run it, and stash the future for later checking
-        self.application_instances[protocol] = asyncio.ensure_future(application_instance(
+        self.connections[protocol]["application_instance"] = asyncio.ensure_future(application_instance(
             receive=input_queue.get,
             send=lambda message: self.handle_reply(protocol, message),
         ), loop=asyncio.get_event_loop())
@@ -197,29 +201,50 @@ class Server(object):
         Goes through the set of current application Futures and cleans up
         any that are done/prints exceptions for any that errored.
         """
-        for protocol, application_instance in list(self.application_instances.items()):
-            if application_instance.done():
-                exception = application_instance.exception()
-                if exception:
-                    if isinstance(exception, KeyboardInterrupt):
-                        # Protocol is asking the server to exit (likely during test)
-                        self.stop()
-                    else:
-                        logger.error(
-                            "Exception inside application: {}\n{}{}".format(
+        for protocol, details in list(self.connections.items()):
+            disconnected = details.get("disconnected", None)
+            application_instance = details.get("application_instance", None)
+            # First, see if the protocol disconnected and the app has taken
+            # too long to close up
+            if disconnected and time.time() - disconnected > self.application_close_timeout:
+                if not application_instance.done():
+                    logger.warning(
+                        "Application instance %r for connection %s took too long to shut down and was killed.",
+                        application_instance,
+                        repr(protocol),
+                    )
+                    application_instance.cancel()
+            # Then see if the app is done and we should reap it
+            if application_instance and application_instance.done():
+                try:
+                    exception = application_instance.exception()
+                except CancelledError:
+                    # Future cancellation. We can ignore this.
+                    pass
+                else:
+                    if exception:
+                        if isinstance(exception, KeyboardInterrupt):
+                            # Protocol is asking the server to exit (likely during test)
+                            self.stop()
+                        else:
+                            exception_output = "{}\n{}{}".format(
                                 exception,
                                 "".join(traceback.format_tb(
                                     exception.__traceback__,
                                 )),
                                 "  {}".format(exception),
                             )
-                        )
-                        protocol.handle_exception(exception)
-                try:
-                    del self.application_instances[protocol]
-                except KeyError:
-                    # The protocol might have already got here before us. That's fine.
-                    pass
+                            logger.error(
+                                "Exception inside application: %s",
+                                exception_output,
+                            )
+                            if not disconnected:
+                                protocol.handle_exception(exception)
+                del self.connections[protocol]["application_instance"]
+                application_instance = None
+            # Check to see if protocol is closed and app is closed so we can remove it
+            if not application_instance and disconnected:
+                del self.connections[protocol]
         reactor.callLater(1, self.application_checker)
 
     def kill_all_applications(self):
@@ -228,7 +253,8 @@ class Server(object):
         """
         # Send cancel to all coroutines
         wait_for = []
-        for application_instance in self.application_instances.values():
+        for details in self.connections.values():
+            application_instance = details["application_instance"]
             if not application_instance.done():
                 application_instance.cancel()
                 wait_for.append(application_instance)
@@ -243,7 +269,7 @@ class Server(object):
         Called periodically to enforce timeout rules on all connections.
         Also checks pings at the same time.
         """
-        for protocol in list(self.protocols):
+        for protocol in list(self.connections.keys()):
             protocol.check_timeouts()
         reactor.callLater(2, self.timeout_checker)
 
