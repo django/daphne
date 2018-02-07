@@ -1,3 +1,12 @@
+2.0.3 (2018-02-07)
+------------------
+
+* Unix socket listening no longer errors during startup (introduced in 2.0.2)
+
+* ASGI Applications are now not immediately killed on disconnection but instead
+  given --application-close-timeout seconds to exit (defaults to 10)
+
+
 2.0.2 (2018-02-04)
 ------------------
 
