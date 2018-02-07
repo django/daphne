@@ -115,7 +115,7 @@ def header_value():
     https://en.wikipedia.org/wiki/List_of_HTTP_header_fields
     """
     return strategies.text(
-        alphabet=string.ascii_letters + string.digits + string.punctuation + " /t",
+        alphabet=string.ascii_letters + string.digits + string.punctuation.replace(",", "") + " /t",
         min_size=1,
         average_size=40,
         max_size=8190,
