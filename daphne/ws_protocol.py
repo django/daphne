@@ -28,7 +28,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
         self.request = request
         self.protocol_to_accept = None
         self.socket_opened = time.time()
-        self.last_data = time.time()
+        self.last_ping = time.time()
         try:
             # Sanitize and decode headers
             self.clean_headers = []
@@ -108,7 +108,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
             logger.debug("Muting incoming frame on %s", self.client_addr)
             return
         logger.debug("WebSocket incoming frame on %s", self.client_addr)
-        self.last_data = time.time()
+        self.last_ping = time.time()
         if isBinary:
             self.application_queue.put_nowait({
                 "type": "websocket.receive",
@@ -200,7 +200,6 @@ class WebSocketProtocol(WebSocketServerProtocol):
         """
         if self.state == self.STATE_CONNECTING:
             self.serverAccept()
-        self.last_data = time.time()
         logger.debug("Sent WebSocket packet to client for %s", self.client_addr)
         if binary:
             self.sendMessage(content, binary)
@@ -235,9 +234,9 @@ class WebSocketProtocol(WebSocketServerProtocol):
             if self.duration() > self.server.websocket_connect_timeout:
                 self.serverReject()
         elif self.state == self.STATE_OPEN:
-            if (time.time() - self.last_data) > self.server.ping_interval:
+            if (time.time() - self.last_ping) > self.server.ping_interval:
                 self._sendAutoPing()
-                self.last_data = time.time()
+                self.last_ping = time.time()
 
     def __hash__(self):
         return hash(id(self))
