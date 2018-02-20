@@ -161,7 +161,7 @@ class TestHTTPRequest(DaphneTestCase):
         request_headers=http_strategies.headers(),
         request_body=http_strategies.http_body(),
     )
-    @settings(max_examples=5, deadline=5000)
+    @settings(max_examples=2, deadline=5000)
     def test_kitchen_sink(
         self,
         request_method,

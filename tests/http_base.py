@@ -1,87 +1,11 @@
-
 import socket
 import struct
-import subprocess
 import time
 import unittest
 from http.client import HTTPConnection
 from urllib import parse
 
-from daphne.test_application import TestApplication
-
-
-class DaphneTestingInstance:
-    """
-    Launches an instance of Daphne to test against, with an application
-    object you can read messages from and feed messages to.
-
-    Works as a context manager.
-    """
-
-    def __init__(self, xff=False, http_timeout=None):
-        self.xff = xff
-        self.http_timeout = http_timeout
-        self.host = "127.0.0.1"
-
-    def __enter__(self):
-        # Clear result storage
-        TestApplication.delete_setup()
-        TestApplication.delete_result()
-        # Tell Daphne to use port 0 so the OS gives it a free port
-        daphne_args = ["daphne", "-p", "0", "-v", "1"]
-        # Optionally enable X-Forwarded-For support.
-        if self.xff:
-            daphne_args += ["--proxy-headers"]
-        if self.http_timeout:
-            daphne_args += ["--http-timeout=%i" % self.http_timeout]
-        # Start up process
-        self.process = subprocess.Popen(
-            daphne_args + ["daphne.test_application:TestApplication"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-        # Read the port from its stdout
-        stdout = b""
-        for line in self.process.stdout:
-            stdout += line
-            if b"Listening on TCP address " in line:
-                self.port = int(line.split(b"TCP address ")[1].split(b":")[1].strip())
-                return self
-        else:
-            # Daphne didn't start up right :(
-            raise RuntimeError("Daphne never listened on a port. Output: \n%s" % stdout)
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        # Shut down the process
-        self.process.terminate()
-        del self.process
-
-    def get_received(self):
-        """
-        Returns the scope and messages the test application has received
-        so far. Note you'll get all messages since scope start, not just any
-        new ones since the last call.
-
-        Also checks for any exceptions in the application. If there are,
-        raises them.
-        """
-        try:
-            inner_result = TestApplication.load_result()
-        except FileNotFoundError:
-            raise ValueError("No results available yet.")
-        # Check for exception
-        if "exception" in inner_result:
-            raise inner_result["exception"]
-        return inner_result["scope"], inner_result["messages"]
-
-    def add_send_messages(self, messages):
-        """
-        Adds messages for the application to send back.
-        The next time it receives an incoming message, it will reply with these.
-        """
-        TestApplication.save_setup(
-            response_messages=messages,
-        )
+from daphne.testing import DaphneTestingInstance, TestApplication
 
 
 class DaphneTestCase(unittest.TestCase):
