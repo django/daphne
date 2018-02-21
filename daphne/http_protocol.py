@@ -190,7 +190,7 @@ class WebRequest(http.Request):
         Handles a reply from the client
         """
         # Handle connections that are already closed
-        if self.channel is None:
+        if self.finished or self.channel is None:
             return
         # Check message validity
         if "type" not in message:
