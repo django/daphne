@@ -46,7 +46,6 @@ class Server(object):
         websocket_connect_timeout=20,
         ping_interval=20,
         ping_timeout=30,
-        ws_protocols=None,
         root_path="",
         proxy_forwarded_address_header=None,
         proxy_forwarded_port_header=None,
@@ -70,7 +69,6 @@ class Server(object):
         self.websocket_connect_timeout = websocket_connect_timeout
         self.websocket_handshake_timeout = websocket_handshake_timeout
         self.application_close_timeout = application_close_timeout
-        self.websocket_protocols = ws_protocols
         self.root_path = root_path
         self.verbosity = verbosity
         self.abort_start = False
@@ -85,7 +83,7 @@ class Server(object):
         self.connections = {}
         # Make the factory
         self.http_factory = HTTPFactory(self)
-        self.ws_factory = WebSocketFactory(self, protocols=self.websocket_protocols, server="Daphne")
+        self.ws_factory = WebSocketFactory(self, server="Daphne")
         self.ws_factory.setProtocolOptions(
             autoPingTimeout=self.ping_timeout,
             allowNullOrigin=True,
