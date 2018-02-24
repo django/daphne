@@ -53,6 +53,8 @@ class Server(object):
         websocket_handshake_timeout=5,
         application_close_timeout=10,
         ready_callable=None,
+        # Deprecated and does not work, remove in version 2.2
+        ws_protocols=None,
     ):
         self.application = application
         self.endpoints = endpoints or []
