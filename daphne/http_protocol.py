@@ -90,6 +90,11 @@ class WebRequest(http.Request):
             self.query_string = b""
             if b"?" in self.uri:
                 self.query_string = self.uri.split(b"?", 1)[1]
+                try:
+                    self.query_string.decode("ascii")
+                except UnicodeDecodeError:
+                    self.basic_error(400, b"Bad Request", "Invalid query string")
+                    return
             # Is it WebSocket? IS IT?!
             if upgrade_header and upgrade_header.lower() == b"websocket":
                 # Make WebSocket protocol to hand off to
@@ -218,10 +223,15 @@ class WebRequest(http.Request):
                 self.finish()
                 logger.debug("HTTP response complete for %s", self.client_addr)
                 try:
+                    uri = self.uri.decode("ascii")
+                except UnicodeDecodeError:
+                    # The path is malformed somehow - do our best to log something
+                    uri = repr(self.uri)
+                try:
                     self.server.log_action("http", "complete", {
-                        "path": self.uri.decode("ascii"),
+                        "path": uri,
                         "status": self.code,
-                        "method": self.method.decode("ascii"),
+                        "method": self.method.decode("ascii", "replace"),
                         "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,
                         "time_taken": self.duration(),
                         "size": self.sentLength,

@@ -54,6 +54,22 @@ class DaphneTestCase(unittest.TestCase):
             # Return scope, messages, response
             return test_app.get_received() + (response, )
 
+    def run_daphne_raw(self, data, timeout=1):
+        """
+        Runs daphne and sends it the given raw bytestring over a socket. Returns what it sends back.
+        """
+        assert isinstance(data, bytes)
+        with DaphneTestingInstance() as test_app:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(timeout)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.connect((test_app.host, test_app.port))
+            s.send(data)
+            try:
+                return s.recv(1000000)
+            except socket.timeout:
+                raise RuntimeError("Daphne timed out handling raw request, no exception found.")
+
     def run_daphne_request(self, method, path, params=None, body=None, headers=None, xff=False):
         """
         Convenience method for just testing request handling.

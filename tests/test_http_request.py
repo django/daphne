@@ -259,3 +259,14 @@ class TestHTTPRequest(DaphneTestCase):
         self.assert_valid_http_request_message(messages[0], body=b"")
         # It should now appear in the client scope item
         self.assertEqual(scope["client"], ["10.1.2.3", 0])
+
+    def test_bad_requests(self):
+        """
+        Tests that requests with invalid (non-ASCII) characters fail.
+        """
+        # Bad path
+        response = self.run_daphne_raw(b"GET /\xc3\xa4\xc3\xb6\xc3\xbc HTTP/1.0\r\n\r\n")
+        self.assertTrue(response.startswith(b"HTTP/1.0 400 Bad Request"))
+        # Bad querystring
+        response = self.run_daphne_raw(b"GET /?\xc3\xa4\xc3\xb6\xc3\xbc HTTP/1.0\r\n\r\n")
+        self.assertTrue(response.startswith(b"HTTP/1.0 400 Bad Request"))
