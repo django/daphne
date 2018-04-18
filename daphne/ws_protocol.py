@@ -66,7 +66,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
                     ]
             # Make new application instance with scope
             self.path = request.path.encode("ascii")
-            self.application_queue = self.server.create_application(self, {
+            self.application_deferred = self.server.create_application(self, {
                 "type": "websocket",
                 "path": unquote(self.path.decode("ascii")),
                 "headers": self.clean_headers,
@@ -75,12 +75,25 @@ class WebSocketProtocol(WebSocketServerProtocol):
                 "server": self.server_addr,
                 "subprotocols": subprotocols,
             })
+            self.application_deferred.addCallback(self.applicationCreateWorked)
+            self.application_deferred.addErrback(self.applicationCreateFailed)
         except Exception as e:
             # Exceptions here are not displayed right, just 500.
             # Turn them into an ERROR log.
             logger.error(traceback.format_exc())
             raise
 
+        # Make a deferred and return it - we'll either call it or err it later on
+        self.handshake_deferred = defer.Deferred()
+        return self.handshake_deferred
+
+    def applicationCreateWorked(self, application_queue):
+        """
+        Called when the background thread has successfully made the application
+        instance.
+        """
+        # Store the application's queue
+        self.application_queue = application_queue
         # Send over the connect message
         self.application_queue.put_nowait({"type": "websocket.connect"})
         self.server.log_action("websocket", "connecting", {
@@ -88,9 +101,12 @@ class WebSocketProtocol(WebSocketServerProtocol):
             "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,
         })
 
-        # Make a deferred and return it - we'll either call it or err it later on
-        self.handshake_deferred = defer.Deferred()
-        return self.handshake_deferred
+    def applicationCreateFailed(self, failure):
+        """
+        Called when application creation fails.
+        """
+        logger.error(failure)
+        return failure
 
     ### Twisted event handling
 

@@ -24,6 +24,7 @@ from concurrent.futures import CancelledError
 
 from twisted.internet import defer, reactor
 from twisted.internet.endpoints import serverFromString
+from twisted.internet.threads import deferToThread
 from twisted.logger import STDLibLogObserver, globalLogBeginner
 from twisted.web import http
 
@@ -170,6 +171,7 @@ class Server(object):
 
     ### Internal event/message handling
 
+    @defer.inlineCallbacks
     def create_application(self, protocol, scope):
         """
         Creates a new application instance that fronts a Protocol instance
@@ -181,7 +183,7 @@ class Server(object):
         assert "application_instance" not in self.connections[protocol]
         # Make an instance of the application
         input_queue = asyncio.Queue()
-        application_instance = self.application(scope=scope)
+        application_instance = yield deferToThread(self.application, scope=scope)
         # Run it, and stash the future for later checking
         self.connections[protocol]["application_instance"] = asyncio.ensure_future(application_instance(
             receive=input_queue.get,
