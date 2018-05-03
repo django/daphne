@@ -142,7 +142,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
         """
         self.server.protocol_disconnected(self)
         logger.debug("WebSocket closed for %s", self.client_addr)
-        if not self.muted:
+        if not self.muted and hasattr(self, "application_queue"):
             self.application_queue.put_nowait({
                 "type": "websocket.disconnect",
                 "code": code,
