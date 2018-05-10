@@ -136,23 +136,23 @@ class CommandLineInterface(object):
             action="store_true",
         )
         self._arg_proxy_host = self.parser.add_argument(
-            '--proxy-headers-host',
-            dest='proxy_headers_host',
-            help='Specify which header will be used for getting the host '
-            'part. Can be omitted, requires --proxy-headers to be specified '
-            'when passed. \'X-Real-IP\' (when passed by your webserver) is a '
-            'good candidate for this.',
+            "--proxy-headers-host",
+            dest="proxy_headers_host",
+            help="Specify which header will be used for getting the host "
+            "part. Can be omitted, requires --proxy-headers to be specified "
+            "when passed. \"X-Real-IP\" (when passed by your webserver) is a "
+            "good candidate for this.",
             default=False,
-            action='store',
+            action="store",
         )
         self._arg_proxy_port = self.parser.add_argument(
-            '--proxy-headers-port',
-            dest='proxy_headers_port',
-            help='Specify which header will be used for getting the port '
-            'part. Can be omitted, requires --proxy-headers to be specified '
-            'when passed.',
+            "--proxy-headers-port",
+            dest="proxy_headers_port",
+            help="Specify which header will be used for getting the port "
+            "part. Can be omitted, requires --proxy-headers to be specified "
+            "when passed.",
             default=False,
-            action='store',
+            action="store",
         )
         self.parser.add_argument(
             "application",
@@ -174,7 +174,7 @@ class CommandLineInterface(object):
             return
         raise ArgumentError(
             argument=argument,
-            message='--proxy-headers has to be passed for this parameter.')
+            message="--proxy-headers has to be passed for this parameter.")
 
     def _get_forwarded_host(self, args: Namespace) -> str_or_none:
         """
@@ -186,7 +186,7 @@ class CommandLineInterface(object):
                 argument=self._arg_proxy_host, args=args)
             return args.proxy_headers_host
         if args.proxy_headers:
-            return 'X-Forwarded-For'
+            return "X-Forwarded-For"
 
     def _get_forwarded_port(self, args: Namespace) -> str_or_none:
         """
@@ -198,7 +198,7 @@ class CommandLineInterface(object):
                 argument=self._arg_proxy_port, args=args)
             return args.proxy_headers_port
         if args.proxy_headers:
-            return 'X-Forwarded-Port'
+            return "X-Forwarded-Port"
 
     def run(self, args):
         """

@@ -243,9 +243,9 @@ class TestCLIInterface(TestCase):
         `X-Forwarded-For` header.
         """
         self.assertCLI(
-            ['--proxy-headers'],
+            ["--proxy-headers"],
             {
-                'proxy_forwarded_address_header': 'X-Forwarded-For',
+                "proxy_forwarded_address_header": "X-Forwarded-For",
             },
         )
 
@@ -255,22 +255,22 @@ class TestCLIInterface(TestCase):
         the passed one, and `--proxy-headers` is mandatory.
         """
         self.assertCLI(
-            ['--proxy-headers', '--proxy-headers-host', 'blah'],
+            ["--proxy-headers", "--proxy-headers-host", "blah"],
             {
-                'proxy_forwarded_address_header': 'blah',
+                "proxy_forwarded_address_header": "blah",
             },
         )
         with self.assertRaises(expected_exception=ArgumentError) as exc:
             self.assertCLI(
-                ['--proxy-headers-host', 'blah'],
+                ["--proxy-headers-host", "blah"],
                 {
-                    'proxy_forwarded_address_header': 'blah',
+                    "proxy_forwarded_address_header": "blah",
                 },
             )
-        self.assertEqual(exc.exception.argument_name, '--proxy-headers-host')
+        self.assertEqual(exc.exception.argument_name, "--proxy-headers-host")
         self.assertEqual(
             exc.exception.message,
-            '--proxy-headers has to be passed for this parameter.')
+            "--proxy-headers has to be passed for this parameter.")
 
     def test_custom_proxyport(self):
         """
@@ -278,19 +278,19 @@ class TestCLIInterface(TestCase):
         the passed one, and `--proxy-headers` is mandatory.
         """
         self.assertCLI(
-            ['--proxy-headers', '--proxy-headers-port', 'blah2'],
+            ["--proxy-headers", "--proxy-headers-port", "blah2"],
             {
-                'proxy_forwarded_port_header': 'blah2',
+                "proxy_forwarded_port_header": "blah2",
             },
         )
         with self.assertRaises(expected_exception=ArgumentError) as exc:
             self.assertCLI(
-                ['--proxy-headers-port', 'blah2'],
+                ["--proxy-headers-port", "blah2"],
                 {
-                    'proxy_forwarded_address_header': 'blah2',
+                    "proxy_forwarded_address_header": "blah2",
                 },
             )
-        self.assertEqual(exc.exception.argument_name, '--proxy-headers-port')
+        self.assertEqual(exc.exception.argument_name, "--proxy-headers-port")
         self.assertEqual(
             exc.exception.message,
-            '--proxy-headers has to be passed for this parameter.')
+            "--proxy-headers has to be passed for this parameter.")

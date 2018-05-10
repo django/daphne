@@ -46,11 +46,11 @@ def parse_x_forwarded_for(headers,
     new_headers = dict()
     for name, values in headers.items():
         name = name.lower()
-        name = name if type(name) is bytes else name.encode('utf-8')
+        name = name if type(name) is bytes else name.encode("utf-8")
         new_headers[name] = values
     headers = new_headers
 
-    address_header_name = address_header_name.lower().encode('utf-8')
+    address_header_name = address_header_name.lower().encode("utf-8")
     result = original
     if address_header_name in headers:
         address_value = header_value(headers, address_header_name)
