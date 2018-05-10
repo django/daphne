@@ -1,8 +1,8 @@
 # coding: utf8
 
 import logging
-from unittest import TestCase
 from argparse import ArgumentError
+from unittest import TestCase
 
 from daphne.cli import CommandLineInterface
 from daphne.endpoints import build_endpoint_description_strings as build

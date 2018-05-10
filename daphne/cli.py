@@ -1,8 +1,7 @@
 import argparse
 import logging
 import sys
-
-from argparse import Namespace, ArgumentError
+from argparse import ArgumentError, Namespace
 from typing import Union
 
 from .access import AccessLogGenerator
@@ -15,6 +14,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
 str_or_none = Union[None, str]
+
 
 class CommandLineInterface(object):
     """
