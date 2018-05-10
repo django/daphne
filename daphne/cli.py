@@ -2,6 +2,9 @@ import argparse
 import logging
 import sys
 
+from argparse import Namespace, ArgumentError
+from typing import Union
+
 from .access import AccessLogGenerator
 from .endpoints import build_endpoint_description_strings
 from .server import Server
@@ -11,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
-
+str_or_none = Union[None, str]
 
 class CommandLineInterface(object):
     """
@@ -132,6 +135,25 @@ class CommandLineInterface(object):
             default=False,
             action="store_true",
         )
+        self._arg_proxy_host = self.parser.add_argument(
+            '--proxy-headers-host',
+            dest='proxy_headers_host',
+            help='Specify which header will be used for getting the host '
+            'part. Can be omitted, requires --proxy-headers to be specified '
+            'when passed. \'X-Real-IP\' (when passed by your webserver) is a '
+            'good candidate for this.',
+            default=False,
+            action='store',
+        )
+        self._arg_proxy_port = self.parser.add_argument(
+            '--proxy-headers-port',
+            dest='proxy_headers_port',
+            help='Specify which header will be used for getting the port '
+            'part. Can be omitted, requires --proxy-headers to be specified '
+            'when passed.',
+            default=False,
+            action='store',
+        )
         self.parser.add_argument(
             "application",
             help="The application to dispatch to as path.to.module:instance.path",
@@ -145,6 +167,38 @@ class CommandLineInterface(object):
         Main entrypoint for external starts.
         """
         cls().run(sys.argv[1:])
+
+    def _check_proxy_headers_passed(self, argument: str, args: Namespace):
+        """Raise if the `--proxy-headers` weren't specified."""
+        if args.proxy_headers:
+            return
+        raise ArgumentError(
+            argument=argument,
+            message='--proxy-headers has to be passed for this parameter.')
+
+    def _get_forwarded_host(self, args: Namespace) -> str_or_none:
+        """
+        Return the default host header from which the remote hostname/ip
+        will be extracted.
+        """
+        if args.proxy_headers_host:
+            self._check_proxy_headers_passed(
+                argument=self._arg_proxy_host, args=args)
+            return args.proxy_headers_host
+        if args.proxy_headers:
+            return 'X-Forwarded-For'
+
+    def _get_forwarded_port(self, args: Namespace) -> str_or_none:
+        """
+        Return the default host header from which the remote hostname/ip
+        will be extracted.
+        """
+        if args.proxy_headers_port:
+            self._check_proxy_headers_passed(
+                argument=self._arg_proxy_port, args=args)
+            return args.proxy_headers_port
+        if args.proxy_headers:
+            return 'X-Forwarded-Port'
 
     def run(self, args):
         """
@@ -212,7 +266,7 @@ class CommandLineInterface(object):
             ws_protocols=args.ws_protocols,
             root_path=args.root_path,
             verbosity=args.verbosity,
-            proxy_forwarded_address_header="X-Forwarded-For" if args.proxy_headers else None,
-            proxy_forwarded_port_header="X-Forwarded-Port" if args.proxy_headers else None,
+            proxy_forwarded_address_header=self._get_forwarded_host(args=args),
+            proxy_forwarded_port_header=self._get_forwarded_port(args=args),
         )
         self.server.run()
