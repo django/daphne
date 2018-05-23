@@ -2,7 +2,6 @@ import argparse
 import logging
 import sys
 from argparse import ArgumentError, Namespace
-from typing import Union
 
 from .access import AccessLogGenerator
 from .endpoints import build_endpoint_description_strings
@@ -13,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
-str_or_none = Union[None, str]
 
 
 class CommandLineInterface(object):
@@ -135,7 +133,7 @@ class CommandLineInterface(object):
             default=False,
             action="store_true",
         )
-        self._arg_proxy_host = self.parser.add_argument(
+        self.arg_proxy_host = self.parser.add_argument(
             "--proxy-headers-host",
             dest="proxy_headers_host",
             help="Specify which header will be used for getting the host "
@@ -145,7 +143,7 @@ class CommandLineInterface(object):
             default=False,
             action="store",
         )
-        self._arg_proxy_port = self.parser.add_argument(
+        self.arg_proxy_port = self.parser.add_argument(
             "--proxy-headers-port",
             dest="proxy_headers_port",
             help="Specify which header will be used for getting the port "
@@ -176,26 +174,26 @@ class CommandLineInterface(object):
             argument=argument,
             message="--proxy-headers has to be passed for this parameter.")
 
-    def _get_forwarded_host(self, args: Namespace) -> str_or_none:
+    def _get_forwarded_host(self, args: Namespace):
         """
         Return the default host header from which the remote hostname/ip
         will be extracted.
         """
         if args.proxy_headers_host:
             self._check_proxy_headers_passed(
-                argument=self._arg_proxy_host, args=args)
+                argument=self.arg_proxy_host, args=args)
             return args.proxy_headers_host
         if args.proxy_headers:
             return "X-Forwarded-For"
 
-    def _get_forwarded_port(self, args: Namespace) -> str_or_none:
+    def _get_forwarded_port(self, args: Namespace):
         """
         Return the default host header from which the remote hostname/ip
         will be extracted.
         """
         if args.proxy_headers_port:
             self._check_proxy_headers_passed(
-                argument=self._arg_proxy_port, args=args)
+                argument=self.arg_proxy_port, args=args)
             return args.proxy_headers_port
         if args.proxy_headers:
             return "X-Forwarded-Port"
