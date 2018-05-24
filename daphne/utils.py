@@ -45,6 +45,10 @@ def parse_x_forwarded_for(headers,
     # Lowercase all header names in the dict
     headers = {name.lower(): values for name, values in headers.items()}
 
+    # Make sure header names and values are bytes
+    assert all(isinstance(name, bytes) for name in headers.keys())
+    assert all(isinstance(value, bytes) for value in headers.values())
+
     address_header_name = address_header_name.lower().encode("utf-8")
     result = original
     if address_header_name in headers:
