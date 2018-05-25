@@ -210,7 +210,7 @@ class Server(object):
             # First, see if the protocol disconnected and the app has taken
             # too long to close up
             if disconnected and time.time() - disconnected > self.application_close_timeout:
-                if not application_instance.done():
+                if application_instance and not application_instance.done():
                     logger.warning(
                         "Application instance %r for connection %s took too long to shut down and was killed.",
                         application_instance,
