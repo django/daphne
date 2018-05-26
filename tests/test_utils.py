@@ -30,7 +30,7 @@ class TestXForwardedForHttpParsing(TestCase):
             ["10.1.2.3", 0]
         )
 
-    def test_v6_address(self):
+    def test_v6_address_1(self):
         headers = Headers({
             b"X-Forwarded-For": [b"1043::a321:0001, 10.0.5.6"],
         })
@@ -84,7 +84,17 @@ class TestXForwardedForWsParsing(TestCase):
             ["10.1.2.3", 0]
         )
 
-    def test_v6_address(self):
+    def test_non_bytes_header(self):
+        """The passed headers can be non-bytes too."""
+        headers = {
+            "X-Forwarded-For": "10.1.2.3",
+        }
+        self.assertEqual(
+            parse_x_forwarded_for(headers),
+            ["10.1.2.3", 0]
+        )
+
+    def test_v6_address_2(self):
         headers = {
             b"X-Forwarded-For": [b"1043::a321:0001, 10.0.5.6"],
         }

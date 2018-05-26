@@ -15,11 +15,11 @@ def import_by_path(path):
     return target
 
 
-def header_value(headers, header_name):
+def header_value(headers, header_name) -> str:
     value = headers[header_name]
     if isinstance(value, list):
         value = value[0]
-    return value.decode("utf-8")
+    return value.decode("utf-8") if type(value) is bytes else value
 
 
 def parse_x_forwarded_for(headers,
@@ -43,7 +43,12 @@ def parse_x_forwarded_for(headers,
         headers = dict(headers.getAllRawHeaders())
 
     # Lowercase all header names in the dict
-    headers = {name.lower(): values for name, values in headers.items()}
+    new_headers = dict()
+    for name, values in headers.items():
+        name = name.lower()
+        name = name if type(name) is bytes else name.encode("utf-8")
+        new_headers[name] = values
+    headers = new_headers
 
     # Make sure header names are bytes (values are checked in header_value)
     assert all(isinstance(name, bytes) for name in headers.keys())
