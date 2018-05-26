@@ -50,7 +50,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
 
             if self.server.proxy_forwarded_address_header:
                 self.client_addr = parse_x_forwarded_for(
-                    self.clean_headers,
+                    dict(self.clean_headers),
                     self.server.proxy_forwarded_address_header,
                     self.server.proxy_forwarded_port_header,
                     self.client_addr

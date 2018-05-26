@@ -147,6 +147,27 @@ class TestWebsocket(DaphneTestCase):
             self.assert_valid_websocket_scope(scope, subprotocols=subprotocols)
             self.assert_valid_websocket_connect_message(messages[0])
 
+    def test_xff(self):
+        """
+        Tests that X-Forwarded-For headers get parsed right
+        """
+        headers = [
+            ["X-Forwarded-For", "10.1.2.3"],
+            ["X-Forwarded-Port", "80"],
+        ]
+        with DaphneTestingInstance(xff=True) as test_app:
+            test_app.add_send_messages([
+                {
+                    "type": "websocket.accept",
+                }
+            ])
+            self.websocket_handshake(test_app, headers=headers)
+            # Validate the scope and messages we got
+            scope, messages = test_app.get_received()
+            self.assert_valid_websocket_scope(scope)
+            self.assert_valid_websocket_connect_message(messages[0])
+            assert scope["client"] == ["10.1.2.3", 80]
+
     @given(
         request_path=http_strategies.http_path(),
         request_params=http_strategies.query_params(),
