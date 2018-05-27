@@ -7,6 +7,7 @@ from .access import AccessLogGenerator
 from .endpoints import build_endpoint_description_strings
 from .server import Server
 from .utils import import_by_path
+from argparse import ArgumentError, Namespace
 
 logger = logging.getLogger(__name__)
 
