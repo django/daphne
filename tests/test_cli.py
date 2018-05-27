@@ -192,14 +192,7 @@ class TestCLIInterface(TestCase):
         """
         Tests entirely custom endpoints
         """
-        self.assertCLI(
-            ["-e", "imap:"],
-            {
-                "endpoints": [
-                    "imap:",
-                ],
-            },
-        )
+        self.assertCLI(["-e", "imap:"], {"endpoints": ["imap:"]})
 
     def test_default_proxyheaders(self):
         """
