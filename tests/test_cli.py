@@ -1,6 +1,7 @@
 # coding: utf8
 
 import logging
+from argparse import ArgumentError
 from unittest import TestCase
 
 from daphne.cli import CommandLineInterface
@@ -235,3 +236,61 @@ class TestCLIInterface(TestCase):
                 ],
             },
         )
+
+    def test_default_proxyheaders(self):
+        """
+        Passing `--proxy-headers` without a parameter will use the
+        `X-Forwarded-For` header.
+        """
+        self.assertCLI(
+            ["--proxy-headers"],
+            {
+                "proxy_forwarded_address_header": "X-Forwarded-For",
+            },
+        )
+
+    def test_custom_proxyhost(self):
+        """
+        Passing `--proxy-headers-host` will set the used host header to
+        the passed one, and `--proxy-headers` is mandatory.
+        """
+        self.assertCLI(
+            ["--proxy-headers", "--proxy-headers-host", "blah"],
+            {
+                "proxy_forwarded_address_header": "blah",
+            },
+        )
+        with self.assertRaises(expected_exception=ArgumentError) as exc:
+            self.assertCLI(
+                ["--proxy-headers-host", "blah"],
+                {
+                    "proxy_forwarded_address_header": "blah",
+                },
+            )
+        self.assertEqual(exc.exception.argument_name, "--proxy-headers-host")
+        self.assertEqual(
+            exc.exception.message,
+            "--proxy-headers has to be passed for this parameter.")
+
+    def test_custom_proxyport(self):
+        """
+        Passing `--proxy-headers-port` will set the used port header to
+        the passed one, and `--proxy-headers` is mandatory.
+        """
+        self.assertCLI(
+            ["--proxy-headers", "--proxy-headers-port", "blah2"],
+            {
+                "proxy_forwarded_port_header": "blah2",
+            },
+        )
+        with self.assertRaises(expected_exception=ArgumentError) as exc:
+            self.assertCLI(
+                ["--proxy-headers-port", "blah2"],
+                {
+                    "proxy_forwarded_address_header": "blah2",
+                },
+            )
+        self.assertEqual(exc.exception.argument_name, "--proxy-headers-port")
+        self.assertEqual(
+            exc.exception.message,
+            "--proxy-headers has to be passed for this parameter.")

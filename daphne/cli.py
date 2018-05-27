@@ -1,12 +1,12 @@
 import argparse
 import logging
 import sys
+from argparse import ArgumentError, Namespace
 
 from .access import AccessLogGenerator
 from .endpoints import build_endpoint_description_strings
 from .server import Server
 from .utils import import_by_path
-from argparse import ArgumentError, Namespace
 
 logger = logging.getLogger(__name__)
 
@@ -197,8 +197,6 @@ class CommandLineInterface(object):
             return args.proxy_headers_port
         if args.proxy_headers:
             return "X-Forwarded-Port"
-
-    def run(self, args):
 
     def run(self, args):
         """
