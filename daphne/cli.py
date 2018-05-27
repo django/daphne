@@ -132,6 +132,25 @@ class CommandLineInterface(object):
             default=False,
             action="store_true",
         )
+        self.arg_proxy_host = self.parser.add_argument(
+            "--proxy-headers-host",
+            dest="proxy_headers_host",
+            help="Specify which header will be used for getting the host "
+            "part. Can be omitted, requires --proxy-headers to be specified "
+            "when passed. \"X-Real-IP\" (when passed by your webserver) is a "
+            "good candidate for this.",
+            default=False,
+            action="store",
+        )
+        self.arg_proxy_port = self.parser.add_argument(
+            "--proxy-headers-port",
+            dest="proxy_headers_port",
+            help="Specify which header will be used for getting the port "
+            "part. Can be omitted, requires --proxy-headers to be specified "
+            "when passed.",
+            default=False,
+            action="store",
+        )
         self.parser.add_argument(
             "application",
             help="The application to dispatch to as path.to.module:instance.path",
