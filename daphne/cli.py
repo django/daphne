@@ -87,7 +87,7 @@ class CommandLineInterface(object):
             "--http-timeout",
             type=int,
             help="How long to wait for worker before timing out HTTP connections",
-            default=120,
+            default=None,
         )
         self.parser.add_argument(
             "--access-log",

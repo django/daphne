@@ -42,7 +42,7 @@ class Server(object):
         endpoints=None,
         signal_handlers=True,
         action_logger=None,
-        http_timeout=120,
+        http_timeout=None,
         websocket_timeout=86400,
         websocket_connect_timeout=20,
         ping_interval=20,

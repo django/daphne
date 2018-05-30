@@ -256,8 +256,12 @@ class WebRequest(http.Request):
         Called periodically to see if we should timeout something
         """
         # Web timeout checking
-        if self.duration() > self.server.http_timeout:
-            self.basic_error(503, b"Service Unavailable", "Application failed to respond within time limit.")
+        if self.server.http_timeout and self.duration() > self.server.http_timeout:
+            if self._response_started:
+                logger.warning("Application timed out while sending response")
+                self.finish()
+            else:
+                self.basic_error(503, b"Service Unavailable", "Application failed to respond within time limit.")
 
     ### Utility functions
 
