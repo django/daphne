@@ -159,6 +159,10 @@ class WebRequest(http.Request):
                     "client": self.client_addr,
                     "server": self.server_addr,
                 })
+                # Check they didn't close an unfinished request
+                if self.content.closed:
+                    # Not much we can do, the request is prematurely abandoned.
+                    return
                 # Run application against request
                 self.application_queue.put_nowait(
                     {
