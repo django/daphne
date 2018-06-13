@@ -1,3 +1,17 @@
+2.2.0 (2018-06-13)
+------------------
+
+* HTTP timeouts have been removed by default, as they were only needed
+  with ASGI/Channels 1. You can re-enable them with the --http-timeout
+  argument to Daphne.
+
+* Occasional errors on application timeout for non-fully-opened sockets
+  and for trying to read closed requests under high load are fixed.
+
+* X-Forwarded-For headers are now correctly decoded in all environments
+  and no longer have unicode matching issues.
+
+
 2.1.2 (2018-05-24)
 ------------------
 
