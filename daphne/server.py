@@ -195,6 +195,10 @@ class Server(object):
         """
         Coroutine that jumps the reply message from asyncio to Twisted
         """
+        # Don't do anything if the connection is closed
+        if self.connections[protocol].get("disconnected", None):
+            return
+        # Let the protocol handle it
         protocol.handle_reply(message)
 
     ### Utility
