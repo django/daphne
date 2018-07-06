@@ -160,7 +160,7 @@ class WebRequest(http.Request):
                     "server": self.server_addr,
                 })
                 # Check they didn't close an unfinished request
-                if self.content.closed:
+                if self.application_queue is None or self.content.closed:
                     # Not much we can do, the request is prematurely abandoned.
                     return
                 # Run application against request

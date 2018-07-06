@@ -75,8 +75,9 @@ class WebSocketProtocol(WebSocketServerProtocol):
                 "server": self.server_addr,
                 "subprotocols": subprotocols,
             })
-            self.application_deferred.addCallback(self.applicationCreateWorked)
-            self.application_deferred.addErrback(self.applicationCreateFailed)
+            if self.application_deferred is not None:
+                self.application_deferred.addCallback(self.applicationCreateWorked)
+                self.application_deferred.addErrback(self.applicationCreateFailed)
         except Exception as e:
             # Exceptions here are not displayed right, just 500.
             # Turn them into an ERROR log.

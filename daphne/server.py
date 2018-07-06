@@ -185,6 +185,8 @@ class Server(object):
         input_queue = asyncio.Queue()
         application_instance = yield deferToThread(self.application, scope=scope)
         # Run it, and stash the future for later checking
+        if protocol not in self.connections:
+            return None
         self.connections[protocol]["application_instance"] = asyncio.ensure_future(application_instance(
             receive=input_queue.get,
             send=lambda message: self.handle_reply(protocol, message),
