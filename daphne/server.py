@@ -183,7 +183,7 @@ class Server(object):
         assert "application_instance" not in self.connections[protocol]
         # Make an instance of the application
         input_queue = asyncio.Queue()
-        application_instance = yield deferToThread(self.application, scope=scope)
+        application_instance = self.application(scope=scope)
         # Run it, and stash the future for later checking
         if protocol not in self.connections:
             return None
