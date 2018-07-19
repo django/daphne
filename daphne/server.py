@@ -24,7 +24,6 @@ from concurrent.futures import CancelledError
 
 from twisted.internet import defer, reactor
 from twisted.internet.endpoints import serverFromString
-from twisted.internet.threads import deferToThread
 from twisted.logger import STDLibLogObserver, globalLogBeginner
 from twisted.web import http
 
@@ -171,7 +170,6 @@ class Server(object):
 
     ### Internal event/message handling
 
-    @defer.inlineCallbacks
     def create_application(self, protocol, scope):
         """
         Creates a new application instance that fronts a Protocol instance

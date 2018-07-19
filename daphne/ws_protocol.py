@@ -66,7 +66,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
                     ]
             # Make new application instance with scope
             self.path = request.path.encode("ascii")
-            self.application_deferred = self.server.create_application(self, {
+            self.application_deferred = defer.maybeDeferred(self.server.create_application, self, {
                 "type": "websocket",
                 "path": unquote(self.path.decode("ascii")),
                 "headers": self.clean_headers,
