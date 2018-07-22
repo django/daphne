@@ -23,7 +23,7 @@ setup(
     packages=find_packages() + ["twisted.plugins"],
     include_package_data=True,
     install_requires=[
-        "twisted>=17.5",
+        "twisted>=18.7",
         "autobahn>=0.18",
     ],
     setup_requires=[
@@ -49,6 +49,7 @@ setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Topic :: Internet :: WWW/HTTP",
     ],
 )
