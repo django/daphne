@@ -3,7 +3,7 @@ import time
 import traceback
 from urllib.parse import unquote
 
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import inlineCallbacks, maybeDeferred
 from twisted.internet.interfaces import IProtocolNegotiationFactory
 from twisted.protocols.policies import ProtocolWrapper
 from twisted.web import http
@@ -146,7 +146,7 @@ class WebRequest(http.Request):
                 logger.debug("HTTP %s request for %s", self.method, self.client_addr)
                 self.content.seek(0, 0)
                 # Work out the application scope and create application
-                self.application_queue = yield self.server.create_application(self, {
+                self.application_queue = yield maybeDeferred(self.server.create_application, self, {
                     "type": "http",
                     # TODO: Correctly say if it's 1.1 or 1.0
                     "http_version": self.clientproto.split(b"/")[-1].decode("ascii"),
