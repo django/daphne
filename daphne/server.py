@@ -50,6 +50,7 @@ class Server(object):
         root_path="",
         proxy_forwarded_address_header=None,
         proxy_forwarded_port_header=None,
+        proxy_forwarded_proto_header=None,
         verbosity=1,
         websocket_handshake_timeout=5,
         application_close_timeout=10,
@@ -68,6 +69,7 @@ class Server(object):
         self.ping_timeout = ping_timeout
         self.proxy_forwarded_address_header = proxy_forwarded_address_header
         self.proxy_forwarded_port_header = proxy_forwarded_port_header
+        self.proxy_forwarded_proto_header = proxy_forwarded_proto_header
         self.websocket_timeout = websocket_timeout
         self.websocket_connect_timeout = websocket_connect_timeout
         self.websocket_handshake_timeout = websocket_handshake_timeout
