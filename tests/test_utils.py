@@ -15,11 +15,13 @@ class TestXForwardedForHttpParsing(TestCase):
     def test_basic(self):
         headers = Headers({
             b"X-Forwarded-For": [b"10.1.2.3"],
-            b"X-Forwarded-Port": [b"1234"]
+            b"X-Forwarded-Port": [b"1234"],
+            b"X-Forwarded-Proto": [b"https"]
         })
         result = parse_x_forwarded_for(headers)
-        self.assertEqual(result, ["10.1.2.3", 1234])
-        self.assertIsInstance(result[0], str)
+        self.assertEqual(result, (["10.1.2.3", 1234], "https"))
+        self.assertIsInstance(result[0][0], str)
+        self.assertIsInstance(result[1], str)
 
     def test_address_only(self):
         headers = Headers({
@@ -27,7 +29,7 @@ class TestXForwardedForHttpParsing(TestCase):
         })
         self.assertEqual(
             parse_x_forwarded_for(headers),
-            ["10.1.2.3", 0]
+            (["10.1.2.3", 0], None)
         )
 
     def test_v6_address(self):
@@ -36,7 +38,7 @@ class TestXForwardedForHttpParsing(TestCase):
         })
         self.assertEqual(
             parse_x_forwarded_for(headers),
-            ["1043::a321:0001", 0]
+            (["1043::a321:0001", 0], None)
         )
 
     def test_multiple_proxys(self):
@@ -45,19 +47,19 @@ class TestXForwardedForHttpParsing(TestCase):
         })
         self.assertEqual(
             parse_x_forwarded_for(headers),
-            ["10.1.2.3", 0]
+            (["10.1.2.3", 0], None)
         )
 
     def test_original(self):
         headers = Headers({})
         self.assertEqual(
-            parse_x_forwarded_for(headers, original=["127.0.0.1", 80]),
-            ["127.0.0.1", 80]
+            parse_x_forwarded_for(headers, original_addr=["127.0.0.1", 80]),
+            (["127.0.0.1", 80], None)
         )
 
     def test_no_original(self):
         headers = Headers({})
-        self.assertIsNone(parse_x_forwarded_for(headers))
+        self.assertEqual(parse_x_forwarded_for(headers), (None, None))
 
 
 class TestXForwardedForWsParsing(TestCase):
@@ -69,10 +71,11 @@ class TestXForwardedForWsParsing(TestCase):
         headers = {
             b"X-Forwarded-For": b"10.1.2.3",
             b"X-Forwarded-Port": b"1234",
+            b"X-Forwarded-Proto": b"https",
         }
         self.assertEqual(
             parse_x_forwarded_for(headers),
-            ["10.1.2.3", 1234]
+            (["10.1.2.3", 1234], "https")
         )
 
     def test_address_only(self):
@@ -81,7 +84,7 @@ class TestXForwardedForWsParsing(TestCase):
         }
         self.assertEqual(
             parse_x_forwarded_for(headers),
-            ["10.1.2.3", 0]
+            (["10.1.2.3", 0], None)
         )
 
     def test_v6_address(self):
@@ -90,7 +93,7 @@ class TestXForwardedForWsParsing(TestCase):
         }
         self.assertEqual(
             parse_x_forwarded_for(headers),
-            ["1043::a321:0001", 0]
+            (["1043::a321:0001", 0], None)
         )
 
     def test_multiple_proxies(self):
@@ -99,16 +102,16 @@ class TestXForwardedForWsParsing(TestCase):
         }
         self.assertEqual(
             parse_x_forwarded_for(headers),
-            ["10.1.2.3", 0]
+            (["10.1.2.3", 0], None)
         )
 
     def test_original(self):
         headers = {}
         self.assertEqual(
-            parse_x_forwarded_for(headers, original=["127.0.0.1", 80]),
-            ["127.0.0.1", 80]
+            parse_x_forwarded_for(headers, original_addr=["127.0.0.1", 80]),
+            (["127.0.0.1", 80], None)
         )
 
     def test_no_original(self):
         headers = {}
-        self.assertIsNone(parse_x_forwarded_for(headers))
+        self.assertEqual(parse_x_forwarded_for(headers), (None, None))

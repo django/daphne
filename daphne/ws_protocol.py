@@ -49,10 +49,11 @@ class WebSocketProtocol(WebSocketServerProtocol):
                 self.server_addr = None
 
             if self.server.proxy_forwarded_address_header:
-                self.client_addr = parse_x_forwarded_for(
+                self.client_addr, self.client_scheme = parse_x_forwarded_for(
                     dict(self.clean_headers),
                     self.server.proxy_forwarded_address_header,
                     self.server.proxy_forwarded_port_header,
+                    self.server.proxy_forwarded_proto_header,
                     self.client_addr
                 )
             # Decode websocket subprotocol options

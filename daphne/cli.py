@@ -214,5 +214,6 @@ class CommandLineInterface(object):
             verbosity=args.verbosity,
             proxy_forwarded_address_header="X-Forwarded-For" if args.proxy_headers else None,
             proxy_forwarded_port_header="X-Forwarded-Port" if args.proxy_headers else None,
+            proxy_forwarded_proto_header="X-Forwarded-Proto" if args.proxy_headers else None,
         )
         self.server.run()

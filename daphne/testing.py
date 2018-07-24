@@ -37,6 +37,7 @@ class DaphneTestingInstance:
         if self.xff:
             kwargs["proxy_forwarded_address_header"] = "X-Forwarded-For"
             kwargs["proxy_forwarded_port_header"] = "X-Forwarded-Port"
+            kwargs["proxy_forwarded_proto_header"] = "X-Forwarded-Proto"
         if self.http_timeout:
             kwargs["http_timeout"] = self.http_timeout
         # Start up process
