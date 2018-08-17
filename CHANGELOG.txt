@@ -1,3 +1,13 @@
+2.2.2 (2018-08-16)
+------------------
+
+* X-Forwarded-Proto support is now present and enabled if you turn on the
+  --proxy-headers flag
+
+* ASGI applications are no longer instantiated in a thread (the ASGI spec
+  was finalised to say all constructors must be non-blocking on the main thread)
+
+
 2.2.1 (2018-07-22)
 ------------------
 
