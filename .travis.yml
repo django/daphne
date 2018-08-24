@@ -7,7 +7,7 @@ python:
 - '3.6'
 
 env:
-- TWISTED="twisted==17.5.0"
+- TWISTED="twisted==18.7.0"
 - TWISTED="twisted"
 
 install:
@@ -22,6 +22,14 @@ script:
 
 jobs:
   include:
+    - python: '3.7'
+      env: TWISTED="twisted==18.7.0"
+      dist: xenial
+      sudo: required
+    - python: '3.7'
+      env: TWISTED="twisted"
+      dist: xenial
+      sudo: required
     - stage: release
       script: skip
       deploy:
