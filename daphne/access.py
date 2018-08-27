@@ -49,13 +49,16 @@ class AccessLogGenerator(object):
                 request="WSDISCONNECT %(path)s" % details,
             )
 
-    def write_entry(self, host, date, request, status=None, length=None, ident=None, user=None):
+    def write_entry(
+        self, host, date, request, status=None, length=None, ident=None, user=None
+    ):
         """
         Writes an NCSA-style entry to the log file (some liberty is taken with
         what the entries are for non-HTTP)
         """
         self.stream.write(
-            "%s %s %s [%s] \"%s\" %s %s\n" % (
+            '%s %s %s [%s] "%s" %s %s\n'
+            % (
                 host,
                 ident or "-",
                 user or "-",

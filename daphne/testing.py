@@ -100,9 +100,7 @@ class DaphneTestingInstance:
         Adds messages for the application to send back.
         The next time it receives an incoming message, it will reply with these.
         """
-        TestApplication.save_setup(
-            response_messages=messages,
-        )
+        TestApplication.save_setup(response_messages=messages)
 
 
 class DaphneProcess(multiprocessing.Process):
@@ -193,12 +191,7 @@ class TestApplication:
         Stores setup information.
         """
         with open(cls.setup_storage, "wb") as fh:
-            pickle.dump(
-                {
-                    "response_messages": response_messages,
-                },
-                fh,
-            )
+            pickle.dump({"response_messages": response_messages}, fh)
 
     @classmethod
     def load_setup(cls):
@@ -218,13 +211,7 @@ class TestApplication:
         We could use pickle here, but that seems wrong, still, somehow.
         """
         with open(cls.result_storage, "wb") as fh:
-            pickle.dump(
-                {
-                    "scope": scope,
-                    "messages": messages,
-                },
-                fh,
-            )
+            pickle.dump({"scope": scope, "messages": messages}, fh)
 
     @classmethod
     def save_exception(cls, exception):
@@ -233,12 +220,7 @@ class TestApplication:
         We could use pickle here, but that seems wrong, still, somehow.
         """
         with open(cls.result_storage, "wb") as fh:
-            pickle.dump(
-                {
-                    "exception": exception,
-                },
-                fh,
-            )
+            pickle.dump({"exception": exception}, fh)
 
     @classmethod
     def load_result(cls):

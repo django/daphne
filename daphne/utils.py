@@ -22,12 +22,14 @@ def header_value(headers, header_name):
     return value.decode("utf-8")
 
 
-def parse_x_forwarded_for(headers,
-                          address_header_name="X-Forwarded-For",
-                          port_header_name="X-Forwarded-Port",
-                          proto_header_name="X-Forwarded-Proto",
-                          original_addr=None,
-                          original_scheme=None):
+def parse_x_forwarded_for(
+    headers,
+    address_header_name="X-Forwarded-For",
+    port_header_name="X-Forwarded-Port",
+    proto_header_name="X-Forwarded-Proto",
+    original_addr=None,
+    original_scheme=None,
+):
     """
     Parses an X-Forwarded-For header and returns a host/port pair as a list.
 

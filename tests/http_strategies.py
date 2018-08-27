@@ -6,7 +6,9 @@ from hypothesis import strategies
 HTTP_METHODS = ["OPTIONS", "GET", "HEAD", "POST", "PUT", "DELETE", "TRACE", "CONNECT"]
 
 # Unicode characters of the "Letter" category
-letters = strategies.characters(whitelist_categories=("Lu", "Ll", "Lt", "Lm", "Lo", "Nl"))
+letters = strategies.characters(
+    whitelist_categories=("Lu", "Ll", "Lt", "Lm", "Lo", "Nl")
+)
 
 
 def http_method():
@@ -22,11 +24,9 @@ def http_path():
     """
     Returns a URL path (not encoded).
     """
-    return strategies.lists(
-        _http_path_portion(),
-        min_size=0,
-        max_size=10,
-    ).map(lambda s: "/" + "/".join(s))
+    return strategies.lists(_http_path_portion(), min_size=0, max_size=10).map(
+        lambda s: "/" + "/".join(s)
+    )
 
 
 def http_body():
@@ -53,10 +53,7 @@ def valid_bidi(value):
 
 def _domain_label():
     return strategies.text(
-        alphabet=letters,
-        min_size=1,
-        average_size=6,
-        max_size=63,
+        alphabet=letters, min_size=1, average_size=6, max_size=63
     ).filter(valid_bidi)
 
 
@@ -64,19 +61,14 @@ def international_domain_name():
     """
     Returns a byte string of a domain name, IDNA-encoded.
     """
-    return strategies.lists(
-        _domain_label(),
-        min_size=2,
-        average_size=2,
-    ).map(lambda s: (".".join(s)).encode("idna"))
+    return strategies.lists(_domain_label(), min_size=2, average_size=2).map(
+        lambda s: (".".join(s)).encode("idna")
+    )
 
 
 def _query_param():
     return strategies.text(
-        alphabet=letters,
-        min_size=1,
-        average_size=10,
-        max_size=255,
+        alphabet=letters, min_size=1, average_size=10, max_size=255
     ).map(lambda s: s.encode("utf8"))
 
 
@@ -87,9 +79,7 @@ def query_params():
     ensures that the total urlencoded query string is not longer than 1500 characters.
     """
     return strategies.lists(
-        strategies.tuples(_query_param(), _query_param()),
-        min_size=0,
-        average_size=5,
+        strategies.tuples(_query_param(), _query_param()), min_size=0, average_size=5
     ).filter(lambda x: len(parse.urlencode(x)) < 1500)
 
 
@@ -101,9 +91,7 @@ def header_name():
     and 20 characters long
     """
     return strategies.text(
-        alphabet=string.ascii_letters + string.digits + "-",
-        min_size=1,
-        max_size=30,
+        alphabet=string.ascii_letters + string.digits + "-", min_size=1, max_size=30
     )
 
 
@@ -115,7 +103,10 @@ def header_value():
     https://en.wikipedia.org/wiki/List_of_HTTP_header_fields
     """
     return strategies.text(
-        alphabet=string.ascii_letters + string.digits + string.punctuation.replace(",", "") + " /t",
+        alphabet=string.ascii_letters
+        + string.digits
+        + string.punctuation.replace(",", "")
+        + " /t",
         min_size=1,
         average_size=40,
         max_size=8190,

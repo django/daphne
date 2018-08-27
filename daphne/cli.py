@@ -23,15 +23,9 @@ class CommandLineInterface(object):
     server_class = Server
 
     def __init__(self):
-        self.parser = argparse.ArgumentParser(
-            description=self.description,
-        )
+        self.parser = argparse.ArgumentParser(description=self.description)
         self.parser.add_argument(
-            "-p",
-            "--port",
-            type=int,
-            help="Port number to listen on",
-            default=None,
+            "-p", "--port", type=int, help="Port number to listen on", default=None
         )
         self.parser.add_argument(
             "-b",
@@ -128,7 +122,7 @@ class CommandLineInterface(object):
             "--proxy-headers",
             dest="proxy_headers",
             help="Enable parsing and using of X-Forwarded-For and X-Forwarded-Port headers and using that as the "
-                 "client address",
+            "client address",
             default=False,
             action="store_true",
         )
@@ -176,7 +170,15 @@ class CommandLineInterface(object):
         sys.path.insert(0, ".")
         application = import_by_path(args.application)
         # Set up port/host bindings
-        if not any([args.host, args.port is not None, args.unix_socket, args.file_descriptor, args.socket_strings]):
+        if not any(
+            [
+                args.host,
+                args.port is not None,
+                args.unix_socket,
+                args.file_descriptor,
+                args.socket_strings,
+            ]
+        ):
             # no advanced binding options passed, patch in defaults
             args.host = DEFAULT_HOST
             args.port = DEFAULT_PORT
@@ -189,16 +191,11 @@ class CommandLineInterface(object):
             host=args.host,
             port=args.port,
             unix_socket=args.unix_socket,
-            file_descriptor=args.file_descriptor
+            file_descriptor=args.file_descriptor,
         )
-        endpoints = sorted(
-            args.socket_strings + endpoints
-        )
+        endpoints = sorted(args.socket_strings + endpoints)
         # Start the server
-        logger.info(
-            "Starting server at %s" %
-            (", ".join(endpoints), )
-        )
+        logger.info("Starting server at %s" % (", ".join(endpoints),))
         self.server = self.server_class(
             application=application,
             endpoints=endpoints,
@@ -208,12 +205,20 @@ class CommandLineInterface(object):
             websocket_timeout=args.websocket_timeout,
             websocket_connect_timeout=args.websocket_connect_timeout,
             application_close_timeout=args.application_close_timeout,
-            action_logger=AccessLogGenerator(access_log_stream) if access_log_stream else None,
+            action_logger=AccessLogGenerator(access_log_stream)
+            if access_log_stream
+            else None,
             ws_protocols=args.ws_protocols,
             root_path=args.root_path,
             verbosity=args.verbosity,
-            proxy_forwarded_address_header="X-Forwarded-For" if args.proxy_headers else None,
-            proxy_forwarded_port_header="X-Forwarded-Port" if args.proxy_headers else None,
-            proxy_forwarded_proto_header="X-Forwarded-Proto" if args.proxy_headers else None,
+            proxy_forwarded_address_header="X-Forwarded-For"
+            if args.proxy_headers
+            else None,
+            proxy_forwarded_port_header="X-Forwarded-Port"
+            if args.proxy_headers
+            else None,
+            proxy_forwarded_proto_header="X-Forwarded-Proto"
+            if args.proxy_headers
+            else None,
         )
         self.server.run()
