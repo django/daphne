@@ -36,8 +36,8 @@ jobs:
     - stage: lint
       install: pip install -U -e .[tests] black pyflakes isort
       script:
-        - pyflakes .
-        - black --check .
+        - pyflakes daphne tests
+        - black --check daphne tests
         - isort --check-only --diff --recursive channels_redis tests
 
     - stage: release
