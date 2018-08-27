@@ -38,7 +38,7 @@ jobs:
       script:
         - pyflakes daphne tests
         - black --check daphne tests
-        - isort --check-only --diff --recursive channels_redis tests
+        - isort --check-only --diff --recursive daphne tests
 
     - stage: release
       script: skip
