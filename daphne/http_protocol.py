@@ -23,7 +23,8 @@ class WebRequest(http.Request):
     GET and POST out.
     """
 
-    error_template = """
+    error_template = (
+        """
         <html>
             <head>
                 <title>%(title)s</title>
@@ -40,7 +41,13 @@ class WebRequest(http.Request):
                 <footer>Daphne</footer>
             </body>
         </html>
-    """.replace("\n", "").replace("    ", " ").replace("   ", " ").replace("  ", " ")  # Shorten it a bit, bytes wise
+    """.replace(
+            "\n", ""
+        )
+        .replace("    ", " ")
+        .replace("   ", " ")
+        .replace("  ", " ")
+    )  # Shorten it a bit, bytes wise
 
     def __init__(self, *args, **kwargs):
         try:
@@ -84,7 +91,7 @@ class WebRequest(http.Request):
                     self.server.proxy_forwarded_port_header,
                     self.server.proxy_forwarded_proto_header,
                     self.client_addr,
-                    self.client_scheme
+                    self.client_scheme,
                 )
             # Check for unicodeish path (or it'll crash when trying to parse)
             try:
@@ -105,7 +112,9 @@ class WebRequest(http.Request):
             # Is it WebSocket? IS IT?!
             if upgrade_header and upgrade_header.lower() == b"websocket":
                 # Make WebSocket protocol to hand off to
-                protocol = self.server.ws_factory.buildProtocol(self.transport.getPeer())
+                protocol = self.server.ws_factory.buildProtocol(
+                    self.transport.getPeer()
+                )
                 if not protocol:
                     # If protocol creation fails, we signal "internal server error"
                     self.setResponseCode(500)
@@ -151,33 +160,38 @@ class WebRequest(http.Request):
                 logger.debug("HTTP %s request for %s", self.method, self.client_addr)
                 self.content.seek(0, 0)
                 # Work out the application scope and create application
-                self.application_queue = yield maybeDeferred(self.server.create_application, self, {
-                    "type": "http",
-                    # TODO: Correctly say if it's 1.1 or 1.0
-                    "http_version": self.clientproto.split(b"/")[-1].decode("ascii"),
-                    "method": self.method.decode("ascii"),
-                    "path": unquote(self.path.decode("ascii")),
-                    "root_path": self.root_path,
-                    "scheme": self.client_scheme,
-                    "query_string": self.query_string,
-                    "headers": self.clean_headers,
-                    "client": self.client_addr,
-                    "server": self.server_addr,
-                })
+                self.application_queue = yield maybeDeferred(
+                    self.server.create_application,
+                    self,
+                    {
+                        "type": "http",
+                        # TODO: Correctly say if it's 1.1 or 1.0
+                        "http_version": self.clientproto.split(b"/")[-1].decode(
+                            "ascii"
+                        ),
+                        "method": self.method.decode("ascii"),
+                        "path": unquote(self.path.decode("ascii")),
+                        "root_path": self.root_path,
+                        "scheme": self.client_scheme,
+                        "query_string": self.query_string,
+                        "headers": self.clean_headers,
+                        "client": self.client_addr,
+                        "server": self.server_addr,
+                    },
+                )
                 # Check they didn't close an unfinished request
                 if self.application_queue is None or self.content.closed:
                     # Not much we can do, the request is prematurely abandoned.
                     return
                 # Run application against request
                 self.application_queue.put_nowait(
-                    {
-                        "type": "http.request",
-                        "body": self.content.read(),
-                    },
+                    {"type": "http.request", "body": self.content.read()}
                 )
         except Exception:
             logger.error(traceback.format_exc())
-            self.basic_error(500, b"Internal Server Error", "Daphne HTTP processing error")
+            self.basic_error(
+                500, b"Internal Server Error", "Daphne HTTP processing error"
+            )
 
     def connectionLost(self, reason):
         """
@@ -217,16 +231,23 @@ class WebRequest(http.Request):
                 raise ValueError("HTTP response has already been started")
             self._response_started = True
             if "status" not in message:
-                raise ValueError("Specifying a status code is required for a Response message.")
+                raise ValueError(
+                    "Specifying a status code is required for a Response message."
+                )
             # Set HTTP status code
             self.setResponseCode(message["status"])
             # Write headers
             for header, value in message.get("headers", {}):
                 self.responseHeaders.addRawHeader(header, value)
-            logger.debug("HTTP %s response started for %s", message["status"], self.client_addr)
+            logger.debug(
+                "HTTP %s response started for %s", message["status"], self.client_addr
+            )
         elif message["type"] == "http.response.body":
             if not self._response_started:
-                raise ValueError("HTTP response has not yet been started but got %s" % message["type"])
+                raise ValueError(
+                    "HTTP response has not yet been started but got %s"
+                    % message["type"]
+                )
             # Write out body
             http.Request.write(self, message.get("body", b""))
             # End if there's no more content
@@ -239,15 +260,21 @@ class WebRequest(http.Request):
                     # The path is malformed somehow - do our best to log something
                     uri = repr(self.uri)
                 try:
-                    self.server.log_action("http", "complete", {
-                        "path": uri,
-                        "status": self.code,
-                        "method": self.method.decode("ascii", "replace"),
-                        "client": "%s:%s" % tuple(self.client_addr) if self.client_addr else None,
-                        "time_taken": self.duration(),
-                        "size": self.sentLength,
-                    })
-                except Exception as e:
+                    self.server.log_action(
+                        "http",
+                        "complete",
+                        {
+                            "path": uri,
+                            "status": self.code,
+                            "method": self.method.decode("ascii", "replace"),
+                            "client": "%s:%s" % tuple(self.client_addr)
+                            if self.client_addr
+                            else None,
+                            "time_taken": self.duration(),
+                            "size": self.sentLength,
+                        },
+                    )
+                except Exception:
                     logger.error(traceback.format_exc())
             else:
                 logger.debug("HTTP response chunk for %s", self.client_addr)
@@ -270,7 +297,11 @@ class WebRequest(http.Request):
                 logger.warning("Application timed out while sending response")
                 self.finish()
             else:
-                self.basic_error(503, b"Service Unavailable", "Application failed to respond within time limit.")
+                self.basic_error(
+                    503,
+                    b"Service Unavailable",
+                    "Application failed to respond within time limit.",
+                )
 
     ### Utility functions
 
@@ -281,11 +312,7 @@ class WebRequest(http.Request):
         """
         # If we don't yet have a path, then don't send as we never opened.
         if self.path:
-            self.application_queue.put_nowait(
-                {
-                    "type": "http.disconnect",
-                },
-            )
+            self.application_queue.put_nowait({"type": "http.disconnect"})
 
     def duration(self):
         """
@@ -299,20 +326,25 @@ class WebRequest(http.Request):
         """
         Responds with a server-level error page (very basic)
         """
-        self.handle_reply({
-            "type": "http.response.start",
-            "status": status,
-            "headers": [
-                (b"Content-Type", b"text/html; charset=utf-8"),
-            ],
-        })
-        self.handle_reply({
-            "type": "http.response.body",
-            "body": (self.error_template % {
-                "title": str(status) + " " + status_text.decode("ascii"),
-                "body": body,
-            }).encode("utf8"),
-        })
+        self.handle_reply(
+            {
+                "type": "http.response.start",
+                "status": status,
+                "headers": [(b"Content-Type", b"text/html; charset=utf-8")],
+            }
+        )
+        self.handle_reply(
+            {
+                "type": "http.response.body",
+                "body": (
+                    self.error_template
+                    % {
+                        "title": str(status) + " " + status_text.decode("ascii"),
+                        "body": body,
+                    }
+                ).encode("utf8"),
+            }
+        )
 
     def __hash__(self):
         return hash(id(self))
@@ -343,7 +375,7 @@ class HTTPFactory(http.HTTPFactory):
             protocol = http.HTTPFactory.buildProtocol(self, addr)
             protocol.requestFactory = WebRequest
             return protocol
-        except Exception as e:
+        except Exception:
             logger.error("Cannot build protocol: %s" % traceback.format_exc())
             raise
 

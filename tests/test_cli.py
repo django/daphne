@@ -19,45 +19,32 @@ class TestEndpointDescriptions(TestCase):
     def testTcpPortBindings(self):
         self.assertEqual(
             build(port=1234, host="example.com"),
-            ["tcp:port=1234:interface=example.com"]
+            ["tcp:port=1234:interface=example.com"],
         )
 
         self.assertEqual(
-            build(port=8000, host="127.0.0.1"),
-            ["tcp:port=8000:interface=127.0.0.1"]
+            build(port=8000, host="127.0.0.1"), ["tcp:port=8000:interface=127.0.0.1"]
         )
 
         self.assertEqual(
-            build(port=8000, host="[200a::1]"),
-            [r'tcp:port=8000:interface=200a\:\:1']
+            build(port=8000, host="[200a::1]"), [r"tcp:port=8000:interface=200a\:\:1"]
         )
 
         self.assertEqual(
-            build(port=8000, host="200a::1"),
-            [r'tcp:port=8000:interface=200a\:\:1']
+            build(port=8000, host="200a::1"), [r"tcp:port=8000:interface=200a\:\:1"]
         )
 
         # incomplete port/host kwargs raise errors
-        self.assertRaises(
-            ValueError,
-            build, port=123
-        )
-        self.assertRaises(
-            ValueError,
-            build, host="example.com"
-        )
+        self.assertRaises(ValueError, build, port=123)
+        self.assertRaises(ValueError, build, host="example.com")
 
     def testUnixSocketBinding(self):
         self.assertEqual(
-            build(unix_socket="/tmp/daphne.sock"),
-            ["unix:/tmp/daphne.sock"]
+            build(unix_socket="/tmp/daphne.sock"), ["unix:/tmp/daphne.sock"]
         )
 
     def testFileDescriptorBinding(self):
-        self.assertEqual(
-            build(file_descriptor=5),
-            ["fd:fileno=5"]
-        )
+        self.assertEqual(build(file_descriptor=5), ["fd:fileno=5"])
 
     def testMultipleEnpoints(self):
         self.assertEqual(
@@ -66,14 +53,16 @@ class TestEndpointDescriptions(TestCase):
                     file_descriptor=123,
                     unix_socket="/tmp/daphne.sock",
                     port=8080,
-                    host="10.0.0.1"
+                    host="10.0.0.1",
                 )
             ),
-            sorted([
-                "tcp:port=8080:interface=10.0.0.1",
-                "unix:/tmp/daphne.sock",
-                "fd:fileno=123"
-            ])
+            sorted(
+                [
+                    "tcp:port=8080:interface=10.0.0.1",
+                    "unix:/tmp/daphne.sock",
+                    "fd:fileno=123",
+                ]
+            ),
         )
 
 
@@ -113,7 +102,9 @@ class TestCLIInterface(TestCase):
         Passes in a fake application automatically.
         """
         cli = self.TestedCLI()
-        cli.run(args + ["daphne:__version__"])  # We just pass something importable as app
+        cli.run(
+            args + ["daphne:__version__"]
+        )  # We just pass something importable as app
         # Check the server got all arguments as intended
         for key, value in server_kwargs.items():
             # Get the value and sort it if it's a list (for endpoint checking)
@@ -124,52 +115,30 @@ class TestCLIInterface(TestCase):
             self.assertEqual(
                 value,
                 actual_value,
-                "Wrong value for server kwarg %s: %r != %r" % (
-                    key,
-                    value,
-                    actual_value,
-                ),
+                "Wrong value for server kwarg %s: %r != %r"
+                % (key, value, actual_value),
             )
 
     def testCLIBasics(self):
         """
         Tests basic endpoint generation.
         """
+        self.assertCLI([], {"endpoints": ["tcp:port=8000:interface=127.0.0.1"]})
         self.assertCLI(
-            [],
-            {
-                "endpoints": ["tcp:port=8000:interface=127.0.0.1"],
-            },
+            ["-p", "123"], {"endpoints": ["tcp:port=123:interface=127.0.0.1"]}
         )
         self.assertCLI(
-            ["-p", "123"],
-            {
-                "endpoints": ["tcp:port=123:interface=127.0.0.1"],
-            },
+            ["-b", "10.0.0.1"], {"endpoints": ["tcp:port=8000:interface=10.0.0.1"]}
         )
         self.assertCLI(
-            ["-b", "10.0.0.1"],
-            {
-                "endpoints": ["tcp:port=8000:interface=10.0.0.1"],
-            },
+            ["-b", "200a::1"], {"endpoints": [r"tcp:port=8000:interface=200a\:\:1"]}
         )
         self.assertCLI(
-            ["-b", "200a::1"],
-            {
-                "endpoints": [r'tcp:port=8000:interface=200a\:\:1'],
-            },
-        )
-        self.assertCLI(
-            ["-b", "[200a::1]"],
-            {
-                "endpoints": [r'tcp:port=8000:interface=200a\:\:1'],
-            },
+            ["-b", "[200a::1]"], {"endpoints": [r"tcp:port=8000:interface=200a\:\:1"]}
         )
         self.assertCLI(
             ["-p", "8080", "-b", "example.com"],
-            {
-                "endpoints": ["tcp:port=8080:interface=example.com"],
-            },
+            {"endpoints": ["tcp:port=8080:interface=example.com"]},
         )
 
     def testUnixSockets(self):
@@ -179,7 +148,7 @@ class TestCLIInterface(TestCase):
                 "endpoints": [
                     "tcp:port=8080:interface=127.0.0.1",
                     "unix:/tmp/daphne.sock",
-                ],
+                ]
             },
         )
         self.assertCLI(
@@ -188,17 +157,12 @@ class TestCLIInterface(TestCase):
                 "endpoints": [
                     "tcp:port=8000:interface=example.com",
                     "unix:/tmp/daphne.sock",
-                ],
+                ]
             },
         )
         self.assertCLI(
             ["-u", "/tmp/daphne.sock", "--fd", "5"],
-            {
-                "endpoints": [
-                    "fd:fileno=5",
-                    "unix:/tmp/daphne.sock"
-                ],
-            },
+            {"endpoints": ["fd:fileno=5", "unix:/tmp/daphne.sock"]},
         )
 
     def testMixedCLIEndpointCreation(self):
@@ -210,8 +174,8 @@ class TestCLIInterface(TestCase):
             {
                 "endpoints": [
                     "tcp:port=8080:interface=127.0.0.1",
-                    "unix:/tmp/daphne.sock"
-                ],
+                    "unix:/tmp/daphne.sock",
+                ]
             },
         )
         self.assertCLI(
@@ -220,7 +184,7 @@ class TestCLIInterface(TestCase):
                 "endpoints": [
                     "tcp:port=8080:interface=127.0.0.1",
                     "tcp:port=8080:interface=127.0.0.1",
-                ],
+                ]
             },
         )
 

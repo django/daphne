@@ -1,10 +1,5 @@
-
-
 def build_endpoint_description_strings(
-    host=None,
-    port=None,
-    unix_socket=None,
-    file_descriptor=None
+    host=None, port=None, unix_socket=None, file_descriptor=None
 ):
     """
     Build a list of twisted endpoint description strings that the server will listen on.

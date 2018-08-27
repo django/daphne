@@ -19,7 +19,9 @@ class DaphneTestCase(unittest.TestCase):
 
     ### Plain HTTP helpers
 
-    def run_daphne_http(self, method, path, params, body, responses, headers=None, timeout=1, xff=False):
+    def run_daphne_http(
+        self, method, path, params, body, responses, headers=None, timeout=1, xff=False
+    ):
         """
         Runs Daphne with the given request callback (given the base URL)
         and response messages.
@@ -38,7 +40,9 @@ class DaphneTestCase(unittest.TestCase):
             # Manually send over headers (encoding any non-safe values as best we can)
             if headers:
                 for header_name, header_value in headers:
-                    conn.putheader(header_name.encode("utf8"), header_value.encode("utf8"))
+                    conn.putheader(
+                        header_name.encode("utf8"), header_value.encode("utf8")
+                    )
             # Send body if provided.
             if body:
                 conn.putheader("Content-Length", str(len(body)))
@@ -50,9 +54,11 @@ class DaphneTestCase(unittest.TestCase):
             except socket.timeout:
                 # See if they left an exception for us to load
                 test_app.get_received()
-                raise RuntimeError("Daphne timed out handling request, no exception found.")
+                raise RuntimeError(
+                    "Daphne timed out handling request, no exception found."
+                )
             # Return scope, messages, response
-            return test_app.get_received() + (response, )
+            return test_app.get_received() + (response,)
 
     def run_daphne_raw(self, data, timeout=1):
         """
@@ -68,9 +74,13 @@ class DaphneTestCase(unittest.TestCase):
             try:
                 return s.recv(1000000)
             except socket.timeout:
-                raise RuntimeError("Daphne timed out handling raw request, no exception found.")
+                raise RuntimeError(
+                    "Daphne timed out handling raw request, no exception found."
+                )
 
-    def run_daphne_request(self, method, path, params=None, body=None, headers=None, xff=False):
+    def run_daphne_request(
+        self, method, path, params=None, body=None, headers=None, xff=False
+    ):
         """
         Convenience method for just testing request handling.
         Returns (scope, messages)
@@ -95,17 +105,21 @@ class DaphneTestCase(unittest.TestCase):
         Returns (scope, messages)
         """
         _, _, response = self.run_daphne_http(
-            method="GET",
-            path="/",
-            params={},
-            body=b"",
-            responses=response_messages,
+            method="GET", path="/", params={}, body=b"", responses=response_messages
         )
         return response
 
     ### WebSocket helpers
 
-    def websocket_handshake(self, test_app, path="/", params=None, headers=None, subprotocols=None, timeout=1):
+    def websocket_handshake(
+        self,
+        test_app,
+        path="/",
+        params=None,
+        headers=None,
+        subprotocols=None,
+        timeout=1,
+    ):
         """
         Runs a WebSocket handshake negotiation and returns the raw socket
         object & the selected subprotocol.
@@ -124,14 +138,16 @@ class DaphneTestCase(unittest.TestCase):
         # Do WebSocket handshake headers + any other headers
         if headers is None:
             headers = []
-        headers.extend([
-            ("Host", "example.com"),
-            ("Upgrade", "websocket"),
-            ("Connection", "Upgrade"),
-            ("Sec-WebSocket-Key", "x3JJHMbDL1EzLkh9GBhXDw=="),
-            ("Sec-WebSocket-Version", "13"),
-            ("Origin", "http://example.com")
-        ])
+        headers.extend(
+            [
+                ("Host", "example.com"),
+                ("Upgrade", "websocket"),
+                ("Connection", "Upgrade"),
+                ("Sec-WebSocket-Key", "x3JJHMbDL1EzLkh9GBhXDw=="),
+                ("Sec-WebSocket-Version", "13"),
+                ("Origin", "http://example.com"),
+            ]
+        )
         if subprotocols:
             headers.append(("Sec-WebSocket-Protocol", ", ".join(subprotocols)))
         if headers:
@@ -149,10 +165,7 @@ class DaphneTestCase(unittest.TestCase):
         if response.status != 101:
             raise RuntimeError("WebSocket upgrade did not result in status code 101")
         # Prepare headers for subprotocol searching
-        response_headers = dict(
-            (n.lower(), v)
-            for n, v in response.getheaders()
-        )
+        response_headers = dict((n.lower(), v) for n, v in response.getheaders())
         response.read()
         assert not response.closed
         # Return the raw socket and any subprotocol
@@ -234,10 +247,7 @@ class DaphneTestCase(unittest.TestCase):
         # Make sure all required keys are present
         self.assertTrue(required_keys <= present_keys)
         # Assert that no other keys are present
-        self.assertEqual(
-            set(),
-            present_keys - required_keys - optional_keys,
-        )
+        self.assertEqual(set(), present_keys - required_keys - optional_keys)
 
     def assert_valid_path(self, path, request_path):
         """

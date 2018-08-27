@@ -15,13 +15,7 @@ class TestHTTPRequest(DaphneTestCase):
     """
 
     def assert_valid_http_scope(
-        self,
-        scope,
-        method,
-        path,
-        params=None,
-        headers=None,
-        scheme=None,
+        self, scope, method, path, params=None, headers=None, scheme=None
     ):
         """
         Checks that the passed scope is a valid ASGI HTTP scope regarding types
@@ -29,7 +23,14 @@ class TestHTTPRequest(DaphneTestCase):
         """
         # Check overall keys
         self.assert_key_sets(
-            required_keys={"type", "http_version", "method", "path", "query_string", "headers"},
+            required_keys={
+                "type",
+                "http_version",
+                "method",
+                "path",
+                "query_string",
+                "headers",
+            },
             optional_keys={"scheme", "root_path", "client", "server"},
             actual_keys=scope.keys(),
         )
@@ -50,7 +51,9 @@ class TestHTTPRequest(DaphneTestCase):
         query_string = scope["query_string"]
         self.assertIsInstance(query_string, bytes)
         if params:
-            self.assertEqual(query_string, parse.urlencode(params or []).encode("ascii"))
+            self.assertEqual(
+                query_string, parse.urlencode(params or []).encode("ascii")
+            )
         # Ordering of header names is not important, but the order of values for a header
         # name is. To assert whether that order is kept, we transform both the request
         # headers and the channel message headers into a dictionary
@@ -59,7 +62,7 @@ class TestHTTPRequest(DaphneTestCase):
         for name, value in scope["headers"]:
             transformed_scope_headers[name].append(value)
         transformed_request_headers = collections.defaultdict(list)
-        for name, value in (headers or []):
+        for name, value in headers or []:
             expected_name = name.lower().strip().encode("ascii")
             expected_value = value.strip().encode("ascii")
             transformed_request_headers[expected_name].append(expected_value)
@@ -103,27 +106,31 @@ class TestHTTPRequest(DaphneTestCase):
 
     @given(
         request_path=http_strategies.http_path(),
-        request_params=http_strategies.query_params()
+        request_params=http_strategies.query_params(),
     )
     @settings(max_examples=5, deadline=5000)
     def test_get_request(self, request_path, request_params):
         """
         Tests a typical HTTP GET request, with a path and query parameters
         """
-        scope, messages = self.run_daphne_request("GET", request_path, params=request_params)
+        scope, messages = self.run_daphne_request(
+            "GET", request_path, params=request_params
+        )
         self.assert_valid_http_scope(scope, "GET", request_path, params=request_params)
         self.assert_valid_http_request_message(messages[0], body=b"")
 
     @given(
         request_path=http_strategies.http_path(),
-        request_body=http_strategies.http_body()
+        request_body=http_strategies.http_body(),
     )
     @settings(max_examples=5, deadline=5000)
     def test_post_request(self, request_path, request_body):
         """
         Tests a typical HTTP POST request, with a path and body.
         """
-        scope, messages = self.run_daphne_request("POST", request_path, body=request_body)
+        scope, messages = self.run_daphne_request(
+            "POST", request_path, body=request_body
+        )
         self.assert_valid_http_scope(scope, "POST", request_path)
         self.assert_valid_http_request_message(messages[0], body=request_body)
 
@@ -134,8 +141,12 @@ class TestHTTPRequest(DaphneTestCase):
         Tests that HTTP header fields are handled as specified
         """
         request_path = "/te st-à/"
-        scope, messages = self.run_daphne_request("OPTIONS", request_path, headers=request_headers)
-        self.assert_valid_http_scope(scope, "OPTIONS", request_path, headers=request_headers)
+        scope, messages = self.run_daphne_request(
+            "OPTIONS", request_path, headers=request_headers
+        )
+        self.assert_valid_http_scope(
+            scope, "OPTIONS", request_path, headers=request_headers
+        )
         self.assert_valid_http_request_message(messages[0], body=b"")
 
     @given(request_headers=http_strategies.headers())
@@ -150,8 +161,12 @@ class TestHTTPRequest(DaphneTestCase):
         duplicated_headers = [(header_name, header[1]) for header in request_headers]
         # Run the request
         request_path = "/te st-à/"
-        scope, messages = self.run_daphne_request("OPTIONS", request_path, headers=duplicated_headers)
-        self.assert_valid_http_scope(scope, "OPTIONS", request_path, headers=duplicated_headers)
+        scope, messages = self.run_daphne_request(
+            "OPTIONS", request_path, headers=duplicated_headers
+        )
+        self.assert_valid_http_scope(
+            scope, "OPTIONS", request_path, headers=duplicated_headers
+        )
         self.assert_valid_http_request_message(messages[0], body=b"")
 
     @given(
@@ -222,10 +237,7 @@ class TestHTTPRequest(DaphneTestCase):
         """
         Make sure that, by default, X-Forwarded-For is ignored.
         """
-        headers = [
-            ["X-Forwarded-For", "10.1.2.3"],
-            ["X-Forwarded-Port", "80"],
-        ]
+        headers = [["X-Forwarded-For", "10.1.2.3"], ["X-Forwarded-Port", "80"]]
         scope, messages = self.run_daphne_request("GET", "/", headers=headers)
         self.assert_valid_http_scope(scope, "GET", "/", headers=headers)
         self.assert_valid_http_request_message(messages[0], body=b"")
@@ -236,10 +248,7 @@ class TestHTTPRequest(DaphneTestCase):
         """
         When X-Forwarded-For is enabled, make sure it is respected.
         """
-        headers = [
-            ["X-Forwarded-For", "10.1.2.3"],
-            ["X-Forwarded-Port", "80"],
-        ]
+        headers = [["X-Forwarded-For", "10.1.2.3"], ["X-Forwarded-Port", "80"]]
         scope, messages = self.run_daphne_request("GET", "/", headers=headers, xff=True)
         self.assert_valid_http_scope(scope, "GET", "/", headers=headers)
         self.assert_valid_http_request_message(messages[0], body=b"")
@@ -251,9 +260,7 @@ class TestHTTPRequest(DaphneTestCase):
         When X-Forwarded-For is enabled but only the host is passed, make sure
         that at least makes it through.
         """
-        headers = [
-            ["X-Forwarded-For", "10.1.2.3"],
-        ]
+        headers = [["X-Forwarded-For", "10.1.2.3"]]
         scope, messages = self.run_daphne_request("GET", "/", headers=headers, xff=True)
         self.assert_valid_http_scope(scope, "GET", "/", headers=headers)
         self.assert_valid_http_request_message(messages[0], body=b"")
@@ -265,8 +272,12 @@ class TestHTTPRequest(DaphneTestCase):
         Tests that requests with invalid (non-ASCII) characters fail.
         """
         # Bad path
-        response = self.run_daphne_raw(b"GET /\xc3\xa4\xc3\xb6\xc3\xbc HTTP/1.0\r\n\r\n")
+        response = self.run_daphne_raw(
+            b"GET /\xc3\xa4\xc3\xb6\xc3\xbc HTTP/1.0\r\n\r\n"
+        )
         self.assertTrue(response.startswith(b"HTTP/1.0 400 Bad Request"))
         # Bad querystring
-        response = self.run_daphne_raw(b"GET /?\xc3\xa4\xc3\xb6\xc3\xbc HTTP/1.0\r\n\r\n")
+        response = self.run_daphne_raw(
+            b"GET /?\xc3\xa4\xc3\xb6\xc3\xbc HTTP/1.0\r\n\r\n"
+        )
         self.assertTrue(response.startswith(b"HTTP/1.0 400 Bad Request"))

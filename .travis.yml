@@ -3,22 +3,25 @@ sudo: false
 language: python
 
 python:
-- '3.5'
 - '3.6'
+- '3.5'
 
 env:
-- TWISTED="twisted==18.7.0"
 - TWISTED="twisted"
+- TWISTED="twisted==18.7.0"
 
 install:
-- pip install $TWISTED isort unify flake8 -e .[tests]
+- pip install $TWISTED -e .[tests]
 - pip freeze
 
 script:
 - pytest
-- flake8
-- isort --check-only --diff --recursive daphne tests
-- unify --check-only --recursive --quote \" daphne tests
+
+stages:
+  - lint
+  - test
+  - name: release
+    if: branch = master
 
 jobs:
   include:
@@ -30,6 +33,13 @@ jobs:
       env: TWISTED="twisted"
       dist: xenial
       sudo: required
+    - stage: lint
+      install: pip install -U -e .[tests] black pyflakes isort
+      script:
+        - pyflakes .
+        - black --check .
+        - isort --check-only --diff --recursive channels_redis tests
+
     - stage: release
       script: skip
       deploy:

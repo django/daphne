@@ -2,13 +2,14 @@
 import sys  # isort:skip
 import warnings  # isort:skip
 from twisted.internet import asyncioreactor  # isort:skip
+
 current_reactor = sys.modules.get("twisted.internet.reactor", None)
 if current_reactor is not None:
     if not isinstance(current_reactor, asyncioreactor.AsyncioSelectorReactor):
         warnings.warn(
-            "Something has already installed a non-asyncio Twisted reactor. Attempting to uninstall it; " +
-            "you can fix this warning by importing daphne.server early in your codebase or " +
-            "finding the package that imports Twisted and importing it later on.",
+            "Something has already installed a non-asyncio Twisted reactor. Attempting to uninstall it; "
+            + "you can fix this warning by importing daphne.server early in your codebase or "
+            + "finding the package that imports Twisted and importing it later on.",
             UserWarning,
         )
         del sys.modules["twisted.internet.reactor"]
@@ -34,7 +35,6 @@ logger = logging.getLogger(__name__)
 
 
 class Server(object):
-
     def __init__(
         self,
         application,
@@ -91,11 +91,13 @@ class Server(object):
         self.ws_factory.setProtocolOptions(
             autoPingTimeout=self.ping_timeout,
             allowNullOrigin=True,
-            openHandshakeTimeout=self.websocket_handshake_timeout
+            openHandshakeTimeout=self.websocket_handshake_timeout,
         )
         if self.verbosity <= 1:
             # Redirect the Twisted log to nowhere
-            globalLogBeginner.beginLoggingTo([lambda _: None], redirectStandardIO=False, discardBuffer=True)
+            globalLogBeginner.beginLoggingTo(
+                [lambda _: None], redirectStandardIO=False, discardBuffer=True
+            )
         else:
             globalLogBeginner.beginLoggingTo([STDLibLogObserver(__name__)])
 
@@ -103,7 +105,9 @@ class Server(object):
         if http.H2_ENABLED:
             logger.info("HTTP/2 support enabled")
         else:
-            logger.info("HTTP/2 support not enabled (install the http2 and tls Twisted extras)")
+            logger.info(
+                "HTTP/2 support not enabled (install the http2 and tls Twisted extras)"
+            )
 
         # Kick off the timeout loop
         reactor.callLater(1, self.application_checker)
@@ -141,7 +145,11 @@ class Server(object):
             host = port.getHost()
             if hasattr(host, "host") and hasattr(host, "port"):
                 self.listening_addresses.append((host.host, host.port))
-                logger.info("Listening on TCP address %s:%s", port.getHost().host, port.getHost().port)
+                logger.info(
+                    "Listening on TCP address %s:%s",
+                    port.getHost().host,
+                    port.getHost().port,
+                )
 
     def listen_error(self, failure):
         logger.critical("Listen failure: %s", failure.getErrorMessage())
@@ -187,10 +195,13 @@ class Server(object):
         # Run it, and stash the future for later checking
         if protocol not in self.connections:
             return None
-        self.connections[protocol]["application_instance"] = asyncio.ensure_future(application_instance(
-            receive=input_queue.get,
-            send=lambda message: self.handle_reply(protocol, message),
-        ), loop=asyncio.get_event_loop())
+        self.connections[protocol]["application_instance"] = asyncio.ensure_future(
+            application_instance(
+                receive=input_queue.get,
+                send=lambda message: self.handle_reply(protocol, message),
+            ),
+            loop=asyncio.get_event_loop(),
+        )
         return input_queue
 
     async def handle_reply(self, protocol, message):
@@ -215,7 +226,10 @@ class Server(object):
             application_instance = details.get("application_instance", None)
             # First, see if the protocol disconnected and the app has taken
             # too long to close up
-            if disconnected and time.time() - disconnected > self.application_close_timeout:
+            if (
+                disconnected
+                and time.time() - disconnected > self.application_close_timeout
+            ):
                 if application_instance and not application_instance.done():
                     logger.warning(
                         "Application instance %r for connection %s took too long to shut down and was killed.",
@@ -238,14 +252,11 @@ class Server(object):
                         else:
                             exception_output = "{}\n{}{}".format(
                                 exception,
-                                "".join(traceback.format_tb(
-                                    exception.__traceback__,
-                                )),
+                                "".join(traceback.format_tb(exception.__traceback__)),
                                 "  {}".format(exception),
                             )
                             logger.error(
-                                "Exception inside application: %s",
-                                exception_output,
+                                "Exception inside application: %s", exception_output
                             )
                             if not disconnected:
                                 protocol.handle_exception(exception)
