@@ -211,8 +211,27 @@ class Server(object):
         # Don't do anything if the connection is closed
         if self.connections[protocol].get("disconnected", None):
             return
+        self.check_headers_type(message)
         # Let the protocol handle it
         protocol.handle_reply(message)
+
+    @staticmethod
+    def check_headers_type(message):
+        if not message["type"] == "http.response.start":
+            return
+        for k, v in message.get("headers", []):
+            if not isinstance(k, bytes):
+                raise ValueError(
+                    "Header name '{}' expected to be `bytes`, but got `{}`".format(
+                        k, type(k)
+                    )
+                )
+            if not isinstance(v, bytes):
+                raise ValueError(
+                    "Header value '{}' expected to be `bytes`, but got `{}`".format(
+                        v, type(v)
+                    )
+                )
 
     ### Utility
 

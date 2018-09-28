@@ -92,7 +92,7 @@ def header_name():
     """
     return strategies.text(
         alphabet=string.ascii_letters + string.digits + "-", min_size=1, max_size=30
-    )
+    ).map(lambda s: s.encode("utf-8"))
 
 
 def header_value():
@@ -102,15 +102,19 @@ def header_value():
     "For example, the Apache 2.3 server by default limits the size of each field to 8190 bytes"
     https://en.wikipedia.org/wiki/List_of_HTTP_header_fields
     """
-    return strategies.text(
-        alphabet=string.ascii_letters
-        + string.digits
-        + string.punctuation.replace(",", "")
-        + " /t",
-        min_size=1,
-        average_size=40,
-        max_size=8190,
-    ).filter(lambda s: len(s.encode("utf8")) < 8190)
+    return (
+        strategies.text(
+            alphabet=string.ascii_letters
+            + string.digits
+            + string.punctuation.replace(",", "")
+            + " /t",
+            min_size=1,
+            average_size=40,
+            max_size=8190,
+        )
+        .map(lambda s: s.encode("utf-8"))
+        .filter(lambda s: len(s) < 8190)
+    )
 
 
 def headers():

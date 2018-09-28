@@ -19,9 +19,15 @@ class TestHTTPResponse(DaphneTestCase):
             [
                 (name.lower(), value.strip())
                 for name, value in headers
-                if name.lower() != "transfer-encoding"
+                if name.lower() != b"transfer-encoding"
             ]
         )
+
+    def encode_headers(self, headers):
+        def encode(s):
+            return s if isinstance(s, bytes) else s.encode("utf-8")
+
+        return [[encode(k), encode(v)] for k, v in headers]
 
     def test_minimal_response(self):
         """
@@ -124,6 +130,42 @@ class TestHTTPResponse(DaphneTestCase):
         )
         # Check headers in a sensible way. Ignore transfer-encoding.
         self.assertEqual(
-            self.normalize_headers(response.getheaders()),
+            self.normalize_headers(self.encode_headers(response.getheaders())),
             self.normalize_headers(headers),
+        )
+
+    def test_headers_type(self):
+        """
+        Headers should be `bytes`
+        """
+        with self.assertRaises(ValueError) as context:
+            self.run_daphne_response(
+                [
+                    {
+                        "type": "http.response.start",
+                        "status": 200,
+                        "headers": [["foo", b"bar"]],
+                    },
+                    {"type": "http.response.body", "body": b""},
+                ]
+            )
+        self.assertEqual(
+            str(context.exception),
+            "Header name 'foo' expected to be `bytes`, but got `<class 'str'>`",
+        )
+
+        with self.assertRaises(ValueError) as context:
+            self.run_daphne_response(
+                [
+                    {
+                        "type": "http.response.start",
+                        "status": 200,
+                        "headers": [[b"foo", True]],
+                    },
+                    {"type": "http.response.body", "body": b""},
+                ]
+            )
+        self.assertEqual(
+            str(context.exception),
+            "Header value 'True' expected to be `bytes`, but got `<class 'bool'>`",
         )

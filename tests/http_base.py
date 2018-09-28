@@ -37,12 +37,10 @@ class DaphneTestCase(unittest.TestCase):
             if params:
                 path += "?" + parse.urlencode(params, doseq=True)
             conn.putrequest(method, path, skip_accept_encoding=True, skip_host=True)
-            # Manually send over headers (encoding any non-safe values as best we can)
+            # Manually send over headers
             if headers:
                 for header_name, header_value in headers:
-                    conn.putheader(
-                        header_name.encode("utf8"), header_value.encode("utf8")
-                    )
+                    conn.putheader(header_name, header_value)
             # Send body if provided.
             if body:
                 conn.putheader("Content-Length", str(len(body)))
@@ -140,19 +138,19 @@ class DaphneTestCase(unittest.TestCase):
             headers = []
         headers.extend(
             [
-                ("Host", "example.com"),
-                ("Upgrade", "websocket"),
-                ("Connection", "Upgrade"),
-                ("Sec-WebSocket-Key", "x3JJHMbDL1EzLkh9GBhXDw=="),
-                ("Sec-WebSocket-Version", "13"),
-                ("Origin", "http://example.com"),
+                (b"Host", b"example.com"),
+                (b"Upgrade", b"websocket"),
+                (b"Connection", b"Upgrade"),
+                (b"Sec-WebSocket-Key", b"x3JJHMbDL1EzLkh9GBhXDw=="),
+                (b"Sec-WebSocket-Version", b"13"),
+                (b"Origin", b"http://example.com"),
             ]
         )
         if subprotocols:
-            headers.append(("Sec-WebSocket-Protocol", ", ".join(subprotocols)))
+            headers.append((b"Sec-WebSocket-Protocol", ", ".join(subprotocols)))
         if headers:
             for header_name, header_value in headers:
-                conn.putheader(header_name.encode("utf8"), header_value.encode("utf8"))
+                conn.putheader(header_name, header_value)
         conn.endheaders()
         # Read out the response
         try:
