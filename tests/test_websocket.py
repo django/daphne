@@ -56,8 +56,8 @@ class TestWebsocket(DaphneTestCase):
                     transformed_scope_headers[name].append(bit.strip())
         transformed_request_headers = collections.defaultdict(list)
         for name, value in headers or []:
-            expected_name = name.lower().strip().encode("ascii")
-            expected_value = value.strip().encode("ascii")
+            expected_name = name.lower().strip()
+            expected_value = value.strip()
             # Make sure to split out any headers collapsed with commas
             transformed_request_headers.setdefault(expected_name, [])
             for bit in expected_value.split(b","):
