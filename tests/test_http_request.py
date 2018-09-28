@@ -63,8 +63,8 @@ class TestHTTPRequest(DaphneTestCase):
             transformed_scope_headers[name].append(value)
         transformed_request_headers = collections.defaultdict(list)
         for name, value in headers or []:
-            expected_name = name.lower().strip().encode("ascii")
-            expected_value = value.strip().encode("ascii")
+            expected_name = name.lower().strip()
+            expected_value = value.strip()
             transformed_request_headers[expected_name].append(expected_value)
         for name, value in transformed_request_headers.items():
             self.assertIn(name, transformed_scope_headers)
@@ -209,7 +209,7 @@ class TestHTTPRequest(DaphneTestCase):
         """
         Make sure headers are normalized as the spec says they are.
         """
-        headers = [("MYCUSTOMHEADER", "   foobar    ")]
+        headers = [(b"MYCUSTOMHEADER", b"   foobar    ")]
         scope, messages = self.run_daphne_request("GET", "/", headers=headers)
         self.assert_valid_http_scope(scope, "GET", "/", headers=headers)
         self.assert_valid_http_request_message(messages[0], body=b"")
@@ -237,7 +237,7 @@ class TestHTTPRequest(DaphneTestCase):
         """
         Make sure that, by default, X-Forwarded-For is ignored.
         """
-        headers = [["X-Forwarded-For", "10.1.2.3"], ["X-Forwarded-Port", "80"]]
+        headers = [[b"X-Forwarded-For", b"10.1.2.3"], [b"X-Forwarded-Port", b"80"]]
         scope, messages = self.run_daphne_request("GET", "/", headers=headers)
         self.assert_valid_http_scope(scope, "GET", "/", headers=headers)
         self.assert_valid_http_request_message(messages[0], body=b"")
@@ -248,7 +248,7 @@ class TestHTTPRequest(DaphneTestCase):
         """
         When X-Forwarded-For is enabled, make sure it is respected.
         """
-        headers = [["X-Forwarded-For", "10.1.2.3"], ["X-Forwarded-Port", "80"]]
+        headers = [[b"X-Forwarded-For", b"10.1.2.3"], [b"X-Forwarded-Port", b"80"]]
         scope, messages = self.run_daphne_request("GET", "/", headers=headers, xff=True)
         self.assert_valid_http_scope(scope, "GET", "/", headers=headers)
         self.assert_valid_http_request_message(messages[0], body=b"")
@@ -260,7 +260,7 @@ class TestHTTPRequest(DaphneTestCase):
         When X-Forwarded-For is enabled but only the host is passed, make sure
         that at least makes it through.
         """
-        headers = [["X-Forwarded-For", "10.1.2.3"]]
+        headers = [[b"X-Forwarded-For", b"10.1.2.3"]]
         scope, messages = self.run_daphne_request("GET", "/", headers=headers, xff=True)
         self.assert_valid_http_scope(scope, "GET", "/", headers=headers)
         self.assert_valid_http_request_message(messages[0], body=b"")
