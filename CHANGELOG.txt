@@ -1,3 +1,13 @@
+2.2.3 (2018-11-06)
+------------------
+
+* Enforce that response headers are only bytestrings, rather than allowing
+  unicode strings and coercing them into bytes.
+
+* New command-line options to set proxy header names: --proxy-headers-host and
+  --proxy-headers-port.
+
+
 2.2.2 (2018-08-16)
 ------------------
 
