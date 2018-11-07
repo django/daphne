@@ -54,6 +54,7 @@ class Server(object):
         websocket_handshake_timeout=5,
         application_close_timeout=10,
         ready_callable=None,
+        server_name="Daphne",
         # Deprecated and does not work, remove in version 2.2
         ws_protocols=None,
     ):
@@ -77,6 +78,7 @@ class Server(object):
         self.verbosity = verbosity
         self.abort_start = False
         self.ready_callable = ready_callable
+        self.server_name = server_name
         # Check our construction is actually sensible
         if not self.endpoints:
             logger.error("No endpoints. This server will not listen on anything.")
@@ -87,7 +89,7 @@ class Server(object):
         self.connections = {}
         # Make the factory
         self.http_factory = HTTPFactory(self)
-        self.ws_factory = WebSocketFactory(self, server="Daphne")
+        self.ws_factory = WebSocketFactory(self, server=self.server_name)
         self.ws_factory.setProtocolOptions(
             autoPingTimeout=self.ping_timeout,
             allowNullOrigin=True,
