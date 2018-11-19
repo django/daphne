@@ -226,7 +226,7 @@ class CommandLineInterface(object):
                 args.host,
                 args.port is not None,
                 args.unix_socket,
-                args.file_descriptor,
+                args.file_descriptor is not None,
                 args.socket_strings,
             ]
         ):
