@@ -176,6 +176,9 @@ class Server(object):
 
     def protocol_disconnected(self, protocol):
         # Set its disconnected time (the loops will come and clean it up)
+        # Do not set it if it is already set. Overwriting it might
+        # cause it to never be cleaned up.
+        # See https://github.com/django/channels/issues/1181
         if "disconnected" not in self.connections[protocol]:
             self.connections[protocol]["disconnected"] = time.time()
 
@@ -209,8 +212,10 @@ class Server(object):
         """
         Coroutine that jumps the reply message from asyncio to Twisted
         """
-        # Don't do anything if the connection is closed
-        if protocol not in self.connections or self.connections[protocol].get("disconnected"):
+        # Don't do anything if the connection is closed or does not exist
+        if protocol not in self.connections or self.connections[protocol].get(
+            "disconnected", None
+        ):
             return
         self.check_headers_type(message)
         # Let the protocol handle it
