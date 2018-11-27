@@ -210,7 +210,7 @@ class Server(object):
         Coroutine that jumps the reply message from asyncio to Twisted
         """
         # Don't do anything if the connection is closed
-        if self.connections[protocol].get("disconnected", None):
+        if protocol not in self.connections or self.connections[protocol].get("disconnected"):
             return
         self.check_headers_type(message)
         # Let the protocol handle it
