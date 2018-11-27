@@ -176,7 +176,8 @@ class Server(object):
 
     def protocol_disconnected(self, protocol):
         # Set its disconnected time (the loops will come and clean it up)
-        self.connections[protocol]["disconnected"] = time.time()
+        if "disconnected" not in self.connections[protocol]:
+            self.connections[protocol]["disconnected"] = time.time()
 
     ### Internal event/message handling
 
