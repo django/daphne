@@ -255,6 +255,7 @@ class CommandLineInterface(object):
             ping_timeout=args.ping_timeout,
             websocket_timeout=args.websocket_timeout,
             websocket_connect_timeout=args.websocket_connect_timeout,
+            websocket_handshake_timeout=args.websocket_connect_timeout,
             application_close_timeout=args.application_close_timeout,
             action_logger=AccessLogGenerator(access_log_stream)
             if access_log_stream
