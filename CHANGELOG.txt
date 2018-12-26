@@ -1,7 +1,7 @@
 2.2.4 (2018-12-15)
 ------------------
 
-* No longer listens on port 8000 when a file descriptor is provided with --fixed
+* No longer listens on port 8000 when a file descriptor is provided with --fd
 
 * Fixed a memory leak with WebSockets
 
