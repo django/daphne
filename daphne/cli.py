@@ -150,6 +150,13 @@ class CommandLineInterface(object):
             "application",
             help="The application to dispatch to as path.to.module:instance.path",
         )
+        self.parser.add_argument(
+            "-s",
+            "--server-name",
+            dest="server_name",
+            help="specify which value should be passed to response header Server attribute",
+            default="Daphne",
+        )
 
         self.server = None
 
@@ -268,5 +275,6 @@ class CommandLineInterface(object):
             proxy_forwarded_proto_header="X-Forwarded-Proto"
             if args.proxy_headers
             else None,
+            server_name=args.server_name,
         )
         self.server.run()
