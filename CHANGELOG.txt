@@ -1,3 +1,12 @@
+2.2.5 (2019-01-31)
+------------------
+
+* WebSocket handshakes are now affected by the websocket connect timeout, so
+  you can limit them from the command line.
+
+* Server name can now be set using --server-name
+
+
 2.2.4 (2018-12-15)
 ------------------
 
