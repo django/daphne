@@ -122,6 +122,16 @@ class DaphneProcess(multiprocessing.Process):
 
     def run(self):
         try:
+            # Renew the asyncio event loop without anyone knowing.
+            # This is necessary because asyncio behaves badly with multiprocessing.
+            from twisted.internet import asyncioreactor
+            import sys
+            current_reactor = sys.modules.get("twisted.internet.reactor")
+            if isinstance(current_reactor, asyncioreactor.AsyncioSelectorReactor):
+                import asyncio
+                current_reactor._asyncioEventloop.close()
+                asyncio.set_event_loop(asyncio.new_event_loop())
+                current_reactor._asyncioEventloop = asyncio.get_event_loop()
             # Create the server class
             endpoints = build_endpoint_description_strings(host=self.host, port=0)
             self.server = Server(
