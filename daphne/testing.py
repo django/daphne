@@ -126,9 +126,11 @@ class DaphneProcess(multiprocessing.Process):
             # This is necessary because asyncio behaves badly with multiprocessing.
             from twisted.internet import asyncioreactor
             import sys
+
             current_reactor = sys.modules.get("twisted.internet.reactor")
             if isinstance(current_reactor, asyncioreactor.AsyncioSelectorReactor):
                 import asyncio
+
                 current_reactor._asyncioEventloop.close()
                 asyncio.set_event_loop(asyncio.new_event_loop())
                 current_reactor._asyncioEventloop = asyncio.get_event_loop()
