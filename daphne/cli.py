@@ -22,6 +22,8 @@ class ASGI3Middleware:
         self.app = app
 
     def __call__(self, scope):
+        scope.setdefault("asgi", {})
+        scope["asgi"]["version"] = "3.0"
         return functools.partial(self.asgi, scope=scope)
 
     async def asgi(self, receive, send, scope):
