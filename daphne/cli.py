@@ -132,7 +132,7 @@ class CommandLineInterface(object):
             dest="asgi_protocol",
             help="The version of the ASGI protocol to use",
             default="auto",
-            choices=["asgi2", "asgi3", "auto"]
+            choices=["asgi2", "asgi3", "auto"],
         )
         self.parser.add_argument(
             "--root-path",
