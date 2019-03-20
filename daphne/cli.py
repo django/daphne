@@ -1,5 +1,5 @@
-import asyncio
 import argparse
+import asyncio
 import functools
 import inspect
 import logging
