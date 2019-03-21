@@ -5,6 +5,7 @@ import inspect
 import logging
 import sys
 from argparse import ArgumentError, Namespace
+from asgiref.compatibility import is_double_callable
 
 from .access import AccessLogGenerator
 from .endpoints import build_endpoint_description_strings
@@ -221,23 +222,6 @@ class CommandLineInterface(object):
         if args.proxy_headers:
             return "X-Forwarded-Port"
 
-    def _guess_asgi_protocol(self, application):
-        if getattr(application, "_asgi_single_callable", False):
-            return "asgi3"
-        if getattr(application, "_asgi_double_callable", False):
-            return "asgi2"
-        # Uninstanted classes are double-callable
-        if inspect.isclass(application):
-            return "asgi2"
-        # Instanted classes depend on their __call__
-        if hasattr(application, "__call__"):
-            # We only check to see if its __call__ is a coroutine function -
-            # if it's not, it still might be a coroutine function itself.
-            if asyncio.iscoroutinefunction(application.__call__):
-                return "asgi3"
-        # Non-classes we just check directly
-        return "asgi3" if asyncio.iscoroutinefunction(application) else "asgi2"
-
     def run(self, args):
         """
         Pass in raw argument list and it will decode them
@@ -270,7 +254,7 @@ class CommandLineInterface(object):
 
         asgi_protocol = args.asgi_protocol
         if asgi_protocol == "auto":
-            asgi_protocol = self._guess_asgi_protocol(application)
+            asgi_protocol = "asgi2" if is_double_callable(application) else "asgi3"
 
         if asgi_protocol == "asgi3":
             application = ASGI3Middleware(application)
