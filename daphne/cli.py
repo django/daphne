@@ -3,6 +3,7 @@ import functools
 import logging
 import sys
 from argparse import ArgumentError, Namespace
+
 from asgiref.compatibility import is_double_callable
 
 from .access import AccessLogGenerator
