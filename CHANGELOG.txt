@@ -1,3 +1,8 @@
+2.3.0 (2019-04-09)
+------------------
+
+* Added support for ASGI v3.
+
 2.2.5 (2019-01-31)
 ------------------
 
@@ -407,4 +412,4 @@
 
 * http.disconnect messages are now sent
 
-* Request handling speed significantly improved 
+* Request handling speed significantly improved
