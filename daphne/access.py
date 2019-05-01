@@ -68,3 +68,7 @@ class AccessLogGenerator(object):
                 length or "-",
             )
         )
+
+    def close_stream(self):
+        self.stream.flush()
+        self.stream.close()

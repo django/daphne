@@ -11,6 +11,9 @@ from .endpoints import build_endpoint_description_strings
 from .server import Server
 from .utils import import_by_path
 
+import signal
+
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_HOST = "127.0.0.1"
@@ -40,6 +43,8 @@ class CommandLineInterface(object):
     server_class = Server
 
     def __init__(self):
+        self.access_log = None
+
         self.parser = argparse.ArgumentParser(description=self.description)
         self.parser.add_argument(
             "-p", "--port", type=int, help="Port number to listen on", default=None
@@ -183,6 +188,14 @@ class CommandLineInterface(object):
 
         self.server = None
 
+
+    # For logrotate at SIGNALUSR1
+    def logrotate(self, signum, stack):
+        if self.access_log is not None:
+            access_log_stream = open(self.access_log, "a", 1)
+            self.server.rotate_log_action(AccessLogGenerator(access_log_stream))
+
+
     @classmethod
     def entrypoint(cls):
         """
@@ -244,7 +257,9 @@ class CommandLineInterface(object):
             if args.access_log == "-":
                 access_log_stream = sys.stdout
             else:
+                self.access_log = args.access_log
                 access_log_stream = open(args.access_log, "a", 1)
+                signal.signal(signal.SIGUSR1, self.logrotate)
         elif args.verbosity >= 1:
             access_log_stream = sys.stdout
         # Import application

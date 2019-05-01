@@ -326,3 +326,7 @@ class Server(object):
         """
         if self.action_logger:
             self.action_logger(protocol, action, details)
+
+    def rotate_log_action(self, log):
+        self.action_logger.close_stream()
+        self.action_logger = log
