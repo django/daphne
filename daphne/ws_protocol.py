@@ -3,11 +3,8 @@ import time
 import traceback
 from urllib.parse import unquote
 
-from autobahn.twisted.websocket import (
-    ConnectionDeny,
-    WebSocketServerFactory,
-    WebSocketServerProtocol,
-)
+from autobahn.twisted.websocket import (ConnectionDeny, WebSocketServerFactory,
+                                        WebSocketServerProtocol)
 from twisted.internet import defer
 
 from .utils import parse_x_forwarded_for

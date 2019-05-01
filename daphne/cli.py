@@ -12,7 +12,6 @@ from .endpoints import build_endpoint_description_strings
 from .server import Server
 from .utils import import_by_path
 
-
 logger = logging.getLogger(__name__)
 
 DEFAULT_HOST = "127.0.0.1"
