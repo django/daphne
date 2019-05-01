@@ -3,8 +3,11 @@ import time
 import traceback
 from urllib.parse import unquote
 
-from autobahn.twisted.websocket import (ConnectionDeny, WebSocketServerFactory,
-                                        WebSocketServerProtocol)
+from autobahn.twisted.websocket import (
+    ConnectionDeny,
+    WebSocketServerFactory,
+    WebSocketServerProtocol,
+)
 from twisted.internet import defer
 
 from .utils import parse_x_forwarded_for
@@ -293,7 +296,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
         return id(self) == id(other)
 
     def __repr__(self):
-        return "<WebSocketProtocol client=%r path=%r>" % (self.client_addr, self.path)
+        return "" % (self.client_addr, self.path)
 
 
 class WebSocketFactory(WebSocketServerFactory):
