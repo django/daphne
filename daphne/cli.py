@@ -1,9 +1,8 @@
 import argparse
 import functools
 import logging
-import sys
 import signal
-
+import sys
 from argparse import ArgumentError, Namespace
 
 from asgiref.compatibility import is_double_callable
@@ -188,13 +187,11 @@ class CommandLineInterface(object):
 
         self.server = None
 
-
     # For logrotate at SIGNALUSR1
     def logrotate(self, signum, stack):
         if self.access_log is not None:
             access_log_stream = open(self.access_log, "a", 1)
             self.server.rotate_log_action(AccessLogGenerator(access_log_stream))
-
 
     @classmethod
     def entrypoint(cls):
