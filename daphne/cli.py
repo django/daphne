@@ -2,6 +2,8 @@ import argparse
 import functools
 import logging
 import sys
+import signal
+
 from argparse import ArgumentError, Namespace
 
 from asgiref.compatibility import is_double_callable
@@ -10,8 +12,6 @@ from .access import AccessLogGenerator
 from .endpoints import build_endpoint_description_strings
 from .server import Server
 from .utils import import_by_path
-
-import signal
 
 
 logger = logging.getLogger(__name__)
