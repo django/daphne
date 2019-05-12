@@ -296,7 +296,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
         return id(self) == id(other)
 
     def __repr__(self):
-        return "" % (self.client_addr, self.path)
+        return "<WebSocketProtocol client=%r path=%r>" % (self.client_addr, self.path)
 
 
 class WebSocketFactory(WebSocketServerFactory):
