@@ -8,7 +8,7 @@ def build_endpoint_description_strings(
     """
     socket_descriptions = []
     if host and port is not None:
-        host = host.strip("[]").replace(":", "\:")
+        host = host.strip("[]").replace(":", r"\:")
         socket_descriptions.append("tcp:port=%d:interface=%s" % (int(port), host))
     elif any([host, port]):
         raise ValueError("TCP binding requires both port and host kwargs.")
