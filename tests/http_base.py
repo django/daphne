@@ -32,8 +32,6 @@ class DaphneTestCase(unittest.TestCase):
             # Send it the request. We have to do this the long way to allow
             # duplicate headers.
             conn = HTTPConnection(test_app.host, test_app.port, timeout=timeout)
-            # Make sure path is urlquoted and add any params
-            path = parse.quote(path)
             if params:
                 path += "?" + parse.urlencode(params, doseq=True)
             conn.putrequest(method, path, skip_accept_encoding=True, skip_host=True)
@@ -128,8 +126,6 @@ class DaphneTestCase(unittest.TestCase):
         # Send it the request. We have to do this the long way to allow
         # duplicate headers.
         conn = HTTPConnection(test_app.host, test_app.port, timeout=timeout)
-        # Make sure path is urlquoted and add any params
-        path = parse.quote(path)
         if params:
             path += "?" + parse.urlencode(params, doseq=True)
         conn.putrequest("GET", path, skip_accept_encoding=True, skip_host=True)
@@ -247,12 +243,11 @@ class DaphneTestCase(unittest.TestCase):
         # Assert that no other keys are present
         self.assertEqual(set(), present_keys - required_keys - optional_keys)
 
-    def assert_valid_path(self, path, request_path):
+    def assert_valid_path(self, path):
         """
         Checks the path is valid and already url-decoded.
         """
         self.assertIsInstance(path, str)
-        self.assertEqual(path, request_path)
         # Assert that it's already url decoded
         self.assertEqual(path, parse.unquote(path))
 
