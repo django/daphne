@@ -24,14 +24,14 @@ class TestWebsocket(DaphneTestCase):
         """
         # Check overall keys
         self.assert_key_sets(
-            required_keys={"type", "path", "query_string", "headers"},
+            required_keys={"type", "path", "raw_path", "query_string", "headers"},
             optional_keys={"scheme", "root_path", "client", "server", "subprotocols"},
             actual_keys=scope.keys(),
         )
         # Check that it is the right type
         self.assertEqual(scope["type"], "websocket")
         # Path
-        self.assert_valid_path(scope["path"], path)
+        self.assert_valid_path(scope["path"])
         # Scheme
         self.assertIn(scope.get("scheme", "ws"), ["ws", "wss"])
         if scheme:
@@ -161,7 +161,7 @@ class TestWebsocket(DaphneTestCase):
             test_app.add_send_messages([{"type": "websocket.accept"}])
             self.websocket_handshake(
                 test_app,
-                path=request_path,
+                path=parse.quote(request_path),
                 params=request_params,
                 headers=request_headers,
             )
@@ -171,6 +171,19 @@ class TestWebsocket(DaphneTestCase):
                 scope, path=request_path, params=request_params, headers=request_headers
             )
             self.assert_valid_websocket_connect_message(messages[0])
+
+    def test_raw_path(self):
+        """
+        Tests that /foo%2Fbar produces raw_path and a decoded path
+        """
+        with DaphneTestingInstance() as test_app:
+            test_app.add_send_messages([{"type": "websocket.accept"}])
+            self.websocket_handshake(test_app, path="/foo%2Fbar")
+            # Validate the scope and messages we got
+            scope, _ = test_app.get_received()
+
+        self.assertEqual(scope["path"], "/foo/bar")
+        self.assertEqual(scope["raw_path"], b"/foo%2Fbar")
 
     def test_text_frames(self):
         """

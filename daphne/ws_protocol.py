@@ -75,6 +75,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
                 {
                     "type": "websocket",
                     "path": unquote(self.path.decode("ascii")),
+                    "raw_path": self.path,
                     "headers": self.clean_headers,
                     "query_string": self._raw_query_string,  # Passed by HTTP protocol
                     "client": self.client_addr,

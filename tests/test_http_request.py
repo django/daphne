@@ -28,6 +28,7 @@ class TestHTTPRequest(DaphneTestCase):
                 "http_version",
                 "method",
                 "path",
+                "raw_path",
                 "query_string",
                 "headers",
             },
@@ -40,7 +41,7 @@ class TestHTTPRequest(DaphneTestCase):
         self.assertIsInstance(scope["method"], str)
         self.assertEqual(scope["method"], method.upper())
         # Path
-        self.assert_valid_path(scope["path"], path)
+        self.assert_valid_path(scope["path"])
         # HTTP version
         self.assertIn(scope["http_version"], ["1.0", "1.1", "1.2"])
         # Scheme
@@ -134,13 +135,21 @@ class TestHTTPRequest(DaphneTestCase):
         self.assert_valid_http_scope(scope, "POST", request_path)
         self.assert_valid_http_request_message(messages[0], body=request_body)
 
+    def test_raw_path(self):
+        """
+        Tests that /foo%2Fbar produces raw_path and a decoded path
+        """
+        scope, _ = self.run_daphne_request("GET", "/foo%2Fbar")
+        self.assertEqual(scope["path"], "/foo/bar")
+        self.assertEqual(scope["raw_path"], b"/foo%2Fbar")
+
     @given(request_headers=http_strategies.headers())
     @settings(max_examples=5, deadline=5000)
     def test_headers(self, request_headers):
         """
         Tests that HTTP header fields are handled as specified
         """
-        request_path = "/te st-à/"
+        request_path = parse.quote("/te st-à/")
         scope, messages = self.run_daphne_request(
             "OPTIONS", request_path, headers=request_headers
         )
@@ -160,7 +169,7 @@ class TestHTTPRequest(DaphneTestCase):
         header_name = request_headers[0][0]
         duplicated_headers = [(header_name, header[1]) for header in request_headers]
         # Run the request
-        request_path = "/te st-à/"
+        request_path = parse.quote("/te st-à/")
         scope, messages = self.run_daphne_request(
             "OPTIONS", request_path, headers=duplicated_headers
         )

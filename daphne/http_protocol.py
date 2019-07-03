@@ -171,6 +171,7 @@ class WebRequest(http.Request):
                         ),
                         "method": self.method.decode("ascii"),
                         "path": unquote(self.path.decode("ascii")),
+                        "raw_path": self.path,
                         "root_path": self.root_path,
                         "scheme": self.client_scheme,
                         "query_string": self.query_string,
