@@ -5,7 +5,6 @@ import pickle
 import tempfile
 import traceback
 from concurrent.futures import CancelledError
-from functools import partial
 
 
 class DaphneTestingInstance:
@@ -43,7 +42,7 @@ class DaphneTestingInstance:
         # Start up process
         self.process = DaphneProcess(
             host=self.host,
-            application=partial(TestApplication, lock=self.lock),
+            application=TestApplication(lock=self.lock),
             kwargs=kwargs,
             setup=self.process_setup,
             teardown=self.process_teardown,
@@ -173,12 +172,12 @@ class TestApplication:
     setup_storage = os.path.join(tempfile.gettempdir(), "setup.testio")
     result_storage = os.path.join(tempfile.gettempdir(), "result.testio")
 
-    def __init__(self, scope, lock):
-        self.scope = scope
+    def __init__(self, lock):
         self.lock = lock
         self.messages = []
 
-    async def __call__(self, send, receive):
+    async def __call__(self, scope, receive, send):
+        self.scope = scope
         # Receive input and send output
         logging.debug("test app coroutine alive")
         try:

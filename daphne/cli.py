@@ -1,10 +1,9 @@
 import argparse
-import functools
 import logging
 import sys
 from argparse import ArgumentError, Namespace
 
-from asgiref.compatibility import is_double_callable
+from asgiref.compatibility import guarantee_single_callable
 
 from .access import AccessLogGenerator
 from .endpoints import build_endpoint_description_strings
@@ -15,19 +14,6 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
-
-
-class ASGI3Middleware:
-    def __init__(self, app):
-        self.app = app
-
-    def __call__(self, scope):
-        scope.setdefault("asgi", {})
-        scope["asgi"]["version"] = "3.0"
-        return functools.partial(self.asgi, scope=scope)
-
-    async def asgi(self, receive, send, scope):
-        await self.app(scope, receive, send)
 
 
 class CommandLineInterface(object):
@@ -128,13 +114,6 @@ class CommandLineInterface(object):
             dest="ws_protocols",
             help="The WebSocket protocols you wish to support",
             default=None,
-        )
-        self.parser.add_argument(
-            "--asgi-protocol",
-            dest="asgi_protocol",
-            help="The version of the ASGI protocol to use",
-            default="auto",
-            choices=["asgi2", "asgi3", "auto"],
         )
         self.parser.add_argument(
             "--root-path",
@@ -247,16 +226,11 @@ class CommandLineInterface(object):
                 access_log_stream = open(args.access_log, "a", 1)
         elif args.verbosity >= 1:
             access_log_stream = sys.stdout
+
         # Import application
         sys.path.insert(0, ".")
         application = import_by_path(args.application)
-
-        asgi_protocol = args.asgi_protocol
-        if asgi_protocol == "auto":
-            asgi_protocol = "asgi2" if is_double_callable(application) else "asgi3"
-
-        if asgi_protocol == "asgi3":
-            application = ASGI3Middleware(application)
+        application = guarantee_single_callable(application)
 
         # Set up port/host bindings
         if not any(

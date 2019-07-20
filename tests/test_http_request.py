@@ -24,6 +24,7 @@ class TestHTTPRequest(DaphneTestCase):
         # Check overall keys
         self.assert_key_sets(
             required_keys={
+                "asgi",
                 "type",
                 "http_version",
                 "method",
@@ -35,6 +36,7 @@ class TestHTTPRequest(DaphneTestCase):
             optional_keys={"scheme", "root_path", "client", "server"},
             actual_keys=scope.keys(),
         )
+        self.assertEqual(scope["asgi"]["version"], "3.0")
         # Check that it is the right type
         self.assertEqual(scope["type"], "http")
         # Method (uppercased unicode string)
@@ -120,10 +122,7 @@ class TestHTTPRequest(DaphneTestCase):
         self.assert_valid_http_scope(scope, "GET", request_path, params=request_params)
         self.assert_valid_http_request_message(messages[0], body=b"")
 
-    @given(
-        request_path=http_strategies.http_path(),
-        chunk_size=integers(min_value=1),
-    )
+    @given(request_path=http_strategies.http_path(), chunk_size=integers(min_value=1))
     @settings(max_examples=5, deadline=5000)
     def test_request_body_chunking(self, request_path, chunk_size):
         """

@@ -199,15 +199,17 @@ class Server(object):
         assert "application_instance" not in self.connections[protocol]
         # Make an instance of the application
         input_queue = asyncio.Queue()
-        application_instance = self.application(scope=scope)
+        scope.setdefault("asgi", {"version": "3.0"})
+        application_instance = self.application(
+            scope=scope,
+            receive=input_queue.get,
+            send=lambda message: self.handle_reply(protocol, message),
+        )
         # Run it, and stash the future for later checking
         if protocol not in self.connections:
             return None
         self.connections[protocol]["application_instance"] = asyncio.ensure_future(
-            application_instance(
-                receive=input_queue.get,
-                send=lambda message: self.handle_reply(protocol, message),
-            ),
+            application_instance,
             loop=asyncio.get_event_loop(),
         )
         return input_queue
