@@ -56,12 +56,16 @@ class DaphneTestCase(unittest.TestCase):
             # Return scope, messages, response
             return test_app.get_received() + (response,)
 
-    def run_daphne_raw(self, data, timeout=1):
+    def run_daphne_raw(self, data, *, responses=None, timeout=1):
         """
-        Runs daphne and sends it the given raw bytestring over a socket. Returns what it sends back.
+        Runs Daphne and sends it the given raw bytestring over a socket.
+        Accepts list of response messages the application will reply with.
+        Returns what Daphne sends back.
         """
         assert isinstance(data, bytes)
         with DaphneTestingInstance() as test_app:
+            if responses is not None:
+                test_app.add_send_messages(responses)
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(timeout)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

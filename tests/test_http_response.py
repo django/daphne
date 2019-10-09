@@ -169,3 +169,21 @@ class TestHTTPResponse(DaphneTestCase):
             str(context.exception),
             "Header value 'True' expected to be `bytes`, but got `<class 'bool'>`",
         )
+
+    def test_headers_type_raw(self):
+        """
+        Daphne returns a 500 error response if the application sends invalid
+        headers.
+        """
+        response = self.run_daphne_raw(
+            b"GET / HTTP/1.0\r\n\r\n",
+            responses=[
+                {
+                    "type": "http.response.start",
+                    "status": 200,
+                    "headers": [["foo", b"bar"]],
+                },
+                {"type": "http.response.body", "body": b""},
+            ],
+        )
+        self.assertTrue(response.startswith(b"HTTP/1.0 500 Internal Server Error"))
