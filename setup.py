@@ -25,7 +25,7 @@ setup(
     install_requires=["twisted[tls]>=18.7", "autobahn>=0.18", "asgiref~=3.0"],
     setup_requires=["pytest-runner"],
     extras_require={
-        "tests": ["hypothesis~=4.23", "pytest~=3.10", "pytest-asyncio~=0.8"]
+        "tests": ["hypothesis==4.23", "pytest~=3.10", "pytest-asyncio~=0.8"]
     },
     entry_points={
         "console_scripts": ["daphne = daphne.cli:CommandLineInterface.entrypoint"]
