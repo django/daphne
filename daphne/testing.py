@@ -109,8 +109,8 @@ class DaphneProcess(multiprocessing.Process):
         self.host = host
         self.application = application
         self.kwargs = kwargs or {}
-        self.setup = setup or (lambda: None)
-        self.teardown = teardown or (lambda: None)
+        self.setup = setup
+        self.teardown = teardown
         self.port = multiprocessing.Value("i")
         self.ready = multiprocessing.Event()
         self.errors = multiprocessing.Queue()
@@ -139,11 +139,13 @@ class DaphneProcess(multiprocessing.Process):
             # Set up a poller to look for the port
             reactor.callLater(0.1, self.resolve_port)
             # Run with setup/teardown
-            self.setup()
+            if self.setup:
+                self.setup()
             try:
                 self.server.run()
             finally:
-                self.teardown()
+                if self.teardown:
+                    self.teardown()
         except Exception as e:
             # Put the error on our queue so the parent gets it
             self.errors.put((e, traceback.format_exc()))
@@ -164,6 +166,7 @@ class TestApplication:
     and then quits the server. For testing.
     """
 
+    __test__ = False  # Prevent pytest from thinking this is a TestCase
     setup_storage = os.path.join(tempfile.gettempdir(), "setup.testio")
     result_storage = os.path.join(tempfile.gettempdir(), "result.testio")
 
