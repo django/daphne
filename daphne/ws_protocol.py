@@ -199,7 +199,15 @@ class WebSocketProtocol(WebSocketServerProtocol):
             if message.get("bytes", None):
                 self.serverSend(message["bytes"], True)
             if message.get("text", None):
-                self.serverSend(message["text"], False)
+                # When sending a message using:
+                # async_to_sync(channel_layer.group_send)("group1", {"type": "send", "text":  "data"})
+                # The below is in error as a dictionary is passed through. But you need to format your request as a
+                # dictionary.
+                # Maybe there's a better way to fix this.
+                if type(message.get("text")) == dict:
+                    self.serverSend(message["text"]["text"], False)
+                else:
+                    self.serverSend(message["text"], False)
 
     def handle_exception(self, exception):
         """
