@@ -219,7 +219,12 @@ class Server(object):
             "disconnected", None
         ):
             return
-        self.check_headers_type(message)
+        try:
+            self.check_headers_type(message)
+        except ValueError:
+            # Ensure to send SOME reply.
+            protocol.basic_error(500, b"Server Error", "Server Error")
+            raise
         # Let the protocol handle it
         protocol.handle_reply(message)
 
