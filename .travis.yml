@@ -33,6 +33,10 @@ jobs:
       env: TWISTED="twisted"
       dist: xenial
       sudo: required
+    - python: '3.8'
+      env: TWISTED="twisted"
+      dist: xenial
+      sudo: required
 
     - os: osx
       language: generic
