@@ -1,8 +1,10 @@
 # This has to be done first as Twisted is import-order-sensitive with reactors
+import asyncio  # isort:skip
 import sys  # isort:skip
 import warnings  # isort:skip
 from twisted.internet import asyncioreactor  # isort:skip
 
+twisted_loop = asyncio.new_event_loop()
 current_reactor = sys.modules.get("twisted.internet.reactor", None)
 if current_reactor is not None:
     if not isinstance(current_reactor, asyncioreactor.AsyncioSelectorReactor):
@@ -13,11 +15,10 @@ if current_reactor is not None:
             UserWarning,
         )
         del sys.modules["twisted.internet.reactor"]
-        asyncioreactor.install()
+        asyncioreactor.install(twisted_loop)
 else:
-    asyncioreactor.install()
+    asyncioreactor.install(twisted_loop)
 
-import asyncio
 import logging
 import time
 import traceback
