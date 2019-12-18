@@ -1,3 +1,10 @@
+2.4.1 (2019-12-18)
+------------------
+
+* Avoids Twisted using the default event loop, for compatibility with Django
+  3.0's ``async_unsafe()`` decorator in threaded contexts, such as using the
+  auto-reloader.
+
 2.4.0 (2019-11-20)
 ------------------
 
