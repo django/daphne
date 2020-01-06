@@ -3,8 +3,11 @@ import asyncio  # isort:skip
 import sys  # isort:skip
 import warnings  # isort:skip
 from twisted.internet import asyncioreactor  # isort:skip
+import selectors
 
-twisted_loop = asyncio.new_event_loop()
+selector = selectors.SelectSelector()
+twisted_loop = asyncio.SelectorEventLoop(selector)
+
 current_reactor = sys.modules.get("twisted.internet.reactor", None)
 if current_reactor is not None:
     if not isinstance(current_reactor, asyncioreactor.AsyncioSelectorReactor):
