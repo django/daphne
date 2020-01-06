@@ -1,9 +1,9 @@
 # This has to be done first as Twisted is import-order-sensitive with reactors
 import asyncio  # isort:skip
+import selectors # isort:skip
 import sys  # isort:skip
 import warnings  # isort:skip
 from twisted.internet import asyncioreactor  # isort:skip
-import selectors
 
 selector = selectors.SelectSelector()
 twisted_loop = asyncio.SelectorEventLoop(selector)
