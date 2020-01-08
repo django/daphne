@@ -5,6 +5,7 @@ import warnings  # isort:skip
 from twisted.internet import asyncioreactor  # isort:skip
 
 twisted_loop = asyncio.new_event_loop()
+asyncio.set_event_loop(twisted_loop)
 current_reactor = sys.modules.get("twisted.internet.reactor", None)
 if current_reactor is not None:
     if not isinstance(current_reactor, asyncioreactor.AsyncioSelectorReactor):
