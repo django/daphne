@@ -283,7 +283,7 @@ class Server(object):
                             self.stop()
                         else:
                             logger.error(
-                                "Exception inside application: %s", exception.__repr__, stack_info=True
+                                "Exception inside application: %s", exception.__repr__(), stack_info=True
                             )
                             if not disconnected:
                                 protocol.handle_exception(exception)
