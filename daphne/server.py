@@ -21,7 +21,6 @@ else:
 
 import logging
 import time
-import traceback
 from concurrent.futures import CancelledError
 
 from twisted.internet import defer, reactor
