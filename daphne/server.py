@@ -283,13 +283,8 @@ class Server(object):
                             # Protocol is asking the server to exit (likely during test)
                             self.stop()
                         else:
-                            exception_output = "{}\n{}{}".format(
-                                exception,
-                                "".join(traceback.format_tb(exception.__traceback__)),
-                                "  {}".format(exception),
-                            )
                             logger.error(
-                                "Exception inside application: %s", exception_output
+                                "Exception inside application: %s", exception.__repr__, stack_info=True
                             )
                             if not disconnected:
                                 protocol.handle_exception(exception)
