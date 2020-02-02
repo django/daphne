@@ -284,8 +284,8 @@ class Server(object):
                         else:
                             logger.error(
                                 "Exception inside application: %s",
-                                exception.__repr__(),
-                                stack_info=True,
+                                exception,
+                                exc_info=exception,
                             )
                             if not disconnected:
                                 protocol.handle_exception(exception)
