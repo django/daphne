@@ -21,7 +21,6 @@ else:
 
 import logging
 import time
-import traceback
 from concurrent.futures import CancelledError
 
 from twisted.internet import defer, reactor
@@ -283,13 +282,10 @@ class Server(object):
                             # Protocol is asking the server to exit (likely during test)
                             self.stop()
                         else:
-                            exception_output = "{}\n{}{}".format(
-                                exception,
-                                "".join(traceback.format_tb(exception.__traceback__)),
-                                "  {}".format(exception),
-                            )
                             logger.error(
-                                "Exception inside application: %s", exception_output
+                                "Exception inside application: %s",
+                                exception,
+                                exc_info=exception,
                             )
                             if not disconnected:
                                 protocol.handle_exception(exception)
