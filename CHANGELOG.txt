@@ -1,3 +1,27 @@
+2.4.1 (2019-12-18)
+------------------
+
+* Avoids Twisted using the default event loop, for compatibility with Django
+  3.0's ``async_unsafe()`` decorator in threaded contexts, such as using the
+  auto-reloader.
+
+2.4.0 (2019-11-20)
+------------------
+
+* Adds CI testing against and support for Python 3.8.
+
+* Adds support for ``raw_path`` in ASGI scope.
+
+* Ensures an error response is sent to the client if the application sends
+  malformed headers.
+
+* Resolves an asyncio + multiprocessing problem when testing that would cause
+  the test suite to fail/hang on macOS.
+
+* Requires installing Twisted's TLS extras, via ``install_requires``.
+
+* Adds missing LICENSE to distribution.
+
 2.3.0 (2019-04-09)
 ------------------
 

@@ -1,8 +1,10 @@
 # This has to be done first as Twisted is import-order-sensitive with reactors
+import asyncio  # isort:skip
 import sys  # isort:skip
 import warnings  # isort:skip
 from twisted.internet import asyncioreactor  # isort:skip
 
+twisted_loop = asyncio.new_event_loop()
 current_reactor = sys.modules.get("twisted.internet.reactor", None)
 if current_reactor is not None:
     if not isinstance(current_reactor, asyncioreactor.AsyncioSelectorReactor):
@@ -13,14 +15,12 @@ if current_reactor is not None:
             UserWarning,
         )
         del sys.modules["twisted.internet.reactor"]
-        asyncioreactor.install()
+        asyncioreactor.install(twisted_loop)
 else:
-    asyncioreactor.install()
+    asyncioreactor.install(twisted_loop)
 
-import asyncio
 import logging
 import time
-import traceback
 from concurrent.futures import CancelledError
 
 from twisted.internet import defer, reactor
@@ -219,7 +219,12 @@ class Server(object):
             "disconnected", None
         ):
             return
-        self.check_headers_type(message)
+        try:
+            self.check_headers_type(message)
+        except ValueError:
+            # Ensure to send SOME reply.
+            protocol.basic_error(500, b"Server Error", "Server Error")
+            raise
         # Let the protocol handle it
         protocol.handle_reply(message)
 
@@ -277,13 +282,10 @@ class Server(object):
                             # Protocol is asking the server to exit (likely during test)
                             self.stop()
                         else:
-                            exception_output = "{}\n{}{}".format(
-                                exception,
-                                "".join(traceback.format_tb(exception.__traceback__)),
-                                "  {}".format(exception),
-                            )
                             logger.error(
-                                "Exception inside application: %s", exception_output
+                                "Exception inside application: %s",
+                                exception,
+                                exc_info=exception,
                             )
                             if not disconnected:
                                 protocol.handle_exception(exception)
