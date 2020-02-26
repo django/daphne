@@ -2,6 +2,7 @@ import logging
 import multiprocessing
 import os
 import pickle
+import selectors
 import tempfile
 import traceback
 from concurrent.futures import CancelledError
@@ -275,6 +276,6 @@ def _reinstall_reactor():
     if "daphne.server" in sys.modules:
         del sys.modules["daphne.server"]
 
-    event_loop = asyncio.new_event_loop()
+    event_loop = asyncio.SelectorEventLoop(selectors.SelectSelector())
     asyncioreactor.install(event_loop)
     asyncio.set_event_loop(event_loop)
