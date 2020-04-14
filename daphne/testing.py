@@ -5,6 +5,7 @@ import pickle
 import tempfile
 import traceback
 from concurrent.futures import CancelledError
+from functools import partial
 
 
 class DaphneTestingInstance:
@@ -21,6 +22,7 @@ class DaphneTestingInstance:
         self.xff = xff
         self.http_timeout = http_timeout
         self.host = "127.0.0.1"
+        self.lock = multiprocessing.Lock()
 
     def __enter__(self):
         # Clear result storage
@@ -38,7 +40,7 @@ class DaphneTestingInstance:
         # Start up process
         self.process = DaphneProcess(
             host=self.host,
-            application=TestApplication,
+            application=partial(TestApplication, lock=self.lock),
             kwargs=kwargs,
             setup=self.process_setup,
             teardown=self.process_teardown,
@@ -82,7 +84,8 @@ class DaphneTestingInstance:
         raises them.
         """
         try:
-            inner_result = TestApplication.load_result()
+            with self.lock:
+                inner_result = TestApplication.load_result()
         except FileNotFoundError:
             raise ValueError("No results available yet.")
         # Check for exception
@@ -167,8 +170,9 @@ class TestApplication:
     setup_storage = os.path.join(tempfile.gettempdir(), "setup.testio")
     result_storage = os.path.join(tempfile.gettempdir(), "result.testio")
 
-    def __init__(self, scope):
+    def __init__(self, scope, lock):
         self.scope = scope
+        self.lock = lock
         self.messages = []
 
     async def __call__(self, send, receive):
@@ -178,8 +182,10 @@ class TestApplication:
             while True:
                 # Receive a message and save it into the result store
                 self.messages.append(await receive())
+                self.lock.acquire()
                 logging.debug("test app received %r", self.messages[-1])
                 self.save_result(self.scope, self.messages)
+                self.lock.release()
                 # See if there are any messages to send back
                 setup = self.load_setup()
                 self.delete_setup()
