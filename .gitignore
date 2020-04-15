@@ -12,4 +12,4 @@ test_layer*
 test_consumer*
 .python-version
 .pytest_cache/
-.vscode/
+.vscode
