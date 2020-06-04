@@ -1,12 +1,19 @@
+Unreleased
+----------
+
+* Updated twisted requirement to 20.3 or later.
+* Updated Autobahn dependency to 20.4 or later.
+
+
 2.5.0 (2020-04-15)
 ------------------
 
-* Fixes compatability for twisted when running Python 3.8+ on Windows, by 
-  setting ``asyncio.WindowsSelectorEventLoopPolicy`` as the event loop policy 
-  in this case. 
+* Fixes compatability for twisted when running Python 3.8+ on Windows, by
+  setting ``asyncio.WindowsSelectorEventLoopPolicy`` as the event loop policy
+  in this case.
 
-* The internal ``daphne.testing.TestApplication`` now requires an addition 
-  ``lock`` argument to ``__init__()``. This is expected to be an instance of 
+* The internal ``daphne.testing.TestApplication`` now requires an addition
+  ``lock`` argument to ``__init__()``. This is expected to be an instance of
   ``multiprocessing.Lock``.
 
 2.4.1 (2019-12-18)

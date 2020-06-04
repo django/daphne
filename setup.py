@@ -22,10 +22,10 @@ setup(
     package_dir={"twisted": "daphne/twisted"},
     packages=find_packages() + ["twisted.plugins"],
     include_package_data=True,
-    install_requires=["twisted[tls]>=18.7", "autobahn>=0.18", "asgiref~=3.2"],
+    install_requires=["twisted[tls]>=20.3", "autobahn>=20.4", "asgiref~=3.2"],
     setup_requires=["pytest-runner"],
     extras_require={
-        "tests": ["hypothesis==4.23", "pytest~=3.10", "pytest-asyncio~=0.8"]
+        "tests": ["hypothesis", "pytest", "pytest-asyncio"]
     },
     entry_points={
         "console_scripts": ["daphne = daphne.cli:CommandLineInterface.entrypoint"]

@@ -1,5 +1,6 @@
 sudo: false
 
+dist: bionic
 language: python
 
 python:
@@ -10,11 +11,12 @@ python:
 
 env:
 - TWISTED="twisted"
-- TWISTED="twisted==18.7.0"
+- TWISTED="twisted==20.3.0"
 
 install:
-- pip install $TWISTED -e .[tests]
-- pip freeze
+  - pip install -U pytest  # Travis comes with an old version pre-installed.
+  - pip install $TWISTED -e .[tests]
+  - pip freeze
 
 script:
 - pytest
