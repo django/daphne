@@ -54,10 +54,11 @@ class Server(object):
         websocket_handshake_timeout=5,
         application_close_timeout=10,
         ready_callable=None,
-        server_name="Daphne",
+        server_name="Daphne++",
         # Deprecated and does not work, remove in version 2.2
         ws_protocols=None,
     ):
+        logger.warning("Daphne++ is running!")
         self.application = application
         self.endpoints = endpoints or []
         self.listeners = []

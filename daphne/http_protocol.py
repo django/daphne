@@ -66,6 +66,19 @@ class WebRequest(http.Request):
     @inlineCallbacks
     def process(self):
         try:
+            if "inbound_email" in self.path:
+                from uuid import uuid4
+                groupid=f"@debugging@ inbound_email {uuid4()}"
+                logger.warning(f"{groupid} About to serve {self.path}")
+                try:
+                    for k, v in self.requestHeaders():
+                        logger.warning(f"{groupid} Header Key: {k}")
+                        logger.warning(f"{groupid} Header Value: {v}")
+                except Exception:
+                    logger.error(f"{groupid} Parsing headers failed")
+        except Exception:
+            logger.error("Checking for inbound_email in path failed")
+        try:
             self.request_start = time.time()
             # Get upgrade header
             upgrade_header = None
