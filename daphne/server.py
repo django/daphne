@@ -58,7 +58,7 @@ class Server(object):
         # Deprecated and does not work, remove in version 2.2
         ws_protocols=None,
     ):
-        logger.warning("Daphne++ is running!")
+        logger.warning("Daphne++ is running!!!!!")
         self.application = application
         self.endpoints = endpoints or []
         self.listeners = []
