@@ -33,7 +33,7 @@ jobs:
       script:
         - pyflakes daphne tests
         - black --check daphne tests
-        - isort --check-only --diff --recursive daphne tests
+        - isort --check-only --diff daphne tests
 
     - stage: release
       python: 3.6
