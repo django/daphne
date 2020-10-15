@@ -6,6 +6,7 @@ from urllib import parse
 import http_strategies
 from http_base import DaphneTestCase
 from hypothesis import assume, given, settings
+from hypothesis.strategies import integers
 
 
 class TestHTTPRequest(DaphneTestCase):
@@ -118,6 +119,29 @@ class TestHTTPRequest(DaphneTestCase):
         )
         self.assert_valid_http_scope(scope, "GET", request_path, params=request_params)
         self.assert_valid_http_request_message(messages[0], body=b"")
+
+    @given(
+        request_path=http_strategies.http_path(),
+        chunk_size=integers(min_value=1),
+    )
+    @settings(max_examples=5, deadline=5000)
+    def test_request_body_chunking(self, request_path, chunk_size):
+        """
+        Tests request body chunking logic.
+        """
+        body = b"The quick brown fox jumps over the lazy dog"
+        _, messages = self.run_daphne_request(
+            "POST",
+            request_path,
+            body=body,
+            request_buffer_size=chunk_size,
+        )
+
+        # Avoid running those asserts when there's a single "http.disconnect"
+        if len(messages) > 1:
+            assert messages[0]["body"].decode() == body.decode()[:chunk_size]
+            assert not messages[-2]["more_body"]
+            assert messages[-1] == {"type": "http.disconnect"}
 
     @given(
         request_path=http_strategies.http_path(),

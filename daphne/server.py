@@ -42,6 +42,7 @@ class Server(object):
         signal_handlers=True,
         action_logger=None,
         http_timeout=None,
+        request_buffer_size=8192,
         websocket_timeout=86400,
         websocket_connect_timeout=20,
         ping_interval=20,
@@ -67,6 +68,7 @@ class Server(object):
         self.http_timeout = http_timeout
         self.ping_interval = ping_interval
         self.ping_timeout = ping_timeout
+        self.request_buffer_size = request_buffer_size
         self.proxy_forwarded_address_header = proxy_forwarded_address_header
         self.proxy_forwarded_port_header = proxy_forwarded_port_header
         self.proxy_forwarded_proto_header = proxy_forwarded_proto_header

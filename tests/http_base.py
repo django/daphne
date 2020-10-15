@@ -20,13 +20,24 @@ class DaphneTestCase(unittest.TestCase):
     ### Plain HTTP helpers
 
     def run_daphne_http(
-        self, method, path, params, body, responses, headers=None, timeout=1, xff=False
+        self,
+        method,
+        path,
+        params,
+        body,
+        responses,
+        headers=None,
+        timeout=1,
+        xff=False,
+        request_buffer_size=None,
     ):
         """
         Runs Daphne with the given request callback (given the base URL)
         and response messages.
         """
-        with DaphneTestingInstance(xff=xff) as test_app:
+        with DaphneTestingInstance(
+            xff=xff, request_buffer_size=request_buffer_size
+        ) as test_app:
             # Add the response messages
             test_app.add_send_messages(responses)
             # Send it the request. We have to do this the long way to allow
@@ -79,7 +90,14 @@ class DaphneTestCase(unittest.TestCase):
                 )
 
     def run_daphne_request(
-        self, method, path, params=None, body=None, headers=None, xff=False
+        self,
+        method,
+        path,
+        params=None,
+        body=None,
+        headers=None,
+        xff=False,
+        request_buffer_size=None,
     ):
         """
         Convenience method for just testing request handling.
@@ -92,6 +110,7 @@ class DaphneTestCase(unittest.TestCase):
             body=body,
             headers=headers,
             xff=xff,
+            request_buffer_size=request_buffer_size,
             responses=[
                 {"type": "http.response.start", "status": 200},
                 {"type": "http.response.body", "body": b"OK"},
