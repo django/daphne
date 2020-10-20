@@ -1,9 +1,8 @@
 # coding: utf8
 
-from hypothesis import given, settings
-
 import http_strategies
 from http_base import DaphneTestCase
+from hypothesis import given, settings
 
 
 class TestHTTPResponse(DaphneTestCase):
