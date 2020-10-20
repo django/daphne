@@ -4,10 +4,9 @@ import collections
 import time
 from urllib import parse
 
-from hypothesis import given, settings
-
 import http_strategies
 from http_base import DaphneTestCase, DaphneTestingInstance
+from hypothesis import given, settings
 
 
 class TestWebsocket(DaphneTestCase):

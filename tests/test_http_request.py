@@ -3,10 +3,9 @@
 import collections
 from urllib import parse
 
-from hypothesis import assume, given, settings
-
 import http_strategies
 from http_base import DaphneTestCase
+from hypothesis import assume, given, settings
 
 
 class TestHTTPRequest(DaphneTestCase):

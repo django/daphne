@@ -1,9 +1,6 @@
 daphne
 ======
 
-.. image:: https://api.travis-ci.org/django/daphne.svg
-    :target: https://travis-ci.org/django/daphne
-
 .. image:: https://img.shields.io/pypi/v/daphne.svg
     :target: https://pypi.python.org/pypi/daphne
 
