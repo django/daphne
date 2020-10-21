@@ -18,11 +18,12 @@ class DaphneTestingInstance:
 
     startup_timeout = 2
 
-    def __init__(self, xff=False, http_timeout=None):
+    def __init__(self, xff=False, http_timeout=None, request_buffer_size=None):
         self.xff = xff
         self.http_timeout = http_timeout
         self.host = "127.0.0.1"
         self.lock = multiprocessing.Lock()
+        self.request_buffer_size = request_buffer_size
 
     def __enter__(self):
         # Clear result storage
@@ -30,6 +31,8 @@ class DaphneTestingInstance:
         TestApplication.delete_result()
         # Option Daphne features
         kwargs = {}
+        if self.request_buffer_size:
+            kwargs["request_buffer_size"] = self.request_buffer_size
         # Optionally enable X-Forwarded-For support.
         if self.xff:
             kwargs["proxy_forwarded_address_header"] = "X-Forwarded-For"

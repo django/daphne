@@ -23,6 +23,7 @@ setup(
     packages=find_packages() + ["twisted.plugins"],
     include_package_data=True,
     install_requires=["twisted[tls]>=18.7", "autobahn>=0.18", "asgiref~=3.2"],
+    python_requires='>=3.6',
     setup_requires=["pytest-runner"],
     extras_require={
         "tests": ["hypothesis==4.23", "pytest~=3.10", "pytest-asyncio~=0.8"]
@@ -38,10 +39,10 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Topic :: Internet :: WWW/HTTP",
     ],
 )
