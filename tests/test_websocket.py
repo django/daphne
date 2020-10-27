@@ -23,10 +23,18 @@ class TestWebsocket(DaphneTestCase):
         """
         # Check overall keys
         self.assert_key_sets(
-            required_keys={"type", "path", "raw_path", "query_string", "headers"},
+            required_keys={
+                "asgi",
+                "type",
+                "path",
+                "raw_path",
+                "query_string",
+                "headers",
+            },
             optional_keys={"scheme", "root_path", "client", "server", "subprotocols"},
             actual_keys=scope.keys(),
         )
+        self.assertEqual(scope["asgi"]["version"], "3.0")
         # Check that it is the right type
         self.assertEqual(scope["type"], "websocket")
         # Path
