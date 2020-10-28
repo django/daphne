@@ -1,12 +1,26 @@
+3.0.0 (2020-10-28)
+------------------
+
+* Updates internals to use ASGI v3 throughout. ``asgiref.compatibility`` is
+  used for older applications.
+
+* Consequently, the `--asgi-protocol` command-line option is removed.
+
+* HTTP request bodies are now read, and passed to the application, in chunks.
+
+* Added support for Python 3.9.
+
+* Dropped support for Python 3.5.
+
 2.5.0 (2020-04-15)
 ------------------
 
-* Fixes compatability for twisted when running Python 3.8+ on Windows, by 
-  setting ``asyncio.WindowsSelectorEventLoopPolicy`` as the event loop policy 
-  in this case. 
+* Fixes compatability for twisted when running Python 3.8+ on Windows, by
+  setting ``asyncio.WindowsSelectorEventLoopPolicy`` as the event loop policy
+  in this case.
 
-* The internal ``daphne.testing.TestApplication`` now requires an addition 
-  ``lock`` argument to ``__init__()``. This is expected to be an instance of 
+* The internal ``daphne.testing.TestApplication`` now requires an addition
+  ``lock`` argument to ``__init__()``. This is expected to be an instance of
   ``multiprocessing.Lock``.
 
 2.4.1 (2019-12-18)

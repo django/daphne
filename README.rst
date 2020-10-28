@@ -12,10 +12,6 @@ developed to power Django Channels.
 It supports automatic negotiation of protocols; there's no need for URL
 prefixing to determine WebSocket endpoints versus HTTP endpoints.
 
-*Note:* Daphne 2 is not compatible with Channels 1.x applications, only with
-Channels 2.x and other ASGI applications. Install a 1.x version of Daphne
-for Channels 1.x support.
-
 
 Running
 -------
