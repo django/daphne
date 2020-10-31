@@ -277,7 +277,7 @@ class Server(object):
             if application_instance and application_instance.done():
                 try:
                     exception = application_instance.exception()
-                except CancelledError:
+                except (CancelledError, asyncio.CancelledError):
                     # Future cancellation. We can ignore this.
                     pass
                 else:
