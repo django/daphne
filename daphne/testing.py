@@ -7,7 +7,7 @@ import traceback
 from concurrent.futures import CancelledError
 
 
-class DaphneTestingInstance:
+class BaseDaphneTestingInstance:
     """
     Launches an instance of Daphne in a subprocess, with a host and port
     attribute allowing you to call it.
@@ -17,17 +17,16 @@ class DaphneTestingInstance:
 
     startup_timeout = 2
 
-    def __init__(self, xff=False, http_timeout=None, request_buffer_size=None):
+    def __init__(
+        self, xff=False, http_timeout=None, request_buffer_size=None, *, application
+    ):
         self.xff = xff
         self.http_timeout = http_timeout
         self.host = "127.0.0.1"
-        self.lock = multiprocessing.Lock()
         self.request_buffer_size = request_buffer_size
+        self.application = application
 
     def __enter__(self):
-        # Clear result storage
-        TestApplication.delete_setup()
-        TestApplication.delete_result()
         # Option Daphne features
         kwargs = {}
         if self.request_buffer_size:
@@ -42,7 +41,7 @@ class DaphneTestingInstance:
         # Start up process
         self.process = DaphneProcess(
             host=self.host,
-            application=TestApplication(lock=self.lock),
+            application=self.application,
             kwargs=kwargs,
             setup=self.process_setup,
             teardown=self.process_teardown,
@@ -75,6 +74,21 @@ class DaphneTestingInstance:
         Called by the process just after it stops serving
         """
         pass
+
+    def get_received(self):
+        pass
+
+
+class DaphneTestingInstance(BaseDaphneTestingInstance):
+    def __init__(self, *args, **kwargs):
+        self.lock = multiprocessing.Lock()
+        super().__init__(*args, **kwargs, application=TestApplication(lock=self.lock))
+
+    def __enter__(self):
+        # Clear result storage
+        TestApplication.delete_setup()
+        TestApplication.delete_result()
+        return super().__enter__()
 
     def get_received(self):
         """
@@ -149,7 +163,7 @@ class DaphneProcess(multiprocessing.Process):
                 self.server.run()
             finally:
                 self.teardown()
-        except Exception as e:
+        except BaseException as e:
             # Put the error on our queue so the parent gets it
             self.errors.put((e, traceback.format_exc()))
 

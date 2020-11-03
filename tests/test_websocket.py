@@ -6,6 +6,7 @@ from urllib import parse
 
 import http_strategies
 from http_base import DaphneTestCase, DaphneTestingInstance
+from daphne.testing import BaseDaphneTestingInstance
 from hypothesis import given, settings
 
 
@@ -261,3 +262,47 @@ class TestWebsocket(DaphneTestCase):
             self.websocket_send_frame(sock, "still alive?")
             # Receive a frame and make sure it's correct
             assert self.websocket_receive_frame(sock) == "cake"
+
+    def test_application_checker_handles_asyncio_cancellederror(self):
+        with CancellingTestingInstance() as app:
+            # Connect to the websocket app, it will immediately raise
+            # asyncio.CancelledError
+            sock, _ = self.websocket_handshake(app)
+            # Disconnect from the socket
+            sock.close()
+            # Wait for application_checker to clean up the applications for
+            # disconnected clients, and for the server to be stopped.
+            time.sleep(3)
+            # Make sure we received either no error, or a ConnectionsNotEmpty
+            while not app.process.errors.empty():
+                err, _tb = app.process.errors.get()
+                if not isinstance(err, ConnectionsNotEmpty):
+                    raise err
+                self.fail(
+                    "Server connections were not cleaned up after an asyncio.CancelledError was raised"
+                )
+
+
+async def cancelling_application(scope, receive, send):
+    import asyncio
+    from twisted.internet import reactor
+
+    reactor.callLater(2, lambda: reactor.stop())
+    await send({"type": "websocket.accept"})
+    raise asyncio.CancelledError()
+
+
+class ConnectionsNotEmpty(Exception):
+    pass
+
+
+class CancellingTestingInstance(BaseDaphneTestingInstance):
+    def __init__(self):
+        super().__init__(application=cancelling_application)
+
+    def process_teardown(self):
+        import multiprocessing
+
+        proc = multiprocessing.current_process()
+        if proc.server.connections:
+            raise ConnectionsNotEmpty()
