@@ -6,8 +6,9 @@ from urllib import parse
 
 import http_strategies
 from http_base import DaphneTestCase, DaphneTestingInstance
-from daphne.testing import BaseDaphneTestingInstance
 from hypothesis import given, settings
+
+from daphne.testing import BaseDaphneTestingInstance
 
 
 class TestWebsocket(DaphneTestCase):
@@ -285,8 +286,10 @@ class TestWebsocket(DaphneTestCase):
 
 async def cancelling_application(scope, receive, send):
     import asyncio
+
     from twisted.internet import reactor
 
+    # Stop the server after a short delay so that the teardown is run.
     reactor.callLater(2, lambda: reactor.stop())
     await send({"type": "websocket.accept"})
     raise asyncio.CancelledError()
@@ -303,6 +306,11 @@ class CancellingTestingInstance(BaseDaphneTestingInstance):
     def process_teardown(self):
         import multiprocessing
 
+        # Get a hold of the enclosing DaphneProcess (we're currently running in
+        # the same process as the application).
         proc = multiprocessing.current_process()
+        # By now the (only) socket should have disconnected, and the
+        # application_checker should have run. If there are any connections
+        # still, it means that the application_checker did not clean them up.
         if proc.server.connections:
             raise ConnectionsNotEmpty()
