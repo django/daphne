@@ -8,6 +8,8 @@ import http_strategies
 from http_base import DaphneTestCase, DaphneTestingInstance
 from hypothesis import given, settings
 
+from daphne.testing import BaseDaphneTestingInstance
+
 
 class TestWebsocket(DaphneTestCase):
     """
@@ -261,3 +263,54 @@ class TestWebsocket(DaphneTestCase):
             self.websocket_send_frame(sock, "still alive?")
             # Receive a frame and make sure it's correct
             assert self.websocket_receive_frame(sock) == "cake"
+
+    def test_application_checker_handles_asyncio_cancellederror(self):
+        with CancellingTestingInstance() as app:
+            # Connect to the websocket app, it will immediately raise
+            # asyncio.CancelledError
+            sock, _ = self.websocket_handshake(app)
+            # Disconnect from the socket
+            sock.close()
+            # Wait for application_checker to clean up the applications for
+            # disconnected clients, and for the server to be stopped.
+            time.sleep(3)
+            # Make sure we received either no error, or a ConnectionsNotEmpty
+            while not app.process.errors.empty():
+                err, _tb = app.process.errors.get()
+                if not isinstance(err, ConnectionsNotEmpty):
+                    raise err
+                self.fail(
+                    "Server connections were not cleaned up after an asyncio.CancelledError was raised"
+                )
+
+
+async def cancelling_application(scope, receive, send):
+    import asyncio
+
+    from twisted.internet import reactor
+
+    # Stop the server after a short delay so that the teardown is run.
+    reactor.callLater(2, lambda: reactor.stop())
+    await send({"type": "websocket.accept"})
+    raise asyncio.CancelledError()
+
+
+class ConnectionsNotEmpty(Exception):
+    pass
+
+
+class CancellingTestingInstance(BaseDaphneTestingInstance):
+    def __init__(self):
+        super().__init__(application=cancelling_application)
+
+    def process_teardown(self):
+        import multiprocessing
+
+        # Get a hold of the enclosing DaphneProcess (we're currently running in
+        # the same process as the application).
+        proc = multiprocessing.current_process()
+        # By now the (only) socket should have disconnected, and the
+        # application_checker should have run. If there are any connections
+        # still, it means that the application_checker did not clean them up.
+        if proc.server.connections:
+            raise ConnectionsNotEmpty()
