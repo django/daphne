@@ -245,10 +245,18 @@ class CommandLineInterface(object):
             # no advanced binding options passed, patch in defaults
             args.host = DEFAULT_HOST
             args.port = DEFAULT_PORT
-        elif args.host and args.port is None:
+        elif args.host and args.port is None and not any([
+            # Checking the other options must be done or else 
+            args.unix_socket,
+            args.file_descriptor is not None,
+            args.socket_strings
+        ]):
             args.port = DEFAULT_PORT
-        elif args.port is not None and not args.host:
-            args.host = DEFAULT_HOST
+        elif args.port is not None and not args.host and not any([
+            args.unix_socket,
+            args.file_descriptor is not None,
+            args.socket_strings
+        ]):
         # Build endpoint description strings from (optional) cli arguments
         endpoints = build_endpoint_description_strings(
             host=args.host,
