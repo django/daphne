@@ -200,6 +200,12 @@ class CommandLineInterface(object):
         if args.proxy_headers:
             return "X-Forwarded-Port"
 
+    def load_asgi_app(self, asgi_app_path: str):
+        """
+        Return the imported application.
+        """
+        return import_by_path(asgi_app_path)
+
     def run(self, args):
         """
         Pass in raw argument list and it will decode them
@@ -229,7 +235,7 @@ class CommandLineInterface(object):
 
         # Import application
         sys.path.insert(0, ".")
-        application = import_by_path(args.application)
+        application = self.load_asgi_app(args.application)
         application = guarantee_single_callable(application)
 
         # Set up port/host bindings
