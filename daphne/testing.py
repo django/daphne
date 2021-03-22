@@ -162,7 +162,7 @@ class DaphneProcess(multiprocessing.Process):
 
         try:
             if isinstance(self.application, str):
-                mod_name, _, app_name = self.application.rpartition(':')
+                mod_name, _, app_name = self.application.rpartition(":")
                 module = importlib.import_module(mod_name)
                 application = getattr(module, app_name)
             else:
