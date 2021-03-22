@@ -132,18 +132,9 @@ class DaphneProcess(multiprocessing.Process):
         # prefer `type(None)` over `lambda x: None` for serialization in spawn mode
         self.setup = setup or type(None)
         self.teardown = teardown or type(None)
-        # ready event isn't really needed when blocking on Queue.get() but Channels calls into it
+        self.port = multiprocessing.Value("i")
         self.ready = multiprocessing.Event()
         self.errors = multiprocessing.Queue()
-        self.__port = None
-        self.__portqueue = multiprocessing.Queue()
-
-    @property
-    def port(self):
-        # lazy load the port so we don't block the main process waiting
-        if self.__port is None:
-            self.__port = self.__portqueue.get()
-        return self.__port
 
     def run(self):
         # Note: MacOS uses spawn by default since Python 3.8.
@@ -192,9 +183,7 @@ class DaphneProcess(multiprocessing.Process):
         from twisted.internet import reactor
 
         if self.server.listening_addresses:
-            port = self.server.listening_addresses[0][1]
-            self.__portqueue.put(port)
-            # ready event isn't really needed when blocking on queue.get() but Channels calls into it
+            self.port.value = self.server.listening_addresses[0][1]
             self.ready.set()
         else:
             reactor.callLater(0.1, self.resolve_port)
