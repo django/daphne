@@ -1,7 +1,7 @@
 import datetime
 
 
-class AccessLogGenerator(object):
+class AccessLogGenerator:
     """
     Object that implements the Daphne "action logger" internal interface in
     order to provide an access log in something resembling NCSA format.

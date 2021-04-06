@@ -182,7 +182,7 @@ class DaphneTestCase(unittest.TestCase):
         if response.status != 101:
             raise RuntimeError("WebSocket upgrade did not result in status code 101")
         # Prepare headers for subprotocol searching
-        response_headers = dict((n.lower(), v) for n, v in response.getheaders())
+        response_headers = {n.lower(): v for n, v in response.getheaders()}
         response.read()
         assert not response.closed
         # Return the raw socket and any subprotocol
@@ -252,7 +252,7 @@ class DaphneTestCase(unittest.TestCase):
         """
         try:
             socket.inet_aton(address)
-        except socket.error:
+        except OSError:
             self.fail("'%s' is not a valid IP address." % address)
 
     def assert_key_sets(self, required_keys, optional_keys, actual_keys):

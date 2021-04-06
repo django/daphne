@@ -7,7 +7,7 @@ from zope.interface import implementer
 
 
 @implementer(IPlugin, IStreamServerEndpointStringParser)
-class _FDParser(object):
+class _FDParser:
     prefix = "fd"
 
     def _parseServer(self, reactor, fileno, domain=socket.AF_INET):
