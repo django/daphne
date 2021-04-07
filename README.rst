@@ -5,8 +5,8 @@ daphne
     :target: https://pypi.python.org/pypi/daphne
 
 Daphne is a HTTP, HTTP2 and WebSocket protocol server for
-`ASGI <https://github.com/django/asgiref/blob/master/specs/asgi.rst>`_ and
-`ASGI-HTTP <https://github.com/django/asgiref/blob/master/specs/www.rst>`_,
+`ASGI <https://github.com/django/asgiref/blob/main/specs/asgi.rst>`_ and
+`ASGI-HTTP <https://github.com/django/asgiref/blob/main/specs/www.rst>`_,
 developed to power Django Channels.
 
 It supports automatic negotiation of protocols; there's no need for URL
@@ -115,7 +115,7 @@ Contributing
 ------------
 
 Please refer to the
-`main Channels contributing docs <https://github.com/django/channels/blob/master/CONTRIBUTING.rst>`_.
+`main Channels contributing docs <https://github.com/django/channels/blob/main/CONTRIBUTING.rst>`_.
 
 To run tests, make sure you have installed the ``tests`` extra with the package::
 
@@ -134,4 +134,4 @@ https://docs.djangoproject.com/en/dev/internals/security/.
 To report bugs or request new features, please open a new GitHub issue.
 
 This repository is part of the Channels project. For the shepherd and maintenance team, please see the
-`main Channels readme <https://github.com/django/channels/blob/master/README.rst>`_.
+`main Channels readme <https://github.com/django/channels/blob/main/README.rst>`_.
