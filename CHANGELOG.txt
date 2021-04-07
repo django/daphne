@@ -1,3 +1,7 @@
+* Fixed a bug where ``send`` passed to applications wasn't a true async
+  function but a lambda wrapper, preventing it from being used with
+  ``asgiref.sync.async_to_sync()``.
+
 3.0.1 (2020-11-12)
 ------------------
 

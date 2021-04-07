@@ -22,6 +22,7 @@ else:
 import logging
 import time
 from concurrent.futures import CancelledError
+from functools import partial
 
 from twisted.internet import defer, reactor
 from twisted.internet.endpoints import serverFromString
@@ -203,7 +204,7 @@ class Server:
         application_instance = self.application(
             scope=scope,
             receive=input_queue.get,
-            send=lambda message: self.handle_reply(protocol, message),
+            send=partial(self.handle_reply, protocol),
         )
         # Run it, and stash the future for later checking
         if protocol not in self.connections:
