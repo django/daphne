@@ -16,7 +16,7 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
 
 
-class CommandLineInterface(object):
+class CommandLineInterface:
     """
     Acts as the main CLI entry point for running the server.
     """
@@ -258,7 +258,7 @@ class CommandLineInterface(object):
         )
         endpoints = sorted(args.socket_strings + endpoints)
         # Start the server
-        logger.info("Starting server at %s" % (", ".join(endpoints),))
+        logger.info("Starting server at {}".format(", ".join(endpoints)))
         self.server = self.server_class(
             application=application,
             endpoints=endpoints,

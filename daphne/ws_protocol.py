@@ -297,7 +297,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
         return id(self) == id(other)
 
     def __repr__(self):
-        return "<WebSocketProtocol client=%r path=%r>" % (self.client_addr, self.path)
+        return f"<WebSocketProtocol client={self.client_addr!r} path={self.path!r}>"
 
 
 class WebSocketFactory(WebSocketServerFactory):
@@ -318,7 +318,7 @@ class WebSocketFactory(WebSocketServerFactory):
         Builds protocol instances. We use this to inject the factory object into the protocol.
         """
         try:
-            protocol = super(WebSocketFactory, self).buildProtocol(addr)
+            protocol = super().buildProtocol(addr)
             protocol.factory = self
             return protocol
         except Exception:

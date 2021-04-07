@@ -34,7 +34,7 @@ from .ws_protocol import WebSocketFactory
 logger = logging.getLogger(__name__)
 
 
-class Server(object):
+class Server:
     def __init__(
         self,
         application,

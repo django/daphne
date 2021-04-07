@@ -1,5 +1,3 @@
-# coding: utf8
-
 import http_strategies
 from http_base import DaphneTestCase
 from hypothesis import given, settings
