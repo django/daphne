@@ -1,5 +1,3 @@
-# coding: utf8
-
 from unittest import TestCase
 
 from twisted.web.http_headers import Headers

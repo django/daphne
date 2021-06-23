@@ -1,5 +1,3 @@
-# coding: utf8
-
 import logging
 from argparse import ArgumentError
 from unittest import TestCase

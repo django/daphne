@@ -22,6 +22,7 @@ else:
 import logging
 import time
 from concurrent.futures import CancelledError
+from functools import partial
 
 from autobahn.websocket.compress import PERMESSAGE_COMPRESSION_EXTENSION as EXTENSIONS
 from twisted.internet import defer, reactor
@@ -35,7 +36,7 @@ from .ws_protocol import WebSocketFactory
 logger = logging.getLogger(__name__)
 
 
-class Server(object):
+class Server:
     def __init__(
         self,
         application,
@@ -43,6 +44,7 @@ class Server(object):
         signal_handlers=True,
         action_logger=None,
         http_timeout=None,
+        request_buffer_size=8192,
         websocket_timeout=86400,
         websocket_connect_timeout=20,
         websocket_permessage_compression_extensions=[
@@ -73,6 +75,7 @@ class Server(object):
         self.http_timeout = http_timeout
         self.ping_interval = ping_interval
         self.ping_timeout = ping_timeout
+        self.request_buffer_size = request_buffer_size
         self.proxy_forwarded_address_header = proxy_forwarded_address_header
         self.proxy_forwarded_port_header = proxy_forwarded_port_header
         self.proxy_forwarded_proto_header = proxy_forwarded_proto_header
@@ -207,15 +210,17 @@ class Server(object):
         assert "application_instance" not in self.connections[protocol]
         # Make an instance of the application
         input_queue = asyncio.Queue()
-        application_instance = self.application(scope=scope)
+        scope.setdefault("asgi", {"version": "3.0"})
+        application_instance = self.application(
+            scope=scope,
+            receive=input_queue.get,
+            send=partial(self.handle_reply, protocol),
+        )
         # Run it, and stash the future for later checking
         if protocol not in self.connections:
             return None
         self.connections[protocol]["application_instance"] = asyncio.ensure_future(
-            application_instance(
-                receive=input_queue.get,
-                send=lambda message: self.handle_reply(protocol, message),
-            ),
+            application_instance,
             loop=asyncio.get_event_loop(),
         )
         return input_queue
@@ -298,7 +303,7 @@ class Server(object):
             if application_instance and application_instance.done():
                 try:
                     exception = application_instance.exception()
-                except CancelledError:
+                except (CancelledError, asyncio.CancelledError):
                     # Future cancellation. We can ignore this.
                     pass
                 else:

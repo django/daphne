@@ -185,9 +185,19 @@ class WebRequest(http.Request):
                     # Not much we can do, the request is prematurely abandoned.
                     return
                 # Run application against request
-                self.application_queue.put_nowait(
-                    {"type": "http.request", "body": self.content.read()}
-                )
+                buffer_size = self.server.request_buffer_size
+                while True:
+                    chunk = self.content.read(buffer_size)
+                    more_body = not (len(chunk) < buffer_size)
+                    payload = {
+                        "type": "http.request",
+                        "body": chunk,
+                        "more_body": more_body,
+                    }
+                    self.application_queue.put_nowait(payload)
+                    if not more_body:
+                        break
+
         except Exception:
             logger.error(traceback.format_exc())
             self.basic_error(

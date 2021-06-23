@@ -1,13 +1,44 @@
+3.0.2 (2021-04-07)
+------------------
+
+* Fixed a bug where ``send`` passed to applications wasn't a true async
+  function but a lambda wrapper, preventing it from being used with
+  ``asgiref.sync.async_to_sync()``.
+
+
+3.0.1 (2020-11-12)
+------------------
+
+* Fixed a bug where ``asyncio.CancelledError`` was not correctly handled on
+  Python 3.8+, resulting in incorrect protocol application cleanup.
+
+
+3.0.0 (2020-10-28)
+------------------
+
+* Updates internals to use ASGI v3 throughout. ``asgiref.compatibility`` is
+  used for older applications.
+
+* Consequently, the `--asgi-protocol` command-line option is removed.
+
+* HTTP request bodies are now read, and passed to the application, in chunks.
+
+* Added support for Python 3.9.
+
+* Dropped support for Python 3.5.
+
+
 2.5.0 (2020-04-15)
 ------------------
 
-* Fixes compatability for twisted when running Python 3.8+ on Windows, by 
-  setting ``asyncio.WindowsSelectorEventLoopPolicy`` as the event loop policy 
-  in this case. 
+* Fixes compatability for twisted when running Python 3.8+ on Windows, by
+  setting ``asyncio.WindowsSelectorEventLoopPolicy`` as the event loop policy
+  in this case.
 
-* The internal ``daphne.testing.TestApplication`` now requires an addition 
-  ``lock`` argument to ``__init__()``. This is expected to be an instance of 
+* The internal ``daphne.testing.TestApplication`` now requires an addition
+  ``lock`` argument to ``__init__()``. This is expected to be an instance of
   ``multiprocessing.Lock``.
+
 
 2.4.1 (2019-12-18)
 ------------------
@@ -15,6 +46,7 @@
 * Avoids Twisted using the default event loop, for compatibility with Django
   3.0's ``async_unsafe()`` decorator in threaded contexts, such as using the
   auto-reloader.
+
 
 2.4.0 (2019-11-20)
 ------------------
@@ -33,10 +65,12 @@
 
 * Adds missing LICENSE to distribution.
 
+
 2.3.0 (2019-04-09)
 ------------------
 
 * Added support for ASGI v3.
+
 
 2.2.5 (2019-01-31)
 ------------------
