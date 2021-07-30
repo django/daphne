@@ -10,11 +10,10 @@ with open(readme_path) as fp:
     long_description = fp.read()
 
 setup(
-    name="daphne",
+    name="ocp-daphne",
     version=__version__,
-    url="https://github.com/django/daphne",
-    author="Django Software Foundation",
-    author_email="foundation@djangoproject.com",
+    author="Aryan Kapoor",
+    author_email="pro.akapoor@gmail.com",
     description="Django ASGI (HTTP/WebSocket) server",
     long_description=long_description,
     license="BSD",

@@ -1,6 +1,7 @@
 import datetime
+import logging
 
-
+logger = logging.getLogger(__name__)
 class AccessLogGenerator:
     """
     Object that implements the Daphne "action logger" internal interface in
@@ -8,7 +9,7 @@ class AccessLogGenerator:
     """
 
     def __init__(self, stream):
-        self.stream = stream
+        self.stream = logger
 
     def __call__(self, protocol, action, details):
         """
@@ -56,7 +57,16 @@ class AccessLogGenerator:
         Writes an NCSA-style entry to the log file (some liberty is taken with
         what the entries are for non-HTTP)
         """
-        self.stream.write(
+        atoms = {
+            "host": host,
+            "time": date.strftime("%d/%b/%Y:%H:%M:%S"),
+            "request": request,
+            "status": status,
+            "size": length,
+            "ident": ident,
+            "user": user
+        }
+        self.stream.info(
             '%s %s %s [%s] "%s" %s %s\n'
             % (
                 host,
@@ -66,5 +76,6 @@ class AccessLogGenerator:
                 request,
                 status or "-",
                 length or "-",
-            )
+            ),
+            extra=atoms
         )
