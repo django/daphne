@@ -47,11 +47,11 @@ class Server:
         request_buffer_size=8192,
         websocket_timeout=86400,
         websocket_connect_timeout=20,
-        websocket_permessage_compression_extensions=[
+        websocket_permessage_compression_extensions=(
             "permessage-deflate",
             "permessage-bzip2",
             "permessage-snappy",
-        ],
+        ),
         ping_interval=20,
         ping_timeout=30,
         root_path="",
