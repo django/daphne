@@ -26,7 +26,7 @@ setup(
     python_requires=">=3.6",
     setup_requires=["pytest-runner"],
     extras_require={
-        "tests": ["hypothesis==4.23", "pytest~=3.10", "pytest-asyncio~=0.8"]
+        "tests": ["hypothesis", "pytest", "pytest-asyncio"]
     },
     entry_points={
         "console_scripts": ["daphne = daphne.cli:CommandLineInterface.entrypoint"]
