@@ -22,7 +22,7 @@ setup(
     package_dir={"twisted": "daphne/twisted"},
     packages=find_packages() + ["twisted.plugins"],
     include_package_data=True,
-    install_requires=["twisted[tls]>=18.7", "autobahn>=0.18", "asgiref>=3.2.10,<4"],
+    install_requires=["twisted[tls]>=19.7", "autobahn>=0.18", "asgiref>=3.2.10,<4"],
     python_requires=">=3.6",
     setup_requires=["pytest-runner"],
     extras_require={"tests": ["hypothesis", "pytest", "pytest-asyncio"]},
