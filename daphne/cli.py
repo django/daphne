@@ -148,7 +148,7 @@ class CommandLineInterface:
             default=False,
             action="store",
         )
-        self.arg_proxy_port = self.parser.add_argument(
+        self.max_requests = self.parser.add_argument(
             "--max-requests",
             dest="max_requests",
             help="The maximum number of requests a worker will process before restarting.",

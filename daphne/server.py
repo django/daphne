@@ -57,7 +57,7 @@ class Server:
         application_close_timeout=10,
         ready_callable=None,
         server_name="Daphne",
-        max_requests=0,
+        max_requests=float('inf'),
         # Deprecated and does not work, remove in version 2.2
         ws_protocols=None,
     ):
