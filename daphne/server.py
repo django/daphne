@@ -57,6 +57,7 @@ class Server:
         application_close_timeout=10,
         ready_callable=None,
         server_name="Daphne",
+        max_requests=0,
         # Deprecated and does not work, remove in version 2.2
         ws_protocols=None,
     ):
@@ -82,6 +83,7 @@ class Server:
         self.abort_start = False
         self.ready_callable = ready_callable
         self.server_name = server_name
+        self.max_requests = max_requests
         # Check our construction is actually sensible
         if not self.endpoints:
             logger.error("No endpoints. This server will not listen on anything.")

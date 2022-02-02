@@ -56,6 +56,7 @@ class WebRequest(http.Request):
             self.server = self.channel.factory.server
             self.application_queue = None
             self._response_started = False
+            self._complete_requests_counted = 0
             self.server.protocol_connected(self)
         except Exception:
             logger.error(traceback.format_exc())
@@ -197,6 +198,10 @@ class WebRequest(http.Request):
                     self.application_queue.put_nowait(payload)
                     if not more_body:
                         break
+                # Count completed Request and check against Max Requests
+                self._complete_requests_counted += 1
+                if self._complete_requests_counted > self.server.max_requests:
+                    self.server.close()
 
         except Exception:
             logger.error(traceback.format_exc())

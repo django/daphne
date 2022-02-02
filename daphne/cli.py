@@ -148,6 +148,13 @@ class CommandLineInterface:
             default=False,
             action="store",
         )
+        self.arg_proxy_port = self.parser.add_argument(
+            "--max-requests",
+            dest="max_requests",
+            help="The maximum number of requests a worker will process before restarting.",
+            default=float('inf'),
+            action="store",
+        )
         self.parser.add_argument(
             "application",
             help="The application to dispatch to as path.to.module:instance.path",
