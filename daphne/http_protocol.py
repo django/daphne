@@ -1,4 +1,5 @@
 import logging
+import sys
 import time
 import traceback
 from urllib.parse import unquote
@@ -56,7 +57,6 @@ class WebRequest(http.Request):
             self.server = self.channel.factory.server
             self.application_queue = None
             self._response_started = False
-            self._complete_requests_counted = 0
             self.server.protocol_connected(self)
         except Exception:
             logger.error(traceback.format_exc())
@@ -146,6 +146,11 @@ class WebRequest(http.Request):
 
             # Boring old HTTP.
             else:
+                # Count completed Request and check against Max Requests
+                self.server._complete_requests_counted += 1
+                if self.server._complete_requests_counted > self.server.max_requests:
+                    sys.exit(0)
+
                 # Sanitize and decode headers, potentially extracting root path
                 self.clean_headers = []
                 self.root_path = self.server.root_path
@@ -198,10 +203,6 @@ class WebRequest(http.Request):
                     self.application_queue.put_nowait(payload)
                     if not more_body:
                         break
-                # Count completed Request and check against Max Requests
-                self._complete_requests_counted += 1
-                if self._complete_requests_counted > self.server.max_requests:
-                    self.server.close()
 
         except Exception:
             logger.error(traceback.format_exc())

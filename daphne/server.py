@@ -84,6 +84,7 @@ class Server:
         self.ready_callable = ready_callable
         self.server_name = server_name
         self.max_requests = max_requests
+        self._complete_requests_counted = 0
         # Check our construction is actually sensible
         if not self.endpoints:
             logger.error("No endpoints. This server will not listen on anything.")
