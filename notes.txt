@@ -1,0 +1,5 @@
+Build: python setup.py sdist bdist_wheel
+Test Upload: twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+Prod Upload: twine upload dist/*
+
+Test Install: pip install -i https://test.pypi.org/simple/ adam-daphne==3.0.9

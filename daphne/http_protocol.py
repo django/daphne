@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 import time
 import traceback
@@ -13,7 +14,6 @@ from zope.interface import implementer
 from .utils import parse_x_forwarded_for
 
 logger = logging.getLogger(__name__)
-
 
 class WebRequest(http.Request):
     """
@@ -146,11 +146,6 @@ class WebRequest(http.Request):
 
             # Boring old HTTP.
             else:
-                # Count completed Request and check against Max Requests
-                self.server._complete_requests_counted += 1
-                if self.server._complete_requests_counted > self.server.max_requests:
-                    sys.exit(0)
-
                 # Sanitize and decode headers, potentially extracting root path
                 self.clean_headers = []
                 self.root_path = self.server.root_path
@@ -203,6 +198,14 @@ class WebRequest(http.Request):
                     self.application_queue.put_nowait(payload)
                     if not more_body:
                         break
+
+                # Count completed requests and check against Max
+                self.server._complete_requests_counted += 1
+                if self.server._complete_requests_counted > self.server.max_requests:
+                    logger.info('Max requests completed. Shutting down daphne...')
+                    bash_command = 'kill $(ps -a | grep daphne | cut -f 1 -d " " | head -n 1)'
+                    os.system(bash_command)
+                    sys.exit(0)
 
         except Exception:
             logger.error(traceback.format_exc())
