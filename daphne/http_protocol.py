@@ -203,7 +203,7 @@ class WebRequest(http.Request):
                 self.server._complete_requests_counted += 1
                 if self.server._complete_requests_counted > self.server.max_requests:
                     logger.info('Max requests completed. Shutting down daphne...')
-                    bash_command = 'kill $(ps -a | grep daphne | cut -f 1 -d " " | head -n 1)'
+                    bash_command = "kill $(ps aux | grep 'daphne' | awk '{print $2}')"
                     os.system(bash_command)
                     sys.exit(0)
 
