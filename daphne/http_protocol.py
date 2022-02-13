@@ -50,6 +50,8 @@ class WebRequest(http.Request):
     )  # Shorten it a bit, bytes wise
 
     def __init__(self, *args, **kwargs):
+        self.client_addr = None
+        self.server_addr = None
         try:
             http.Request.__init__(self, *args, **kwargs)
             # Easy server link
@@ -77,9 +79,6 @@ class WebRequest(http.Request):
                 # requires unicode string.
                 self.client_addr = [str(self.client.host), self.client.port]
                 self.server_addr = [str(self.host.host), self.host.port]
-            else:
-                self.client_addr = None
-                self.server_addr = None
 
             self.client_scheme = "https" if self.isSecure() else "http"
 
