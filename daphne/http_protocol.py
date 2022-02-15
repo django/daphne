@@ -1,4 +1,6 @@
 import logging
+import os
+import sys
 import time
 import traceback
 from urllib.parse import unquote
@@ -12,7 +14,6 @@ from zope.interface import implementer
 from .utils import parse_x_forwarded_for
 
 logger = logging.getLogger(__name__)
-
 
 class WebRequest(http.Request):
     """
@@ -196,6 +197,15 @@ class WebRequest(http.Request):
                     self.application_queue.put_nowait(payload)
                     if not more_body:
                         break
+
+                # Count completed requests and check against Max
+                self.server._complete_requests_counted += 1
+                if self.server._complete_requests_counted > self.server.max_requests:
+                    logger.info('Max requests completed. Shutting down daphne...')
+                    os.system("ps aux | grep 'daphne'")
+                    bash_command = "kill $(ps aux | grep 'daphne' | awk '{print $2}')"
+                    os.system(bash_command)
+                    sys.exit(0)
 
         except Exception:
             logger.error(traceback.format_exc())

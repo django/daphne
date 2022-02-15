@@ -10,7 +10,7 @@ with open(readme_path) as fp:
     long_description = fp.read()
 
 setup(
-    name="daphne",
+    name="adam-daphne",
     version=__version__,
     url="https://github.com/django/daphne",
     author="Django Software Foundation",

@@ -148,6 +148,14 @@ class CommandLineInterface:
             default=False,
             action="store",
         )
+        self.max_requests = self.parser.add_argument(
+            "--max-requests",
+            dest="max_requests",
+            help="The maximum number of requests a worker will process before restarting.",
+            default=float('inf'),
+            action="store",
+            type=int,
+        )
         self.parser.add_argument(
             "application",
             help="The application to dispatch to as path.to.module:instance.path",
@@ -259,6 +267,7 @@ class CommandLineInterface:
         endpoints = sorted(args.socket_strings + endpoints)
         # Start the server
         logger.info("Starting server at {}".format(", ".join(endpoints)))
+        logger.info(args.max_requests)
         self.server = self.server_class(
             application=application,
             endpoints=endpoints,
@@ -281,5 +290,6 @@ class CommandLineInterface:
             if args.proxy_headers
             else None,
             server_name=args.server_name,
+            max_requests=args.max_requests,
         )
         self.server.run()

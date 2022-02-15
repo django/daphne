@@ -13,3 +13,4 @@ test_consumer*
 .python-version
 .pytest_cache/
 .vscode
+.dccache
