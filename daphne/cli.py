@@ -274,9 +274,9 @@ class CommandLineInterface:
             websocket_connect_timeout=args.websocket_connect_timeout,
             websocket_handshake_timeout=args.websocket_connect_timeout,
             application_close_timeout=args.application_close_timeout,
-            action_logger=AccessLogGenerator(access_log_stream)
-            if access_log_stream
-            else None,
+            # action_logger=AccessLogGenerator(access_log_stream)
+            # if access_log_stream
+            # else None,
             ws_protocols=args.ws_protocols,
             root_path=args.root_path,
             verbosity=args.verbosity,
