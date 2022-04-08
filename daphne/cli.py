@@ -91,6 +91,11 @@ class CommandLineInterface:
             default=None,
         )
         self.parser.add_argument(
+            "--log-fmt",
+            help="Log format to use",
+            default="%(asctime)-15s %(levelname)-8s %(message)s"
+        )
+        self.parser.add_argument(
             "--ping-interval",
             type=int,
             help="The number of seconds a WebSocket must be idle before a keepalive ping is sent",
@@ -215,7 +220,7 @@ class CommandLineInterface:
                 2: logging.DEBUG,
                 3: logging.DEBUG,  # Also turns on asyncio debug
             }[args.verbosity],
-            format="%(asctime)-15s %(levelname)-8s %(message)s",
+            format=args.log_fmt,
         )
         # If verbosity is 1 or greater, or they told us explicitly, set up access log
         access_log_stream = None
