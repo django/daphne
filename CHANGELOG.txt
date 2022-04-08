@@ -11,6 +11,8 @@ Unreleased
   range of versions does not represent a good use of maintainer time. Going
   forward the latest Twisted version will be required.
 
+* Added `log-fmt` CLI argument.
+
 3.0.2 (2021-04-07)
 ------------------
 
