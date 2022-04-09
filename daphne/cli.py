@@ -5,6 +5,7 @@ from argparse import ArgumentError, Namespace
 
 from asgiref.compatibility import guarantee_single_callable
 
+from .access import AccessLogGenerator
 from .endpoints import build_endpoint_description_strings
 from .server import Server
 from .utils import import_by_path
