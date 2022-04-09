@@ -5,7 +5,6 @@ from argparse import ArgumentError, Namespace
 
 from asgiref.compatibility import guarantee_single_callable
 
-from .access import AccessLogGenerator
 from .endpoints import build_endpoint_description_strings
 from .server import Server
 from .utils import import_by_path
@@ -213,15 +212,16 @@ class CommandLineInterface:
         # Decode args
         args = self.parser.parse_args(args)
         # Set up logging
-        logging.basicConfig(
-            level={
-                0: logging.WARN,
-                1: logging.INFO,
-                2: logging.DEBUG,
-                3: logging.DEBUG,  # Also turns on asyncio debug
-            }[args.verbosity],
-            format=args.log_fmt,
-        )
+        if args.verbosity >= 1:
+            logging.basicConfig(
+                level={
+                    0: logging.WARN,
+                    1: logging.INFO,
+                    2: logging.DEBUG,
+                    3: logging.DEBUG,  # Also turns on asyncio debug
+                }[args.verbosity],
+                format=args.log_fmt,
+            )
         # If verbosity is 1 or greater, or they told us explicitly, set up access log
         access_log_stream = None
         if args.access_log:
