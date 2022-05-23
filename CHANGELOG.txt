@@ -1,3 +1,16 @@
+Unreleased
+----------
+
+* Dropped support for Python 3.6.
+
+* Updated dependencies to the latest versions.
+
+  Previously a range of Twisted versions have been supported. Recent Twisted
+  releases (22.2, 22.4) have issued security fixes, so those are now the
+  minimum supported version. Given the stability of Twisted, supporting a
+  range of versions does not represent a good use of maintainer time. Going
+  forward the latest Twisted version will be required.
+
 3.0.2 (2021-04-07)
 ------------------
 
