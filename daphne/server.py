@@ -56,7 +56,7 @@ class Server:
         websocket_handshake_timeout=5,
         application_close_timeout=10,
         ready_callable=None,
-        server_name="Daphne",
+        server_name="daphne",
         # Deprecated and does not work, remove in version 2.2
         ws_protocols=None,
     ):

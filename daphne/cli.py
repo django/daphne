@@ -93,7 +93,7 @@ class CommandLineInterface:
         self.parser.add_argument(
             "--log-fmt",
             help="Log format to use",
-            default="%(asctime)-15s %(levelname)-8s %(message)s"
+            default="%(asctime)-15s %(levelname)-8s %(message)s",
         )
         self.parser.add_argument(
             "--ping-interval",
@@ -162,7 +162,10 @@ class CommandLineInterface:
             "--server-name",
             dest="server_name",
             help="specify which value should be passed to response header Server attribute",
-            default="Daphne",
+            default="daphne",
+        )
+        self.parser.add_argument(
+            "--no-server-name", dest="server_name", action="store_const", const=""
         )
 
         self.server = None

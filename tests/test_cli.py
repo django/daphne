@@ -240,3 +240,18 @@ class TestCLIInterface(TestCase):
             exc.exception.message,
             "--proxy-headers has to be passed for this parameter.",
         )
+
+    def test_custom_servername(self):
+        """
+        Passing `--server-name` will set the default server header
+        from 'daphne' to the passed one.
+        """
+        self.assertCLI([], {"server_name": "daphne"})
+        self.assertCLI(["--server-name", ""], {"server_name": ""})
+        self.assertCLI(["--server-name", "python"], {"server_name": "python"})
+
+    def test_no_servername(self):
+        """
+        Passing `--no-server-name` will set server name to '' (empty string)
+        """
+        self.assertCLI(["--no-server-name"], {"server_name": ""})
