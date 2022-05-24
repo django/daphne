@@ -13,9 +13,12 @@ class TestHTTPResponse(DaphneTestCase):
         Lowercases and sorts headers, and strips transfer-encoding ones.
         """
         return sorted(
-            (name.lower(), value.strip())
-            for name, value in headers
-            if name.lower() != b"transfer-encoding"
+            [(b"server", b"daphne")]
+            + [
+                (name.lower(), value.strip())
+                for name, value in headers
+                if name.lower() not in (b"server", b"transfer-encoding")
+            ]
         )
 
     def encode_headers(self, headers):

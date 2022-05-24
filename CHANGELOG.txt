@@ -11,7 +11,14 @@ Unreleased
   range of versions does not represent a good use of maintainer time. Going
   forward the latest Twisted version will be required.
 
-* Added `log-fmt` CLI argument.
+* Set ``daphne`` as default ``Server`` header.
+
+  This can be configured with the ``--server-name`` CLI argument.
+
+  Added the new ``--no-server-name`` CLI argument to disable the ``Server``
+  header, which is equivalent to ``--server-name=` (an empty name).
+
+* Added ``--log-fmt`` CLI argument.
 
 3.0.2 (2021-04-07)
 ------------------

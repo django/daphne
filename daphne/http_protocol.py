@@ -249,8 +249,8 @@ class WebRequest(http.Request):
             # Write headers
             for header, value in message.get("headers", {}):
                 self.responseHeaders.addRawHeader(header, value)
-            if self.server.server_name and self.server.server_name.lower() != "daphne":
-                self.setHeader(b"server", self.server.server_name.encode("utf-8"))
+            if self.server.server_name and not self.responseHeaders.hasHeader("server"):
+                self.setHeader(b"server", self.server.server_name.encode())
             logger.debug(
                 "HTTP %s response started for %s", message["status"], self.client_addr
             )
