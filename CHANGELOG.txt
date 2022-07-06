@@ -20,6 +20,12 @@ Unreleased
 
 * Added ``--log-fmt`` CLI argument.
 
+* Added support for ``ASGI_THREADS`` environment variable, setting the maximum
+  number of workers used by a ``SyncToAsync`` thread-pool executor.
+
+  Set e.g. ``ASGI_THREADS=4 daphne ...`` when running to limit the number of
+  workers.
+
 3.0.2 (2021-04-07)
 ------------------
 

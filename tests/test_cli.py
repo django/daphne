@@ -1,6 +1,7 @@
 import logging
+import os
 from argparse import ArgumentError
-from unittest import TestCase
+from unittest import TestCase, skipUnless
 
 from daphne.cli import CommandLineInterface
 from daphne.endpoints import build_endpoint_description_strings as build
@@ -255,3 +256,12 @@ class TestCLIInterface(TestCase):
         Passing `--no-server-name` will set server name to '' (empty string)
         """
         self.assertCLI(["--no-server-name"], {"server_name": ""})
+
+
+@skipUnless(os.getenv("ASGI_THREADS"), "ASGI_THREADS environment variable not set.")
+class TestASGIThreads(TestCase):
+    def test_default_executor(self):
+        from daphne.server import twisted_loop
+
+        executor = twisted_loop._default_executor
+        self.assertEqual(executor._max_workers, int(os.getenv("ASGI_THREADS")))

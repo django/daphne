@@ -1,10 +1,18 @@
 # This has to be done first as Twisted is import-order-sensitive with reactors
 import asyncio  # isort:skip
+import os  # isort:skip
 import sys  # isort:skip
 import warnings  # isort:skip
+from concurrent.futures import ThreadPoolExecutor  # isort:skip
 from twisted.internet import asyncioreactor  # isort:skip
 
+
 twisted_loop = asyncio.new_event_loop()
+if "ASGI_THREADS" in os.environ:
+    twisted_loop.set_default_executor(
+        ThreadPoolExecutor(max_workers=int(os.environ["ASGI_THREADS"]))
+    )
+
 current_reactor = sys.modules.get("twisted.internet.reactor", None)
 if current_reactor is not None:
     if not isinstance(current_reactor, asyncioreactor.AsyncioSelectorReactor):
