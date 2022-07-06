@@ -258,10 +258,10 @@ class TestCLIInterface(TestCase):
         self.assertCLI(["--no-server-name"], {"server_name": ""})
 
 
-@skipUnless(os.getenv('ASGI_THREADS'), "ASGI_THREADS environment variable not set.")
+@skipUnless(os.getenv("ASGI_THREADS"), "ASGI_THREADS environment variable not set.")
 class TestASGIThreads(TestCase):
     def test_default_executor(self):
         from daphne.server import twisted_loop
 
         executor = twisted_loop._default_executor
-        self.assertEqual(executor._max_workers, int(os.getenv('ASGI_THREADS')))
+        self.assertEqual(executor._max_workers, int(os.getenv("ASGI_THREADS")))

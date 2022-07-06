@@ -1,6 +1,6 @@
 # This has to be done first as Twisted is import-order-sensitive with reactors
 import asyncio  # isort:skip
-import os # isort:skip
+import os  # isort:skip
 import sys  # isort:skip
 import warnings  # isort:skip
 from concurrent.futures import ThreadPoolExecutor  # isort:skip
