@@ -4,9 +4,10 @@ from django.core.checks import Error, register
 
 @register()
 def check_daphne_installed(app_configs, **kwargs):
-    from daphne.apps import DaphneConfig
     from django.apps import apps
     from django.contrib.staticfiles.apps import StaticFilesConfig
+
+    from daphne.apps import DaphneConfig
 
     for app in apps.get_app_configs():
         if isinstance(app, DaphneConfig):

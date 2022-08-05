@@ -2,11 +2,11 @@
 # packages import twisted.internet.reactor (e.g. raven does this).
 import daphne.server  # noqa: F401
 
-
 try:
     # Allow that Django is not installed.
     from django.apps import AppConfig
     from django.core import checks
+
     from .checks import check_daphne_installed
 except ImportError:
     pass
