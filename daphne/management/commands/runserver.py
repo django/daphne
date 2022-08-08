@@ -3,9 +3,6 @@ import importlib
 import logging
 import sys
 
-from daphne import __version__
-from daphne.endpoints import build_endpoint_description_strings
-from daphne.server import Server
 from django.apps import apps
 from django.conf import settings
 from django.contrib.staticfiles.handlers import ASGIStaticFilesHandler
@@ -13,6 +10,9 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.management import CommandError
 from django.core.management.commands.runserver import Command as RunserverCommand
 
+from daphne import __version__
+from daphne.endpoints import build_endpoint_description_strings
+from daphne.server import Server
 
 logger = logging.getLogger("django.channels.server")
 
@@ -33,7 +33,7 @@ def get_default_application():
         value = getattr(module, name)
     except AttributeError:
         raise ImproperlyConfigured(
-            "Cannot find %r in ASGI_APPLICATION module %s" % (name, path)
+            "Cannot find {!r} in ASGI_APPLICATION module {}".format(name, path)
         )
     return value
 
