@@ -33,7 +33,7 @@ def get_default_application():
         value = getattr(module, name)
     except AttributeError:
         raise ImproperlyConfigured(
-            "Cannot find {!r} in ASGI_APPLICATION module {}".format(name, path)
+            f"Cannot find {name!r} in ASGI_APPLICATION module {path}"
         )
     return value
 
