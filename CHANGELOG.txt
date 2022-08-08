@@ -26,6 +26,16 @@ Unreleased
   Set e.g. ``ASGI_THREADS=4 daphne ...`` when running to limit the number of
   workers.
 
+* Added a ``runserver`` command to run an ASGI Django development server.
+
+  Added ``"daphne"`` to the ``INSTALLED_APPS`` setting, before
+  ``"django.contrib.staticfiles"`` to enable:
+
+  INSTALLED_APPS = [
+    "daphne",
+    ...
+  ]
+
 3.0.2 (2021-04-07)
 ------------------
 
