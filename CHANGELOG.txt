@@ -1,5 +1,8 @@
-Unreleased
-----------
+4.0.0b1 (2022-08-25)
+--------------------
+
+This is a beta release to allow testing compatibility with the upcoming Channels
+4.0.
 
 * Dropped support for Python 3.6.
 
