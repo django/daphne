@@ -41,6 +41,9 @@ This is a beta release to allow testing compatibility with the upcoming Channels
 
 * Removed deprecated ``--ws_protocols`` CLI option.
 
+* Made the ``DaphneProcess`` tests helper class compatible with the ``spawn``
+  process start method, which is used on macOS and Windows.
+
 3.0.2 (2021-04-07)
 ------------------
 

@@ -288,7 +288,7 @@ async def cancelling_application(scope, receive, send):
     from twisted.internet import reactor
 
     # Stop the server after a short delay so that the teardown is run.
-    reactor.callLater(2, lambda: reactor.stop())
+    reactor.callLater(2, reactor.stop)
     await send({"type": "websocket.accept"})
     raise asyncio.CancelledError()
 
