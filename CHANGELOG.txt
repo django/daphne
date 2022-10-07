@@ -39,6 +39,8 @@ This is a beta release to allow testing compatibility with the upcoming Channels
     ...
   ]
 
+* Removed deprecated ``--ws_protocols`` CLI option.
+
 3.0.2 (2021-04-07)
 ------------------
 

@@ -65,8 +65,6 @@ class Server:
         application_close_timeout=10,
         ready_callable=None,
         server_name="daphne",
-        # Deprecated and does not work, remove in version 2.2
-        ws_protocols=None,
     ):
         self.application = application
         self.endpoints = endpoints or []
