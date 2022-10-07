@@ -1,8 +1,26 @@
-4.0.0b1 (2022-08-25)
---------------------
+4.0.0 (2022-10-07)
+------------------
 
-This is a beta release to allow testing compatibility with the upcoming Channels
-4.0.
+Major versioning targeting use with Channels 4.0 and beyond. Except where
+noted should remain usable with Channels v3 projects, but updating Channels to the latest version is recommended.
+
+* Added a ``runserver`` command to run an ASGI Django development server.
+
+  Added ``"daphne"`` to the ``INSTALLED_APPS`` setting, before
+  ``"django.contrib.staticfiles"`` to enable:
+
+  INSTALLED_APPS = [
+    "daphne",
+    ...
+  ]
+
+  This replaces the Channels implementation of ``runserver``, which is removed
+  in Channels 4.0.
+
+* Made the ``DaphneProcess`` tests helper class compatible with the ``spawn``
+  process start method, which is used on macOS and Windows.
+
+  Note that requires Channels v4 if using with ``ChannelsLiveServerTestCase``.
 
 * Dropped support for Python 3.6.
 
@@ -29,20 +47,7 @@ This is a beta release to allow testing compatibility with the upcoming Channels
   Set e.g. ``ASGI_THREADS=4 daphne ...`` when running to limit the number of
   workers.
 
-* Added a ``runserver`` command to run an ASGI Django development server.
-
-  Added ``"daphne"`` to the ``INSTALLED_APPS`` setting, before
-  ``"django.contrib.staticfiles"`` to enable:
-
-  INSTALLED_APPS = [
-    "daphne",
-    ...
-  ]
-
 * Removed deprecated ``--ws_protocols`` CLI option.
-
-* Made the ``DaphneProcess`` tests helper class compatible with the ``spawn``
-  process start method, which is used on macOS and Windows.
 
 3.0.2 (2021-04-07)
 ------------------
