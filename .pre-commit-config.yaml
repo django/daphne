@@ -1,11 +1,11 @@
 repos:
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.38.2
+    rev: v3.0.0
     hooks:
       - id: pyupgrade
         args: [--py36-plus]
   - repo: https://github.com/psf/black
-    rev: 22.8.0
+    rev: 22.10.0
     hooks:
       - id: black
         language_version: python3
