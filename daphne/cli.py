@@ -260,6 +260,17 @@ class CommandLineInterface:
         endpoints = sorted(args.socket_strings + endpoints)
         # Start the server
         logger.info("Starting server at {}".format(", ".join(endpoints)))
+
+        # ----- Custom fork code start -----
+        # Daphne allows you to pass in ready_callable - but doesn't actually expose it for you to define!
+        # So this is yet another piece we need in our custom fork.
+        def ready_callable():
+            # touch app-initialized when server is started
+            # this is so that Heroku acknowledges that the server is up and running
+            # https://github.com/heroku/heroku-buildpack-nginx/blob/main/bin/start-nginx#L41-L53
+            open("/tmp/app-initialized", "w").close()
+        # ----- Custom fork code end -----
+
         self.server = self.server_class(
             application=application,
             endpoints=endpoints,
@@ -281,5 +292,6 @@ class CommandLineInterface:
             if args.proxy_headers
             else None,
             server_name=args.server_name,
+            ready_callable=ready_callable,  # Custom fork: make sure we pass ready_callable through
         )
         self.server.run()
