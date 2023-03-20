@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 import sys
 from argparse import ArgumentError, Namespace
 
@@ -228,10 +229,23 @@ class CommandLineInterface:
         elif args.verbosity >= 1:
             access_log_stream = sys.stdout
 
+        # ----- Custom fork code start -----
+        # default directory on Heroku is /app/, but we want to import the application from within /app/django-root/
+        original_working_dir = os.getcwd()
+        os.chdir("django-root")
+        sys.path.insert(0, os.getcwd())
+        # ----- Custom fork code end -----
+
         # Import application
-        sys.path.insert(0, ".")
+        # sys.path.insert(0, ".")  # Custom fork: commented out this line, moved to below
         application = import_by_path(args.application)
         application = guarantee_single_callable(application)
+
+        # ----- Custom fork code start -----
+        # Change back out of django-root so that everything else runs as daphne expects
+        os.chdir(original_working_dir)
+        sys.path.insert(0, ".")
+        # ----- Custom fork code end -----
 
         # Set up port/host bindings
         if not any(
