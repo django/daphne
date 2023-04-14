@@ -50,6 +50,8 @@ class WebRequest(http.Request):
     )  # Shorten it a bit, bytes wise
 
     def __init__(self, *args, **kwargs):
+        self.client_addr = None
+        self.server_addr = None
         try:
             http.Request.__init__(self, *args, **kwargs)
             # Easy server link
@@ -77,9 +79,6 @@ class WebRequest(http.Request):
                 # requires unicode string.
                 self.client_addr = [str(self.client.host), self.client.port]
                 self.server_addr = [str(self.host.host), self.host.port]
-            else:
-                self.client_addr = None
-                self.server_addr = None
 
             self.client_scheme = "https" if self.isSecure() else "http"
 
@@ -250,8 +249,8 @@ class WebRequest(http.Request):
             # Write headers
             for header, value in message.get("headers", {}):
                 self.responseHeaders.addRawHeader(header, value)
-            if self.server.server_name and self.server.server_name.lower() != "daphne":
-                self.setHeader(b"server", self.server.server_name.encode("utf-8"))
+            if self.server.server_name and not self.responseHeaders.hasHeader("server"):
+                self.setHeader(b"server", self.server.server_name.encode())
             logger.debug(
                 "HTTP %s response started for %s", message["status"], self.client_addr
             )

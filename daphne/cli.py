@@ -91,6 +91,11 @@ class CommandLineInterface:
             default=None,
         )
         self.parser.add_argument(
+            "--log-fmt",
+            help="Log format to use",
+            default="%(asctime)-15s %(levelname)-8s %(message)s",
+        )
+        self.parser.add_argument(
             "--ping-interval",
             type=int,
             help="The number of seconds a WebSocket must be idle before a keepalive ping is sent",
@@ -107,13 +112,6 @@ class CommandLineInterface:
             type=int,
             help="The number of seconds an ASGI application has to exit after client disconnect before it is killed",
             default=10,
-        )
-        self.parser.add_argument(
-            "--ws-protocol",
-            nargs="*",
-            dest="ws_protocols",
-            help="The WebSocket protocols you wish to support",
-            default=None,
         )
         self.parser.add_argument(
             "--root-path",
@@ -157,7 +155,10 @@ class CommandLineInterface:
             "--server-name",
             dest="server_name",
             help="specify which value should be passed to response header Server attribute",
-            default="Daphne",
+            default="daphne",
+        )
+        self.parser.add_argument(
+            "--no-server-name", dest="server_name", action="store_const", const=""
         )
 
         self.server = None
@@ -215,7 +216,7 @@ class CommandLineInterface:
                 2: logging.DEBUG,
                 3: logging.DEBUG,  # Also turns on asyncio debug
             }[args.verbosity],
-            format="%(asctime)-15s %(levelname)-8s %(message)s",
+            format=args.log_fmt,
         )
         # If verbosity is 1 or greater, or they told us explicitly, set up access log
         access_log_stream = None
@@ -272,7 +273,6 @@ class CommandLineInterface:
             action_logger=AccessLogGenerator(access_log_stream)
             if access_log_stream
             else None,
-            ws_protocols=args.ws_protocols,
             root_path=args.root_path,
             verbosity=args.verbosity,
             proxy_forwarded_address_header=self._get_forwarded_host(args=args),
