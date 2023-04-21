@@ -1,5 +1,7 @@
 import datetime
+import logging
 
+logger = logging.getLogger(__name__)
 
 class AccessLogGenerator:
     """
@@ -8,7 +10,16 @@ class AccessLogGenerator:
     """
 
     def __init__(self, stream):
-        self.stream = stream
+        if stream:
+            logger.propagate = False
+            handler = logging.StreamHandler(stream)
+            formatter = logging.Formatter('%(host)s %(ident)s %(user)s [%(asctime)s] "%{request} %(message)s" '
+                                          '%(status)s %(length)s'
+                                          "%d/%b/%Y:%H:%M:%S")
+            handler.setFormatter(fmt=formatter)
+            logger.addHandler(handler)
+        else:
+            logger.addHandler(logging.NullHandler)
 
     def __call__(self, protocol, action, details):
         """
@@ -18,8 +29,8 @@ class AccessLogGenerator:
         if protocol == "http" and action == "complete":
             self.write_entry(
                 host=details["client"],
-                date=datetime.datetime.now(),
-                request="%(method)s %(path)s" % details,
+                request="%(method)s",
+                details="%(path)s" % details,
                 status=details["status"],
                 length=details["size"],
             )
@@ -27,44 +38,45 @@ class AccessLogGenerator:
         elif protocol == "websocket" and action == "connecting":
             self.write_entry(
                 host=details["client"],
-                date=datetime.datetime.now(),
-                request="WSCONNECTING %(path)s" % details,
+                request="WSCONNECTING",
+                details="%(path)s" % details,
             )
         elif protocol == "websocket" and action == "rejected":
             self.write_entry(
                 host=details["client"],
-                date=datetime.datetime.now(),
-                request="WSREJECT %(path)s" % details,
+                request="WSREJECT",
+                details="%(path)s" % details,
             )
         elif protocol == "websocket" and action == "connected":
             self.write_entry(
                 host=details["client"],
-                date=datetime.datetime.now(),
-                request="WSCONNECT %(path)s" % details,
+                request="WSCONNECT",
+                details="%(path)s" % details,
             )
         elif protocol == "websocket" and action == "disconnected":
             self.write_entry(
                 host=details["client"],
-                date=datetime.datetime.now(),
-                request="WSDISCONNECT %(path)s" % details,
+                request="WSDISCONNECT",
+                details="%(path)s" % details,
             )
 
     def write_entry(
-        self, host, date, request, status=None, length=None, ident=None, user=None
+        self, host, request, details, status=None, length=None, ident=None, user=None
     ):
         """
         Writes an NCSA-style entry to the log file (some liberty is taken with
         what the entries are for non-HTTP)
         """
-        self.stream.write(
-            '%s %s %s [%s] "%s" %s %s\n'
-            % (
-                host,
-                ident or "-",
-                user or "-",
-                date.strftime("%d/%b/%Y:%H:%M:%S"),
-                request,
-                status or "-",
-                length or "-",
-            )
+
+        logger.info(
+            f"{request} {details}",
+            extra={
+                "host": host,
+                "request": request,
+                "details": details,
+                "ident": ident or "-",
+                "user": user or "-",
+                "status": status or "-",
+                "length": length or "-",
+            }
         )
