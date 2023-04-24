@@ -1,4 +1,3 @@
-import datetime
 import logging
 
 logger = logging.getLogger(__name__)
@@ -72,7 +71,9 @@ class AccessLogGenerator:
         """
 
         logger.info(
-            f"{request} {details}",
+            "%s %s",
+            request,
+            details,
             extra={
                 "host": host,
                 "request": request,
