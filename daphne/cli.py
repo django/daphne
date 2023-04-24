@@ -228,7 +228,9 @@ class CommandLineInterface:
         elif args.verbosity >= 1:
             access_log_stream = sys.stdout
 
-        access_logger = AccessLogGenerator(access_log_stream) if access_log_stream else None
+        access_logger = (
+            AccessLogGenerator(access_log_stream) if access_log_stream else None
+        )
 
         # Import application
         sys.path.insert(0, ".")
@@ -272,9 +274,7 @@ class CommandLineInterface:
             websocket_connect_timeout=args.websocket_connect_timeout,
             websocket_handshake_timeout=args.websocket_connect_timeout,
             application_close_timeout=args.application_close_timeout,
-            action_logger=access_logger
-            if access_log_stream
-            else None,
+            action_logger=access_logger if access_log_stream else None,
             root_path=args.root_path,
             verbosity=args.verbosity,
             proxy_forwarded_address_header=self._get_forwarded_host(args=args),

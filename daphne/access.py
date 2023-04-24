@@ -3,6 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class AccessLogGenerator:
     """
     Object that implements the Daphne "action logger" internal interface in
@@ -13,9 +14,11 @@ class AccessLogGenerator:
         if stream:
             logger.propagate = False
             handler = logging.StreamHandler(stream)
-            formatter = logging.Formatter('%(host)s %(ident)s %(user)s [%(asctime)s] "%{request} %(message)s" '
-                                          '%(status)s %(length)s'
-                                          "%d/%b/%Y:%H:%M:%S")
+            formatter = logging.Formatter(
+                '%(host)s %(ident)s %(user)s [%(asctime)s] "%{request} %(message)s" '
+                "%(status)s %(length)s"
+                "%d/%b/%Y:%H:%M:%S"
+            )
             handler.setFormatter(fmt=formatter)
             logger.addHandler(handler)
         else:
@@ -78,5 +81,5 @@ class AccessLogGenerator:
                 "user": user or "-",
                 "status": status or "-",
                 "length": length or "-",
-            }
+            },
         )
