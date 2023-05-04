@@ -279,13 +279,18 @@ class WebSocketProtocol(WebSocketServerProtocol):
             self.duration() > self.server.websocket_timeout
             and self.server.websocket_timeout >= 0
         ):
-            logger.warning("WebSocket %s took too long and was killed.", self.client_addr)
+            logger.warning(
+                "WebSocket %s took too long and was killed.", self.client_addr
+            )
             self.serverClose()
         # Ping check
         # If we're still connecting, deny the connection
         if self.state == self.STATE_CONNECTING:
             if self.duration() > self.server.websocket_connect_timeout:
-                logger.warning("WebSocket %s connection took too long and was killed.", self.client_addr)
+                logger.warning(
+                    "WebSocket %s connection took too long and was killed.",
+                    self.client_addr,
+                )
                 self.serverReject()
         elif self.state == self.STATE_OPEN:
             if (time.time() - self.last_ping) > self.server.ping_interval:
