@@ -1,5 +1,6 @@
 import datetime
 
+
 class AccessLogGenerator:
     """
     Object that implements the Daphne "action logger" internal interface in
@@ -29,10 +30,14 @@ class AccessLogGenerator:
                 request=message,
             )
 
-    def write_entry(self, host, date, request, status="-", length="-", ident="-", user="-"):
+    def write_entry(
+        self, host, date, request, status="-", length="-", ident="-", user="-"
+    ):
         """
         Writes an NCSA-style entry to the log file (some liberty is taken with
         what the entries are for non-HTTP)
         """
         formatted_date = date.strftime("%d/%b/%Y:%H:%M:%S")
-        self.stream.write(f"{host} {ident} {user} [{formatted_date}] \"{request}\" {status} {length}\n")
+        self.stream.write(
+            f'{host} {ident} {user} [{formatted_date}] "{request}" {status} {length}\n'
+        )
