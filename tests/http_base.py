@@ -17,6 +17,20 @@ class DaphneTestCase(unittest.TestCase):
     to store/retrieve the request/response messages.
     """
 
+    _instance_endpoint_args = {}
+
+    @staticmethod
+    def _get_instance_raw_socket_connection(test_app, *, timeout):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(timeout)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.connect((test_app.host, test_app.port))
+        return s
+
+    @staticmethod
+    def _get_instance_http_connection(test_app, *, timeout):
+        return HTTPConnection(test_app.host, test_app.port, timeout=timeout)
+
     ### Plain HTTP helpers
 
     def run_daphne_http(
@@ -36,13 +50,15 @@ class DaphneTestCase(unittest.TestCase):
         and response messages.
         """
         with DaphneTestingInstance(
-            xff=xff, request_buffer_size=request_buffer_size
+            xff=xff,
+            request_buffer_size=request_buffer_size,
+            **self._instance_endpoint_args,
         ) as test_app:
             # Add the response messages
             test_app.add_send_messages(responses)
             # Send it the request. We have to do this the long way to allow
             # duplicate headers.
-            conn = HTTPConnection(test_app.host, test_app.port, timeout=timeout)
+            conn = self._get_instance_http_connection(test_app, timeout=timeout)
             if params:
                 path += "?" + parse.urlencode(params, doseq=True)
             conn.putrequest(method, path, skip_accept_encoding=True, skip_host=True)
@@ -74,13 +90,10 @@ class DaphneTestCase(unittest.TestCase):
         Returns what Daphne sends back.
         """
         assert isinstance(data, bytes)
-        with DaphneTestingInstance() as test_app:
+        with DaphneTestingInstance(**self._instance_endpoint_args) as test_app:
             if responses is not None:
                 test_app.add_send_messages(responses)
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(timeout)
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.connect((test_app.host, test_app.port))
+            s = self._get_instance_raw_socket_connection(test_app, timeout=timeout)
             s.send(data)
             try:
                 return s.recv(1000000)
