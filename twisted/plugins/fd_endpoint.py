@@ -1,3 +1,4 @@
+import os
 import socket
 
 from twisted.internet import endpoints
@@ -10,8 +11,13 @@ from zope.interface import implementer
 class _FDParser:
     prefix = "fd"
 
-    def _parseServer(self, reactor, fileno, domain=socket.AF_INET):
+    def _parseServer(self, reactor, fileno, domain=None):
         fileno = int(fileno)
+        if domain:
+            domain = getattr(socket, f"AF_{domain}")
+        else:
+            with socket.socket(fileno=os.dup(fileno)) as sock:
+                domain = sock.family
         return endpoints.AdoptedStreamServerEndpoint(reactor, fileno, domain)
 
     def parseStreamServer(self, reactor, *args, **kwargs):
