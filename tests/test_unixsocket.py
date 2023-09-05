@@ -1,13 +1,13 @@
 import os
 import socket
 import weakref
+from http.client import HTTPConnection
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import skipUnless
 
 import test_http_response
 from http_base import DaphneTestCase
-from httpunixsocketconnection import HTTPUnixSocketConnection
 
 __all__ = ["UnixSocketFDDaphneTestCase", "TestInheritedUnixSocket"]
 
@@ -41,8 +41,14 @@ class UnixSocketFDDaphneTestCase(DaphneTestCase):
 
     @classmethod
     def _get_instance_http_connection(cls, test_app, *, timeout):
-        socket_name = cls._get_instance_socket_path(test_app)
-        return HTTPUnixSocketConnection(unix_socket=socket_name, timeout=timeout)
+        def connect():
+            conn.sock = cls._get_instance_raw_socket_connection(
+                test_app, timeout=timeout
+            )
+
+        conn = HTTPConnection("", timeout=timeout)
+        conn.connect = connect
+        return conn
 
 
 @skipUnless(hasattr(socket, "AF_UNIX"), "AF_UNIX support not present.")
