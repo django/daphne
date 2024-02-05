@@ -54,7 +54,7 @@ Daphne supports terminating HTTP/2 connections natively. You'll
 need to do a couple of things to get it working, though. First, you need to
 make sure you install the Twisted ``http2`` and ``tls`` extras::
 
-    pip install -U 'Twisted[tls,http2]'
+    pip install -U "Twisted[tls,http2]"
 
 Next, because all current browsers only support HTTP/2 when using TLS, you will
 need to start Daphne with TLS turned on, which can be done using the Twisted endpoint syntax::
@@ -108,7 +108,7 @@ should start with a slash, but not end with one; for example::
 Python Support
 --------------
 
-Daphne requires Python 3.7 or later.
+Daphne requires Python 3.8 or later.
 
 
 Contributing
