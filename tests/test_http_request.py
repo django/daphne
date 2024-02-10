@@ -310,3 +310,15 @@ class TestHTTPRequest(DaphneTestCase):
             b"GET /?\xc3\xa4\xc3\xb6\xc3\xbc HTTP/1.0\r\n\r\n"
         )
         self.assertTrue(response.startswith(b"HTTP/1.0 400 Bad Request"))
+
+    def test_invalid_header_name(self):
+        """
+        Tests that requests with invalid header names fail.
+        """
+        # Test cases follow those used by h11
+        # https://github.com/python-hyper/h11/blob/a2c68948accadc3876dffcf979d98002e4a4ed27/h11/tests/test_headers.py#L24-L35
+        for header_name in [b"foo bar", b"foo\x00bar", b"foo\xffbar", b"foo\x01bar"]:
+            response = self.run_daphne_raw(
+                f"GET / HTTP/1.0\r\n{header_name}: baz\r\n\r\n".encode("ascii")
+            )
+            self.assertTrue(response.startswith(b"HTTP/1.0 400 Bad Request"))

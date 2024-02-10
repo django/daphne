@@ -1,6 +1,11 @@
 import importlib
+import re
 
 from twisted.web.http_headers import Headers
+
+# Header name regex as per h11.
+# https://github.com/python-hyper/h11/blob/a2c68948accadc3876dffcf979d98002e4a4ed27/h11/_abnf.py#L10-L21
+HEADER_NAME_RE = re.compile(rb"[-!#$%&'*+.^_`|~0-9a-zA-Z]+")
 
 
 def import_by_path(path):
