@@ -1,8 +1,13 @@
-4.1.0 (unreleased)
+4.1.0 (2024-02-10)
 ------------------
 
-* Added support for Python 3.12
+* Added support for Python 3.12.
 
+* Dropped support for EOL Python 3.7.
+
+* Handled root path for websocket scopes.
+
+* Validate HTTP header names as per RFC 9110.
 
 4.0.0 (2022-10-07)
 ------------------
