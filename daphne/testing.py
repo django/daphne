@@ -18,11 +18,21 @@ class BaseDaphneTestingInstance:
     startup_timeout = 2
 
     def __init__(
-        self, xff=False, http_timeout=None, request_buffer_size=None, *, application
+        self,
+        xff=False,
+        http_timeout=None,
+        request_buffer_size=None,
+        *,
+        application,
+        host="127.0.0.1",
+        unix_socket=None,
+        file_descriptor=None,
     ):
         self.xff = xff
         self.http_timeout = http_timeout
-        self.host = "127.0.0.1"
+        self.host = host
+        self.unix_socket = unix_socket
+        self.file_descriptor = file_descriptor
         self.request_buffer_size = request_buffer_size
         self.application = application
 
@@ -44,6 +54,8 @@ class BaseDaphneTestingInstance:
         # Start up process
         self.process = DaphneProcess(
             host=self.host,
+            unix_socket=self.unix_socket,
+            file_descriptor=self.file_descriptor,
             get_application=self.get_application,
             kwargs=kwargs,
             setup=self.process_setup,
@@ -126,9 +138,20 @@ class DaphneProcess(multiprocessing.Process):
     port it ends up listening on back to the parent process.
     """
 
-    def __init__(self, host, get_application, kwargs=None, setup=None, teardown=None):
+    def __init__(
+        self,
+        get_application,
+        host=None,
+        file_descriptor=None,
+        unix_socket=None,
+        kwargs=None,
+        setup=None,
+        teardown=None,
+    ):
         super().__init__()
         self.host = host
+        self.file_descriptor = file_descriptor
+        self.unix_socket = unix_socket
         self.get_application = get_application
         self.kwargs = kwargs or {}
         self.setup = setup
@@ -153,12 +176,17 @@ class DaphneProcess(multiprocessing.Process):
 
         try:
             # Create the server class
-            endpoints = build_endpoint_description_strings(host=self.host, port=0)
+            endpoints = build_endpoint_description_strings(
+                host=self.host,
+                port=0 if self.host else None,
+                unix_socket=self.unix_socket,
+                file_descriptor=self.file_descriptor,
+            )
             self.server = Server(
                 application=application,
                 endpoints=endpoints,
                 signal_handlers=False,
-                **self.kwargs
+                **self.kwargs,
             )
             # Set up a poller to look for the port
             reactor.callLater(0.1, self.resolve_port)
@@ -177,11 +205,18 @@ class DaphneProcess(multiprocessing.Process):
     def resolve_port(self):
         from twisted.internet import reactor
 
-        if self.server.listening_addresses:
-            self.port.value = self.server.listening_addresses[0][1]
-            self.ready.set()
+        if not all(listener.called for listener in self.server.listeners):
+            pass
+        elif self.host:
+            if self.server.listening_addresses:
+                self.port.value = self.server.listening_addresses[0][1]
+                self.ready.set()
+                return
         else:
-            reactor.callLater(0.1, self.resolve_port)
+            self.port.value = -1
+            self.ready.set()
+            return
+        reactor.callLater(0.1, self.resolve_port)
 
 
 class TestApplication:
