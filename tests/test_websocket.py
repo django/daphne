@@ -139,6 +139,60 @@ class TestWebsocket(DaphneTestCase):
             self.assert_valid_websocket_scope(scope, subprotocols=subprotocols)
             self.assert_valid_websocket_connect_message(messages[0])
 
+    def test_accept_permessage_deflate_extension(self):
+        """
+        Tests that permessage-deflate extension is successfuly accepted
+        by underlying `autobahn` package.
+        """
+
+        headers = [
+            (
+                b"Sec-WebSocket-Extensions",
+                b"permessage-deflate; client_max_window_bits",
+            ),
+        ]
+
+        with DaphneTestingInstance() as test_app:
+            test_app.add_send_messages(
+                [
+                    {
+                        "type": "websocket.accept",
+                    }
+                ]
+            )
+
+            sock, subprotocol = self.websocket_handshake(
+                test_app,
+                headers=headers,
+            )
+            # Validate the scope and messages we got
+            scope, messages = test_app.get_received()
+            self.assert_valid_websocket_connect_message(messages[0])
+
+    def test_accept_custom_extension(self):
+        """
+        Tests that custom headers can be accpeted during handshake.
+        """
+        with DaphneTestingInstance() as test_app:
+            test_app.add_send_messages(
+                [
+                    {
+                        "type": "websocket.accept",
+                        "headers": [(b"Sec-WebSocket-Extensions", b"custom-extension")],
+                    }
+                ]
+            )
+
+            sock, subprotocol = self.websocket_handshake(
+                test_app,
+                headers=[
+                    (b"Sec-WebSocket-Extensions", b"custom-extension"),
+                ],
+            )
+            # Validate the scope and messages we got
+            scope, messages = test_app.get_received()
+            self.assert_valid_websocket_connect_message(messages[0])
+
     def test_xff(self):
         """
         Tests that X-Forwarded-For headers get parsed right
