@@ -115,9 +115,9 @@ class WebSocketProtocol(WebSocketServerProtocol):
             "connecting",
             {
                 "path": self.request.path,
-                "client": "%s:%s" % tuple(self.client_addr)
-                if self.client_addr
-                else None,
+                "client": (
+                    "%s:%s" % tuple(self.client_addr) if self.client_addr else None
+                ),
             },
         )
 
@@ -138,9 +138,9 @@ class WebSocketProtocol(WebSocketServerProtocol):
             "connected",
             {
                 "path": self.request.path,
-                "client": "%s:%s" % tuple(self.client_addr)
-                if self.client_addr
-                else None,
+                "client": (
+                    "%s:%s" % tuple(self.client_addr) if self.client_addr else None
+                ),
             },
         )
 
@@ -175,9 +175,9 @@ class WebSocketProtocol(WebSocketServerProtocol):
             "disconnected",
             {
                 "path": self.request.path,
-                "client": "%s:%s" % tuple(self.client_addr)
-                if self.client_addr
-                else None,
+                "client": (
+                    "%s:%s" % tuple(self.client_addr) if self.client_addr else None
+                ),
             },
         )
 
@@ -242,9 +242,9 @@ class WebSocketProtocol(WebSocketServerProtocol):
             "rejected",
             {
                 "path": self.request.path,
-                "client": "%s:%s" % tuple(self.client_addr)
-                if self.client_addr
-                else None,
+                "client": (
+                    "%s:%s" % tuple(self.client_addr) if self.client_addr else None
+                ),
             },
         )
 

@@ -270,16 +270,16 @@ class CommandLineInterface:
             websocket_connect_timeout=args.websocket_connect_timeout,
             websocket_handshake_timeout=args.websocket_connect_timeout,
             application_close_timeout=args.application_close_timeout,
-            action_logger=AccessLogGenerator(access_log_stream)
-            if access_log_stream
-            else None,
+            action_logger=(
+                AccessLogGenerator(access_log_stream) if access_log_stream else None
+            ),
             root_path=args.root_path,
             verbosity=args.verbosity,
             proxy_forwarded_address_header=self._get_forwarded_host(args=args),
             proxy_forwarded_port_header=self._get_forwarded_port(args=args),
-            proxy_forwarded_proto_header="X-Forwarded-Proto"
-            if args.proxy_headers
-            else None,
+            proxy_forwarded_proto_header=(
+                "X-Forwarded-Proto" if args.proxy_headers else None
+            ),
             server_name=args.server_name,
         )
         self.server.run()
