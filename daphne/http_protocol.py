@@ -286,9 +286,11 @@ class WebRequest(http.Request):
                             "path": uri,
                             "status": self.code,
                             "method": self.method.decode("ascii", "replace"),
-                            "client": "%s:%s" % tuple(self.client_addr)
-                            if self.client_addr
-                            else None,
+                            "client": (
+                                "%s:%s" % tuple(self.client_addr)
+                                if self.client_addr
+                                else None
+                            ),
                             "time_taken": self.duration(),
                             "size": self.sentLength,
                         },
