@@ -101,14 +101,13 @@ class Command(RunserverCommand):
             action="store",
         )
 
-
     def _get_forwarded_host(self, options):
         """
         Return the default host header from which the remote hostname/ip
         will be extracted.
         """
-        proxy_headers = options.get('proxy_headers', None)
-        proxy_headers_host = options.get('proxy_headers_host', None)
+        proxy_headers = options.get("proxy_headers", None)
+        proxy_headers_host = options.get("proxy_headers_host", None)
         if (proxy_headers is not None) and (proxy_headers_host is not None):
             return proxy_headers_host
         elif proxy_headers is not None:
@@ -121,8 +120,8 @@ class Command(RunserverCommand):
         Return the default host header from which the remote hostname/ip
         will be extracted.
         """
-        proxy_headers = options.get('proxy_headers', None)
-        proxy_headers_port = options.get('proxy_headers_port', None)
+        proxy_headers = options.get("proxy_headers", None)
+        proxy_headers_port = options.get("proxy_headers_port", None)
         if (proxy_headers is not None) and (proxy_headers_port is not None):
             return proxy_headers_port
         elif proxy_headers is not None:
@@ -134,7 +133,7 @@ class Command(RunserverCommand):
         """
         Return the proper value for forwarded_proto.
         """
-        proxy_headers = options.get('proxy_headers', None)
+        proxy_headers = options.get("proxy_headers", None)
         if proxy_headers is not None:
             return "X-Forwarded-Proto"
         else:
