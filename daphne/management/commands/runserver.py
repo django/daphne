@@ -73,6 +73,72 @@ class Command(RunserverCommand):
                 "seconds (default: 5)"
             ),
         )
+        parser.add_argument(
+            "--proxy-headers",
+            dest="proxy_headers",
+            help="Enable parsing and using of X-Forwarded-For and X-Forwarded-Port headers and using that as the "
+            "client address",
+            default=False,
+            action="store_true",
+        )
+        parser.add_argument(
+            "--proxy-headers-host",
+            dest="proxy_headers_host",
+            help="Specify which header will be used for getting the host "
+            "part. Can be omitted, requires --proxy-headers to be specified "
+            'when passed. "X-Real-IP" (when passed by your webserver) is a '
+            "good candidate for this.",
+            default=False,
+            action="store",
+        )
+        parser.add_argument(
+            "--proxy-headers-port",
+            dest="proxy_headers_port",
+            help="Specify which header will be used for getting the port "
+            "part. Can be omitted, requires --proxy-headers to be specified "
+            "when passed.",
+            default=False,
+            action="store",
+        )
+
+
+    def _get_forwarded_host(self, options):
+        """
+        Return the default host header from which the remote hostname/ip
+        will be extracted.
+        """
+        proxy_headers = options.get('proxy_headers', None)
+        proxy_headers_host = options.get('proxy_headers_host', None)
+        if (proxy_headers is not None) and (proxy_headers_host is not None):
+            return proxy_headers_host
+        elif proxy_headers is not None:
+            return "X-Forwarded-For"
+        else:
+            return None
+
+    def _get_forwarded_port(self, options):
+        """
+        Return the default host header from which the remote hostname/ip
+        will be extracted.
+        """
+        proxy_headers = options.get('proxy_headers', None)
+        proxy_headers_port = options.get('proxy_headers_port', None)
+        if (proxy_headers is not None) and (proxy_headers_port is not None):
+            return proxy_headers_port
+        elif proxy_headers is not None:
+            return "X-Forwarded-Port"
+        else:
+            return None
+
+    def _get_forwarded_proto(self, options):
+        """
+        Return the proper value for forwarded_proto.
+        """
+        proxy_headers = options.get('proxy_headers', None)
+        if proxy_headers is not None:
+            return "X-Forwarded-Proto"
+        else:
+            return None
 
     def handle(self, *args, **options):
         self.http_timeout = options.get("http_timeout", None)
@@ -132,6 +198,9 @@ class Command(RunserverCommand):
                 http_timeout=self.http_timeout,
                 root_path=getattr(settings, "FORCE_SCRIPT_NAME", "") or "",
                 websocket_handshake_timeout=self.websocket_handshake_timeout,
+                proxy_forwarded_address_header=self._get_forwarded_host(options),
+                proxy_forwarded_port_header=self._get_forwarded_port(options),
+                proxy_forwarded_proto_header=self._get_forwarded_proto(options),
             ).run()
             logger.debug("Daphne exited")
         except KeyboardInterrupt:
