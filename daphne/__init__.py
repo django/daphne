@@ -1,6 +1,6 @@
 import sys
 
-__version__ = "4.1.1"
+__version__ = "4.1.2"
 
 
 # Windows on Python 3.8+ uses ProactorEventLoop, which is not compatible with
