@@ -68,3 +68,4 @@ class AccessLogGenerator:
                 length or "-",
             )
         )
+        self.stream.flush()

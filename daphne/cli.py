@@ -224,7 +224,7 @@ class CommandLineInterface:
             if args.access_log == "-":
                 access_log_stream = sys.stdout
             else:
-                access_log_stream = open(args.access_log, "a", 1)
+                access_log_stream = open(args.access_log, "a")
         elif args.verbosity >= 1:
             access_log_stream = sys.stdout
 
