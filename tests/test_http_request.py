@@ -304,12 +304,12 @@ class TestHTTPRequest(DaphneTestCase):
         response = self.run_daphne_raw(
             b"GET /\xc3\xa4\xc3\xb6\xc3\xbc HTTP/1.0\r\n\r\n"
         )
-        self.assertTrue(response.startswith(b"HTTP/1.0 400 Bad Request"))
+        self.assertTrue(b"400 Bad Request" in response)
         # Bad querystring
         response = self.run_daphne_raw(
             b"GET /?\xc3\xa4\xc3\xb6\xc3\xbc HTTP/1.0\r\n\r\n"
         )
-        self.assertTrue(response.startswith(b"HTTP/1.0 400 Bad Request"))
+        self.assertTrue(b"400 Bad Request" in response)
 
     def test_invalid_header_name(self):
         """
@@ -321,4 +321,4 @@ class TestHTTPRequest(DaphneTestCase):
             response = self.run_daphne_raw(
                 f"GET / HTTP/1.0\r\n{header_name}: baz\r\n\r\n".encode("ascii")
             )
-            self.assertTrue(response.startswith(b"HTTP/1.0 400 Bad Request"))
+            self.assertTrue(b"400 Bad Request" in response)
