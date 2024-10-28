@@ -108,7 +108,7 @@ should start with a slash, but not end with one; for example::
 Python Support
 --------------
 
-Daphne requires Python 3.8 or later.
+Daphne requires Python 3.9 or later.
 
 
 Contributing
