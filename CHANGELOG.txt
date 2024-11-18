@@ -1,6 +1,8 @@
 4.2.0 (to be released)
 ------------------
 
+* Added support for Python 3.13.
+
 * Drop support for EOL Python 3.8.
 
 * Removed unused pytest-runner
