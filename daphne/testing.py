@@ -158,7 +158,7 @@ class DaphneProcess(multiprocessing.Process):
                 application=application,
                 endpoints=endpoints,
                 signal_handlers=False,
-                **self.kwargs
+                **self.kwargs,
             )
             # Set up a poller to look for the port
             reactor.callLater(0.1, self.resolve_port)
