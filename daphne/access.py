@@ -14,14 +14,13 @@ class AccessLogGenerator:
             logger.propagate = False
             handler = logging.StreamHandler(stream)
             formatter = logging.Formatter(
-                '%(host)s %(ident)s %(user)s [%(asctime)s] "%{request} %(message)s" '
-                "%(status)s %(length)s"
+                '%(host)s %(ident)s %(user)s [%(asctime)s] "%(message)s" '
+                "%(status)s %(length)s",
                 "%d/%b/%Y:%H:%M:%S"
             )
             handler.setFormatter(fmt=formatter)
             logger.addHandler(handler)
-        else:
-            logger.addHandler(logging.NullHandler)
+
 
     def __call__(self, protocol, action, details):
         """
@@ -31,7 +30,7 @@ class AccessLogGenerator:
         if protocol == "http" and action == "complete":
             self.write_entry(
                 host=details["client"],
-                request="%(method)s",
+                request="%(method)s" % details,
                 details="%(path)s" % details,
                 status=details["status"],
                 length=details["size"],
@@ -66,8 +65,9 @@ class AccessLogGenerator:
         self, host, request, details, status=None, length=None, ident=None, user=None
     ):
         """
-        Writes an NCSA-style entry to the log file (some liberty is taken with
-        what the entries are for non-HTTP)
+        Writes an access log.  If a file is specified, an NCSA-style entry to the log file 
+        (some liberty is taken with what the entries are for non-HTTP).  The format can be 
+        overriden with logging configuration for 'daphne.access'
         """
 
         logger.info(
