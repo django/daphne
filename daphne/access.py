@@ -16,11 +16,10 @@ class AccessLogGenerator:
             formatter = logging.Formatter(
                 '%(host)s %(ident)s %(user)s [%(asctime)s] "%(message)s" '
                 "%(status)s %(length)s",
-                "%d/%b/%Y:%H:%M:%S"
+                "%d/%b/%Y:%H:%M:%S",
             )
             handler.setFormatter(fmt=formatter)
             logger.addHandler(handler)
-
 
     def __call__(self, protocol, action, details):
         """
@@ -65,8 +64,8 @@ class AccessLogGenerator:
         self, host, request, details, status=None, length=None, ident=None, user=None
     ):
         """
-        Writes an access log.  If a file is specified, an NCSA-style entry to the log file 
-        (some liberty is taken with what the entries are for non-HTTP).  The format can be 
+        Writes an access log.  If a file is specified, an NCSA-style entry to the log file
+        (some liberty is taken with what the entries are for non-HTTP).  The format can be
         overriden with logging configuration for 'daphne.access'
         """
 
