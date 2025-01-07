@@ -19,6 +19,5 @@ repos:
       - id: flake8
         additional_dependencies:
           - flake8-bugbear
-          - Flake8-pyproject
 ci:
   autoupdate_schedule: quarterly
