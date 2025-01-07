@@ -1,37 +1,16 @@
-# Intellij
 .idea/
 *.egg-info
-
-# Python binary files
 *.pyc
 __pycache__
-
-# Wheel builds
 dist/
 build/
-.eggs
-
-# Tox
 /.tox
-
-# Hypothesis
 .hypothesis
-
-# Cache
 .cache
-.pytest_cache/
-
-# Tests
+.eggs
 test_layer*
 test_consumer*
-
 .python-version
-
-# Vscode
+.pytest_cache/
 .vscode
-
-# pytest-cov code coverage
 .coverage
-.coverage.**
-
-.codegpt
