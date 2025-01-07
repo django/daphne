@@ -33,3 +33,5 @@ test_consumer*
 # pytest-cov code coverage
 .coverage
 .coverage.**
+
+.codegpt

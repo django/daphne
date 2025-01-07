@@ -50,24 +50,16 @@ issues = "https://github.com/django/daphne/issues"
 [project.scripts]
 daphne = "daphne.cli:CommandLineInterface.entrypoint"
 
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
 [tool.setuptools]
 packages = ["daphne"]
 
 [tool.setuptools.dynamic]
 version = { attr = "daphne.__version__" }
 readme = { file = "README.rst", content-type = "text/x-rst" }
-
-[tool.flake8]
-exclude = [
-    "venv/*",
-    "tox/*",
-    "docs/*",
-    "testproject/*",
-    "js_client/*",
-    ".eggs/*",
-]
-extend-ignore = ["E123", "E128", "E266", "E402", "W503", "E731", "W601", "B036"]
-max-line-length = 120
 
 [tool.isort]
 profile = "black"
@@ -87,10 +79,3 @@ skip_covered = "true"
 
 [tool.coverage.html]
 directory = "reports/coverage_html_report"
-
-[tool.tox]
-envlist = ["py39", "py310", "py311", "py312", "py313"]
-
-[tool.tox.testenv]
-extras = ["tests"]
-commands = ["pytest -v {posargs}"]
