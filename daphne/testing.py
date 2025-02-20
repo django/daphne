@@ -126,7 +126,9 @@ class DaphneProcess(multiprocessing.Process):
     port it ends up listening on back to the parent process.
     """
 
-    def __init__(self, host, get_application, kwargs=None, setup=None, teardown=None, port=None):
+    def __init__(
+        self, host, get_application, kwargs=None, setup=None, teardown=None, port=None
+    ):
         super().__init__()
         self.host = host
         self.get_application = get_application
@@ -153,7 +155,9 @@ class DaphneProcess(multiprocessing.Process):
 
         try:
             # Create the server class
-            endpoints = build_endpoint_description_strings(host=self.host, port=self.port.value)
+            endpoints = build_endpoint_description_strings(
+                host=self.host, port=self.port.value
+            )
             self.server = Server(
                 application=application,
                 endpoints=endpoints,
