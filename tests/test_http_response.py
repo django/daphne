@@ -1,5 +1,3 @@
-# coding: utf8
-
 import http_strategies
 from http_base import DaphneTestCase
 from hypothesis import given, settings
@@ -15,10 +13,11 @@ class TestHTTPResponse(DaphneTestCase):
         Lowercases and sorts headers, and strips transfer-encoding ones.
         """
         return sorted(
-            [
+            [(b"server", b"daphne")]
+            + [
                 (name.lower(), value.strip())
                 for name, value in headers
-                if name.lower() != b"transfer-encoding"
+                if name.lower() not in (b"server", b"transfer-encoding")
             ]
         )
 

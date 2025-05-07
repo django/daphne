@@ -1,5 +1,3 @@
-# coding: utf8
-
 import collections
 import time
 from urllib import parse
@@ -194,6 +192,30 @@ class TestWebsocket(DaphneTestCase):
         self.assertEqual(scope["path"], "/foo/bar")
         self.assertEqual(scope["raw_path"], b"/foo%2Fbar")
 
+    @given(daphne_path=http_strategies.http_path())
+    @settings(max_examples=5, deadline=2000)
+    def test_root_path(self, *, daphne_path):
+        """
+        Tests root_path handling.
+        """
+        headers = [("Daphne-Root-Path", parse.quote(daphne_path))]
+        with DaphneTestingInstance() as test_app:
+            test_app.add_send_messages([{"type": "websocket.accept"}])
+            self.websocket_handshake(
+                test_app,
+                path="/",
+                headers=headers,
+            )
+            # Validate the scope and messages we got
+            scope, _ = test_app.get_received()
+
+        # Daphne-Root-Path is not included in the returned 'headers' section.
+        self.assertNotIn(
+            "daphne-root-path", (header[0].lower() for header in scope["headers"])
+        )
+        # And what we're looking for, root_path being set.
+        self.assertEqual(scope["root_path"], daphne_path)
+
     def test_text_frames(self):
         """
         Tests we can send and receive text frames.
@@ -290,7 +312,7 @@ async def cancelling_application(scope, receive, send):
     from twisted.internet import reactor
 
     # Stop the server after a short delay so that the teardown is run.
-    reactor.callLater(2, lambda: reactor.stop())
+    reactor.callLater(2, reactor.stop)
     await send({"type": "websocket.accept"})
     raise asyncio.CancelledError()
 

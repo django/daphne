@@ -1,8 +1,7 @@
-# coding: utf8
-
 import logging
+import os
 from argparse import ArgumentError
-from unittest import TestCase
+from unittest import TestCase, skipUnless
 
 from daphne.cli import CommandLineInterface
 from daphne.endpoints import build_endpoint_description_strings as build
@@ -242,3 +241,27 @@ class TestCLIInterface(TestCase):
             exc.exception.message,
             "--proxy-headers has to be passed for this parameter.",
         )
+
+    def test_custom_servername(self):
+        """
+        Passing `--server-name` will set the default server header
+        from 'daphne' to the passed one.
+        """
+        self.assertCLI([], {"server_name": "daphne"})
+        self.assertCLI(["--server-name", ""], {"server_name": ""})
+        self.assertCLI(["--server-name", "python"], {"server_name": "python"})
+
+    def test_no_servername(self):
+        """
+        Passing `--no-server-name` will set server name to '' (empty string)
+        """
+        self.assertCLI(["--no-server-name"], {"server_name": ""})
+
+
+@skipUnless(os.getenv("ASGI_THREADS"), "ASGI_THREADS environment variable not set.")
+class TestASGIThreads(TestCase):
+    def test_default_executor(self):
+        from daphne.server import twisted_loop
+
+        executor = twisted_loop._default_executor
+        self.assertEqual(executor._max_workers, int(os.getenv("ASGI_THREADS")))

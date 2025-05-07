@@ -9,7 +9,7 @@ from twisted.protocols.policies import ProtocolWrapper
 from twisted.web import http
 from zope.interface import implementer
 
-from .utils import parse_x_forwarded_for
+from .utils import HEADER_NAME_RE, parse_x_forwarded_for
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +50,8 @@ class WebRequest(http.Request):
     )  # Shorten it a bit, bytes wise
 
     def __init__(self, *args, **kwargs):
+        self.client_addr = None
+        self.server_addr = None
         try:
             http.Request.__init__(self, *args, **kwargs)
             # Easy server link
@@ -67,6 +69,13 @@ class WebRequest(http.Request):
     def process(self):
         try:
             self.request_start = time.time()
+
+            # Validate header names.
+            for name, _ in self.requestHeaders.getAllRawHeaders():
+                if not HEADER_NAME_RE.fullmatch(name):
+                    self.basic_error(400, b"Bad Request", "Invalid header name")
+                    return
+
             # Get upgrade header
             upgrade_header = None
             if self.requestHeaders.hasHeader(b"Upgrade"):
@@ -77,9 +86,6 @@ class WebRequest(http.Request):
                 # requires unicode string.
                 self.client_addr = [str(self.client.host), self.client.port]
                 self.server_addr = [str(self.host.host), self.host.port]
-            else:
-                self.client_addr = None
-                self.server_addr = None
 
             self.client_scheme = "https" if self.isSecure() else "http"
 
@@ -250,8 +256,8 @@ class WebRequest(http.Request):
             # Write headers
             for header, value in message.get("headers", {}):
                 self.responseHeaders.addRawHeader(header, value)
-            if self.server.server_name and self.server.server_name.lower() != "daphne":
-                self.setHeader(b"server", self.server.server_name.encode("utf-8"))
+            if self.server.server_name and not self.responseHeaders.hasHeader("server"):
+                self.setHeader(b"server", self.server.server_name.encode())
             logger.debug(
                 "HTTP %s response started for %s", message["status"], self.client_addr
             )
@@ -280,9 +286,11 @@ class WebRequest(http.Request):
                             "path": uri,
                             "status": self.code,
                             "method": self.method.decode("ascii", "replace"),
-                            "client": "%s:%s" % tuple(self.client_addr)
-                            if self.client_addr
-                            else None,
+                            "client": (
+                                "%s:%s" % tuple(self.client_addr)
+                                if self.client_addr
+                                else None
+                            ),
                             "time_taken": self.duration(),
                             "size": self.sentLength,
                         },

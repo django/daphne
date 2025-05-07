@@ -1,10 +1,18 @@
 # This has to be done first as Twisted is import-order-sensitive with reactors
 import asyncio  # isort:skip
+import os  # isort:skip
 import sys  # isort:skip
 import warnings  # isort:skip
+from concurrent.futures import ThreadPoolExecutor  # isort:skip
 from twisted.internet import asyncioreactor  # isort:skip
 
+
 twisted_loop = asyncio.new_event_loop()
+if "ASGI_THREADS" in os.environ:
+    twisted_loop.set_default_executor(
+        ThreadPoolExecutor(max_workers=int(os.environ["ASGI_THREADS"]))
+    )
+
 current_reactor = sys.modules.get("twisted.internet.reactor", None)
 if current_reactor is not None:
     if not isinstance(current_reactor, asyncioreactor.AsyncioSelectorReactor):
@@ -13,6 +21,7 @@ if current_reactor is not None:
             + "you can fix this warning by importing daphne.server early in your codebase or "
             + "finding the package that imports Twisted and importing it later on.",
             UserWarning,
+            stacklevel=2,
         )
         del sys.modules["twisted.internet.reactor"]
         asyncioreactor.install(twisted_loop)
@@ -22,6 +31,7 @@ else:
 import logging
 import time
 from concurrent.futures import CancelledError
+from functools import partial
 
 from twisted.internet import defer, reactor
 from twisted.internet.endpoints import serverFromString
@@ -34,7 +44,7 @@ from .ws_protocol import WebSocketFactory
 logger = logging.getLogger(__name__)
 
 
-class Server(object):
+class Server:
     def __init__(
         self,
         application,
@@ -55,9 +65,7 @@ class Server(object):
         websocket_handshake_timeout=5,
         application_close_timeout=10,
         ready_callable=None,
-        server_name="Daphne",
-        # Deprecated and does not work, remove in version 2.2
-        ws_protocols=None,
+        server_name="daphne",
     ):
         self.application = application
         self.endpoints = endpoints or []
@@ -203,7 +211,7 @@ class Server(object):
         application_instance = self.application(
             scope=scope,
             receive=input_queue.get,
-            send=lambda message: self.handle_reply(protocol, message),
+            send=partial(self.handle_reply, protocol),
         )
         # Run it, and stash the future for later checking
         if protocol not in self.connections:

@@ -16,7 +16,7 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
 
 
-class CommandLineInterface(object):
+class CommandLineInterface:
     """
     Acts as the main CLI entry point for running the server.
     """
@@ -91,6 +91,11 @@ class CommandLineInterface(object):
             default=None,
         )
         self.parser.add_argument(
+            "--log-fmt",
+            help="Log format to use",
+            default="%(asctime)-15s %(levelname)-8s %(message)s",
+        )
+        self.parser.add_argument(
             "--ping-interval",
             type=int,
             help="The number of seconds a WebSocket must be idle before a keepalive ping is sent",
@@ -107,13 +112,6 @@ class CommandLineInterface(object):
             type=int,
             help="The number of seconds an ASGI application has to exit after client disconnect before it is killed",
             default=10,
-        )
-        self.parser.add_argument(
-            "--ws-protocol",
-            nargs="*",
-            dest="ws_protocols",
-            help="The WebSocket protocols you wish to support",
-            default=None,
         )
         self.parser.add_argument(
             "--root-path",
@@ -157,7 +155,10 @@ class CommandLineInterface(object):
             "--server-name",
             dest="server_name",
             help="specify which value should be passed to response header Server attribute",
-            default="Daphne",
+            default="daphne",
+        )
+        self.parser.add_argument(
+            "--no-server-name", dest="server_name", action="store_const", const=""
         )
 
         self.server = None
@@ -221,7 +222,7 @@ class CommandLineInterface(object):
                 2: logging.DEBUG,
                 3: logging.DEBUG,  # Also turns on asyncio debug
             }[args.verbosity],
-            format="%(asctime)-15s %(levelname)-8s %(message)s",
+            format=args.log_fmt,
         )
         # If verbosity is 1 or greater, or they told us explicitly, set up access log
         access_log_stream = None
@@ -264,7 +265,7 @@ class CommandLineInterface(object):
         )
         endpoints = sorted(args.socket_strings + endpoints)
         # Start the server
-        logger.info("Starting server at %s" % (", ".join(endpoints),))
+        logger.info("Starting server at {}".format(", ".join(endpoints)))
         self.server = self.server_class(
             application=application,
             endpoints=endpoints,
@@ -275,17 +276,16 @@ class CommandLineInterface(object):
             websocket_connect_timeout=args.websocket_connect_timeout,
             websocket_handshake_timeout=args.websocket_connect_timeout,
             application_close_timeout=args.application_close_timeout,
-            action_logger=AccessLogGenerator(access_log_stream)
-            if access_log_stream
-            else None,
-            ws_protocols=args.ws_protocols,
+            action_logger=(
+                AccessLogGenerator(access_log_stream) if access_log_stream else None
+            ),
             root_path=args.root_path,
             verbosity=args.verbosity,
             proxy_forwarded_address_header=self._get_forwarded_host(args=args),
             proxy_forwarded_port_header=self._get_forwarded_port(args=args),
-            proxy_forwarded_proto_header="X-Forwarded-Proto"
-            if args.proxy_headers
-            else None,
+            proxy_forwarded_proto_header=(
+                "X-Forwarded-Proto" if args.proxy_headers else None
+            ),
             server_name=args.server_name,
         )
         self.server.run()
