@@ -1,2 +1,3 @@
 include LICENSE
+include CHANGELOG.txt
 recursive-include tests *.py
