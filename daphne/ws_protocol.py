@@ -31,17 +31,21 @@ class WebSocketProtocol(WebSocketServerProtocol):
         self.server.protocol_connected(self)
         self.request = request
         self.protocol_to_accept = None
+        self.root_path = self.server.root_path
         self.socket_opened = time.time()
         self.last_ping = time.time()
         try:
-            # Sanitize and decode headers
+            # Sanitize and decode headers, potentially extracting root path
             self.clean_headers = []
             for name, value in request.headers.items():
                 name = name.encode("ascii")
                 # Prevent CVE-2015-0219
                 if b"_" in name:
                     continue
-                self.clean_headers.append((name.lower(), value.encode("latin1")))
+                if name.lower() == b"daphne-root-path":
+                    self.root_path = unquote(value)
+                else:
+                    self.clean_headers.append((name.lower(), value.encode("latin1")))
             # Get client address if possible
             peer = self.transport.getPeer()
             host = self.transport.getHost()
@@ -76,6 +80,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
                     "type": "websocket",
                     "path": unquote(self.path.decode("ascii")),
                     "raw_path": self.path,
+                    "root_path": self.root_path,
                     "headers": self.clean_headers,
                     "query_string": self._raw_query_string,  # Passed by HTTP protocol
                     "client": self.client_addr,
@@ -110,9 +115,9 @@ class WebSocketProtocol(WebSocketServerProtocol):
             "connecting",
             {
                 "path": self.request.path,
-                "client": "%s:%s" % tuple(self.client_addr)
-                if self.client_addr
-                else None,
+                "client": (
+                    "%s:%s" % tuple(self.client_addr) if self.client_addr else None
+                ),
             },
         )
 
@@ -133,9 +138,9 @@ class WebSocketProtocol(WebSocketServerProtocol):
             "connected",
             {
                 "path": self.request.path,
-                "client": "%s:%s" % tuple(self.client_addr)
-                if self.client_addr
-                else None,
+                "client": (
+                    "%s:%s" % tuple(self.client_addr) if self.client_addr else None
+                ),
             },
         )
 
@@ -170,9 +175,9 @@ class WebSocketProtocol(WebSocketServerProtocol):
             "disconnected",
             {
                 "path": self.request.path,
-                "client": "%s:%s" % tuple(self.client_addr)
-                if self.client_addr
-                else None,
+                "client": (
+                    "%s:%s" % tuple(self.client_addr) if self.client_addr else None
+                ),
             },
         )
 
@@ -237,9 +242,9 @@ class WebSocketProtocol(WebSocketServerProtocol):
             "rejected",
             {
                 "path": self.request.path,
-                "client": "%s:%s" % tuple(self.client_addr)
-                if self.client_addr
-                else None,
+                "client": (
+                    "%s:%s" % tuple(self.client_addr) if self.client_addr else None
+                ),
             },
         )
 

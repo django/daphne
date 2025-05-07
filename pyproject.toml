@@ -1,0 +1,81 @@
+[project]
+name = "daphne"
+dynamic = ["version"]
+description = "Django ASGI (HTTP/WebSocket) server"
+requires-python = ">=3.9"
+authors = [
+    { name = "Django Software Foundation", email = "foundation@djangoproject.com" },
+]
+
+license = { text = "BSD" }
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP",
+]
+
+dependencies = ["asgiref>=3.5.2,<4", "autobahn>=22.4.2", "twisted[tls]>=22.4"]
+
+[project.optional-dependencies]
+tests = [
+    "django",
+    "hypothesis",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "black",
+    "tox",
+    "flake8",
+    "flake8-bugbear",
+    "mypy",
+]
+
+[project.urls]
+homepage = "https://github.com/django/daphne"
+documentation = "https://channels.readthedocs.io"
+repository = "https://github.com/django/daphne.git"
+changelog = "https://github.com/django/daphne/blob/main/CHANGELOG.txt"
+issues = "https://github.com/django/daphne/issues"
+
+[project.scripts]
+daphne = "daphne.cli:CommandLineInterface.entrypoint"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["daphne"]
+
+[tool.setuptools.dynamic]
+version = { attr = "daphne.__version__" }
+readme = { file = "README.rst", content-type = "text/x-rst" }
+
+[tool.isort]
+profile = "black"
+
+[tool.pytest]
+testpaths = ["tests"]
+asyncio_mode = "strict"
+filterwarnings = ["ignore::pytest.PytestDeprecationWarning"]
+
+[tool.coverage.run]
+omit = ["tests/*"]
+concurrency = ["multiprocessing"]
+
+[tool.coverage.report]
+show_missing = "true"
+skip_covered = "true"
+
+[tool.coverage.html]
+directory = "reports/coverage_html_report"

@@ -114,13 +114,6 @@ class CommandLineInterface:
             default=10,
         )
         self.parser.add_argument(
-            "--ws-protocol",
-            nargs="*",
-            dest="ws_protocols",
-            help="The WebSocket protocols you wish to support",
-            default=None,
-        )
-        self.parser.add_argument(
             "--root-path",
             dest="root_path",
             help="The setting for the ASGI root_path variable",
@@ -277,17 +270,16 @@ class CommandLineInterface:
             websocket_connect_timeout=args.websocket_connect_timeout,
             websocket_handshake_timeout=args.websocket_connect_timeout,
             application_close_timeout=args.application_close_timeout,
-            action_logger=AccessLogGenerator(access_log_stream)
-            if access_log_stream
-            else None,
-            ws_protocols=args.ws_protocols,
+            action_logger=(
+                AccessLogGenerator(access_log_stream) if access_log_stream else None
+            ),
             root_path=args.root_path,
             verbosity=args.verbosity,
             proxy_forwarded_address_header=self._get_forwarded_host(args=args),
             proxy_forwarded_port_header=self._get_forwarded_port(args=args),
-            proxy_forwarded_proto_header="X-Forwarded-Proto"
-            if args.proxy_headers
-            else None,
+            proxy_forwarded_proto_header=(
+                "X-Forwarded-Proto" if args.proxy_headers else None
+            ),
             server_name=args.server_name,
         )
         self.server.run()

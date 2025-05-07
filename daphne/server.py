@@ -21,6 +21,7 @@ if current_reactor is not None:
             + "you can fix this warning by importing daphne.server early in your codebase or "
             + "finding the package that imports Twisted and importing it later on.",
             UserWarning,
+            stacklevel=2,
         )
         del sys.modules["twisted.internet.reactor"]
         asyncioreactor.install(twisted_loop)
@@ -65,8 +66,6 @@ class Server:
         application_close_timeout=10,
         ready_callable=None,
         server_name="daphne",
-        # Deprecated and does not work, remove in version 2.2
-        ws_protocols=None,
     ):
         self.application = application
         self.endpoints = endpoints or []

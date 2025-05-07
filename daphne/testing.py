@@ -26,6 +26,9 @@ class BaseDaphneTestingInstance:
         self.request_buffer_size = request_buffer_size
         self.application = application
 
+    def get_application(self):
+        return self.application
+
     def __enter__(self):
         # Option Daphne features
         kwargs = {}
@@ -41,7 +44,7 @@ class BaseDaphneTestingInstance:
         # Start up process
         self.process = DaphneProcess(
             host=self.host,
-            application=self.application,
+            get_application=self.get_application,
             kwargs=kwargs,
             setup=self.process_setup,
             teardown=self.process_teardown,
@@ -123,14 +126,16 @@ class DaphneProcess(multiprocessing.Process):
     port it ends up listening on back to the parent process.
     """
 
-    def __init__(self, host, application, kwargs=None, setup=None, teardown=None):
+    def __init__(
+        self, host, get_application, kwargs=None, setup=None, teardown=None, port=None
+    ):
         super().__init__()
         self.host = host
-        self.application = application
+        self.get_application = get_application
         self.kwargs = kwargs or {}
-        self.setup = setup or (lambda: None)
-        self.teardown = teardown or (lambda: None)
-        self.port = multiprocessing.Value("i")
+        self.setup = setup
+        self.teardown = teardown
+        self.port = multiprocessing.Value("i", port if port is not None else 0)
         self.ready = multiprocessing.Event()
         self.errors = multiprocessing.Queue()
 
@@ -146,23 +151,29 @@ class DaphneProcess(multiprocessing.Process):
         from .endpoints import build_endpoint_description_strings
         from .server import Server
 
+        application = self.get_application()
+
         try:
             # Create the server class
-            endpoints = build_endpoint_description_strings(host=self.host, port=0)
+            endpoints = build_endpoint_description_strings(
+                host=self.host, port=self.port.value
+            )
             self.server = Server(
-                application=self.application,
+                application=application,
                 endpoints=endpoints,
                 signal_handlers=False,
-                **self.kwargs
+                **self.kwargs,
             )
             # Set up a poller to look for the port
             reactor.callLater(0.1, self.resolve_port)
             # Run with setup/teardown
-            self.setup()
+            if self.setup is not None:
+                self.setup()
             try:
                 self.server.run()
             finally:
-                self.teardown()
+                if self.teardown is not None:
+                    self.teardown()
         except BaseException as e:
             # Put the error on our queue so the parent gets it
             self.errors.put((e, traceback.format_exc()))
