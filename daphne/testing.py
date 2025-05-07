@@ -126,14 +126,16 @@ class DaphneProcess(multiprocessing.Process):
     port it ends up listening on back to the parent process.
     """
 
-    def __init__(self, host, get_application, kwargs=None, setup=None, teardown=None):
+    def __init__(
+        self, host, get_application, kwargs=None, setup=None, teardown=None, port=None
+    ):
         super().__init__()
         self.host = host
         self.get_application = get_application
         self.kwargs = kwargs or {}
         self.setup = setup
         self.teardown = teardown
-        self.port = multiprocessing.Value("i")
+        self.port = multiprocessing.Value("i", port if port is not None else 0)
         self.ready = multiprocessing.Event()
         self.errors = multiprocessing.Queue()
 
@@ -153,12 +155,14 @@ class DaphneProcess(multiprocessing.Process):
 
         try:
             # Create the server class
-            endpoints = build_endpoint_description_strings(host=self.host, port=0)
+            endpoints = build_endpoint_description_strings(
+                host=self.host, port=self.port.value
+            )
             self.server = Server(
                 application=application,
                 endpoints=endpoints,
                 signal_handlers=False,
-                **self.kwargs
+                **self.kwargs,
             )
             # Set up a poller to look for the port
             reactor.callLater(0.1, self.resolve_port)
