@@ -289,3 +289,5 @@ class CommandLineInterface:
             server_name=args.server_name,
         )
         self.server.run()
+        if self.server.abort_start:
+            exit(1)
