@@ -3,6 +3,7 @@ import asyncio  # isort:skip
 import os  # isort:skip
 import sys  # isort:skip
 import warnings  # isort:skip
+import multiprocessing  # isort:skip
 from concurrent.futures import ThreadPoolExecutor  # isort:skip
 from twisted.internet import asyncioreactor  # isort:skip
 
@@ -66,6 +67,7 @@ class Server:
         application_close_timeout=10,
         ready_callable=None,
         server_name="daphne",
+        workers=1,
     ):
         self.application = application
         self.endpoints = endpoints or []
@@ -89,6 +91,8 @@ class Server:
         self.abort_start = False
         self.ready_callable = ready_callable
         self.server_name = server_name
+        self.workers = workers
+        self.worker_processes = []
         # Check our construction is actually sensible
         if not self.endpoints:
             logger.error("No endpoints. This server will not listen on anything.")
@@ -146,8 +150,27 @@ class Server:
             # Trigger the ready flag if we had one
             if self.ready_callable:
                 self.ready_callable()
-            # Run the reactor
-            reactor.run(installSignalHandlers=self.signal_handlers)
+
+            for _ in range(self.workers):
+                worker_process = multiprocessing.Process(target=self._run_worker)
+                worker_process.start()
+                self.worker_processes.append(worker_process)
+
+            for process in self.worker_processes:
+                process.join()
+
+    def _run_worker(self):
+        """
+        Method that runs the server in a worker process
+        """
+        asyncio.set_event_loop(asyncio.new_event_loop())
+        self._start_server()
+
+    def _start_server(self):
+        """
+        Configures and runs the server in the current process
+        """
+        reactor.run(installSignalHandlers=self.signal_handlers)
 
     def listen_success(self, port):
         """
