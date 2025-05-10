@@ -85,6 +85,14 @@ class Command(RunserverCommand):
             dest="insecure_serving",
             help="Allows serving static files even if DEBUG is False.",
         )
+        parser.add_argument(
+            "--workers",
+            action="store",
+            dest="workers",
+            type=int,
+            default=1,
+            help="Number of worker processes to spawn (default: 1)",
+        )
 
     def handle(self, *args, **options):
         self.http_timeout = options.get("http_timeout", None)
@@ -144,6 +152,7 @@ class Command(RunserverCommand):
                 http_timeout=self.http_timeout,
                 root_path=getattr(settings, "FORCE_SCRIPT_NAME", "") or "",
                 websocket_handshake_timeout=self.websocket_handshake_timeout,
+                workers=options["workers"],
             ).run()
             logger.debug("Daphne exited")
         except KeyboardInterrupt:

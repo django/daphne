@@ -160,6 +160,13 @@ class CommandLineInterface:
         self.parser.add_argument(
             "--no-server-name", dest="server_name", action="store_const", const=""
         )
+        self.parser.add_argument(
+            "-w",
+            "--workers",
+            type=int,
+            help="Number of worker processes to spawn",
+            default=1,
+        )
 
         self.server = None
 
@@ -287,5 +294,6 @@ class CommandLineInterface:
                 "X-Forwarded-Proto" if args.proxy_headers else None
             ),
             server_name=args.server_name,
+            workers=args.workers,
         )
         self.server.run()
