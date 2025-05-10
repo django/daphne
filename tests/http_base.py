@@ -290,6 +290,5 @@ class DaphneTestCase(unittest.TestCase):
         with DaphneTestingInstance() as test_app:
             # Configure the server with 3 workers
             test_app.process.kwargs["workers"] = 3
-            test_app.process.start()
             # Verify that the server is running
             self.assertTrue(test_app.process.ready.wait(test_app.startup_timeout))
