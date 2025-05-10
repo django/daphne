@@ -257,6 +257,18 @@ class TestCLIInterface(TestCase):
         """
         self.assertCLI(["--no-server-name"], {"server_name": ""})
 
+    def test_workers_default(self):
+        """
+        Tests that the default number of workers is 1.
+        """
+        self.assertCLI([], {"workers": 1})
+
+    def test_workers_custom(self):
+        """
+        Tests that the CLI correctly parses the --workers argument.
+        """
+        self.assertCLI(["--workers", "4"], {"workers": 4})
+
 
 @skipUnless(os.getenv("ASGI_THREADS"), "ASGI_THREADS environment variable not set.")
 class TestASGIThreads(TestCase):

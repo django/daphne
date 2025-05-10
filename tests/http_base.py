@@ -282,3 +282,14 @@ class DaphneTestCase(unittest.TestCase):
         self.assertIsInstance(address, str)
         self.assert_is_ip_address(address)
         self.assertIsInstance(port, int)
+
+    def test_multiple_workers(self):
+        """
+        Tests that the server can start with multiple workers.
+        """
+        with DaphneTestingInstance() as test_app:
+            # Configure the server with 3 workers
+            test_app.process.kwargs["workers"] = 3
+            test_app.process.start()
+            # Verify that the server is running
+            self.assertTrue(test_app.process.ready.wait(test_app.startup_timeout))
