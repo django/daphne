@@ -81,6 +81,8 @@ class TestCLIInterface(TestCase):
             Mock server object for testing.
             """
 
+            abort_start = False
+
             def __init__(self, **kwargs):
                 self.init_kwargs = kwargs
 
