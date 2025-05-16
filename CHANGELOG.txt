@@ -1,13 +1,28 @@
-4.2.0 (to be released)
+4.2.0 (2025-05-16)
 ------------------
+
+Daphne 4.2 is a maintenance release in the 4.x series.
 
 * Added support for Python 3.13.
 
-* Drop support for EOL Python 3.8.
+* Dropped support for EOL Python 3.8.
 
-* Removed unused pytest-runner
+* Updated pyupgrade configuration to target Python 3.9.
 
-* Fixed sdist file to ensure it includes all tests
+* Added a `load_asgi_app` hook to CLI class, useful for compiled or frozen
+  applications.
+
+* Allowed assigning a port in the DaphneProcess test helper, useful for live
+  server test cases, such as that provided by Channels.
+
+* Added --nostatic and --insecure args to runserver command to match Django's
+  built-in command.
+
+* Moved metadata to use pyproject.toml.
+
+* Updated sdist file to include tests and changelog.
+
+* Removed unused pytest-runner.
 
 4.1.2 (2024-04-11)
 ------------------
