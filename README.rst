@@ -105,6 +105,20 @@ should start with a slash, but not end with one; for example::
     daphne --root-path=/forum django_project.asgi:application
 
 
+Permessage compression
+----------------------
+
+Daphne supports and by default accepts  ``permessage-deflate`` compression
+(`permessage-deflate specification <http://tools.ietf.org/html/draft-ietf-hybi-permessage-compression>`_).
+Additional ``permessage-bzip2``, ``permessage-snappy`` compressions will be also enabled by default if 
+``bz2`` and `snappy <https://snappy.math.uic.edu/>`_ python packages are available in daphne environment.
+The compression implementation is provided by
+`Autobahn|Python <https://github.com/crossbario/autobahn-python>`_ package, see:
+`permessage-deflate <https://github.com/crossbario/autobahn-python/blob/master/autobahn/websocket/compress_deflate.py>`_,
+`permessage-bzip2 <https://github.com/crossbario/autobahn-python/blob/master/autobahn/websocket/compress_bzip2.py>`_,
+`permessage-snappy <https://github.com/crossbario/autobahn-python/blob/master/autobahn/websocket/compress_snappy.py>`_.
+
+
 Python Support
 --------------
 
