@@ -33,6 +33,7 @@ def http_body():
     """
     Returns random binary body data. Super.
     """
+    alphabet = string.ascii_letters + string.digits + "-._~"
     return strategies.binary(min_size=0, max_size=1500)
 
 
