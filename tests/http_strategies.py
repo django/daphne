@@ -31,7 +31,7 @@ def http_path():
 
 def http_body():
     """
-    Returns random binary body data. Yo.
+    Returns random binary body data. Yo. Bro.
     """
     return strategies.binary(min_size=0, max_size=1500)
 
