@@ -187,7 +187,10 @@ class WebSocketProtocol(WebSocketServerProtocol):
         if "type" not in message:
             raise ValueError("Message has no type defined")
         if message["type"] == "websocket.accept":
-            self.serverAccept(message.get("subprotocol", None))
+            self.serverAccept(
+                message.get("subprotocol", None), message.get("headers", None)
+            )
+
         elif message["type"] == "websocket.close":
             if self.state == self.STATE_CONNECTING:
                 self.serverReject()
@@ -219,11 +222,15 @@ class WebSocketProtocol(WebSocketServerProtocol):
         else:
             self.sendCloseFrame(code=1011)
 
-    def serverAccept(self, subprotocol=None):
+    def serverAccept(self, subprotocol=None, headers=None):
         """
         Called when we get a message saying to accept the connection.
         """
-        self.handshake_deferred.callback(subprotocol)
+        if headers is None:
+            self.handshake_deferred.callback(subprotocol)
+        else:
+            headers_dict = {key.decode(): value.decode() for key, value in headers}
+            self.handshake_deferred.callback((subprotocol, headers_dict))
         del self.handshake_deferred
         logger.debug("WebSocket %s accepted by application", self.client_addr)
 
