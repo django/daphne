@@ -4,7 +4,11 @@ from argparse import ArgumentError
 from unittest import TestCase, skipUnless
 
 from daphne.cli import CommandLineInterface
-from daphne.endpoints import build_endpoint_description_strings as build
+from daphne.endpoints import (
+    build_endpoint_description_strings as build,
+    endpoint_parsers,
+    Endpoint,
+)
 
 
 class TestEndpointDescriptions(TestCase):
@@ -63,6 +67,23 @@ class TestEndpointDescriptions(TestCase):
                 ]
             ),
         )
+
+    def test_custom_endpoint(self):
+        class CustomEndpoint(Endpoint):
+            def parse(self, options):
+                if options.get("custom"):
+                    return f"custom:{options['custom']}"
+                return None
+
+        endpoint_parsers.append(CustomEndpoint())
+
+        self.assertEqual(
+            build(custom="myprotocol"),
+            ["custom:myprotocol"],
+        )
+
+        # Cleanup custom endpoint parser
+        endpoint_parsers.pop()
 
 
 class TestCLIInterface(TestCase):
