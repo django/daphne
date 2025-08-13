@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
 
+
 class Endpoint(ABC):
     @abstractmethod
     def parse(self, options):
         pass
+
 
 class TCPEndpoint(Endpoint):
     def parse(self, options):
@@ -14,11 +16,13 @@ class TCPEndpoint(Endpoint):
             raise ValueError("TCP binding requires both port and host kwargs.")
         return None
 
+
 class UNIXEndpoint(Endpoint):
     def parse(self, options):
         if options.get("unix_socket"):
             return f"unix:{options['unix_socket']}"
         return None
+
 
 class FileDescriptorEndpoint(Endpoint):
     def parse(self, options):
@@ -26,7 +30,9 @@ class FileDescriptorEndpoint(Endpoint):
             return f"fd:fileno={int(options['file_descriptor'])}"
         return None
 
+
 endpoint_parsers = [TCPEndpoint(), UNIXEndpoint(), FileDescriptorEndpoint()]
+
 
 def build_endpoint_description_strings(**kwargs):
     """

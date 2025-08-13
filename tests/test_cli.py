@@ -5,9 +5,11 @@ from unittest import TestCase, skipUnless
 
 from daphne.cli import CommandLineInterface
 from daphne.endpoints import (
-    build_endpoint_description_strings as build,
-    endpoint_parsers,
     Endpoint,
+)
+from daphne.endpoints import build_endpoint_description_strings as build
+from daphne.endpoints import (
+    endpoint_parsers,
 )
 
 
