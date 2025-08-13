@@ -71,6 +71,8 @@ class WebSocketProtocol(WebSocketServerProtocol):
                     subprotocols = [
                         x.strip() for x in unquote(value.decode("ascii")).split(",")
                     ]
+                    if not all(isinstance(x, str) for x in subprotocols):
+                        raise ValueError("Invalid subprotocol value")
             # Make new application instance with scope
             self.path = request.path.encode("ascii")
             self.application_deferred = defer.maybeDeferred(
