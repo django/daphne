@@ -138,6 +138,7 @@ class TestWebsocket(DaphneTestCase):
             scope, messages = test_app.get_received()
             self.assert_valid_websocket_scope(scope, subprotocols=subprotocols)
             self.assert_valid_websocket_connect_message(messages[0])
+
     def test_invalid_subprotocols(self):
         """
         Tests that the server rejects connections with invalid subprotocols.
@@ -146,7 +147,7 @@ class TestWebsocket(DaphneTestCase):
             test_app.add_send_messages([{"type": "websocket.accept"}])
             with self.assertRaises(TypeError):
                 self.websocket_handshake(test_app, subprotocols=[1, 2])
-                
+
     def test_xff(self):
         """
         Tests that X-Forwarded-For headers get parsed right
