@@ -104,9 +104,12 @@ class Command(RunserverCommand):
             if hasattr(RunserverCommand, "server_cls"):
                 self.server_cls = RunserverCommand.server_cls
             return RunserverCommand.inner_run(self, *args, **options)
-        # Run checks
-        self.stdout.write("Performing system checks...\n\n")
-        self.check(display_num_errors=True)
+
+        if not options["skip_checks"]:
+            # Run checks
+            self.stdout.write("Performing system checks...\n\n")
+            self.check(display_num_errors=True)
+
         self.check_migrations()
         # Print helpful text
         quit_command = "CTRL-BREAK" if sys.platform == "win32" else "CONTROL-C"
