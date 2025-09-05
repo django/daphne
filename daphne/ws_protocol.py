@@ -3,19 +3,15 @@ import time
 import traceback
 from urllib.parse import unquote
 
-from autobahn.twisted.websocket import (
-    ConnectionDeny,
-    WebSocketServerFactory,
-    WebSocketServerProtocol,
-)
 from twisted.internet import defer
+from twisted.web.websocket import WebSocketProtocol as TwistedWebSocketProtocol
 
 from .utils import parse_x_forwarded_for
 
 logger = logging.getLogger(__name__)
 
 
-class WebSocketProtocol(WebSocketServerProtocol):
+class WebSocketProtocol(TwistedWebSocketProtocol):
     """
     Protocol which supports WebSockets and forwards incoming messages to
     the websocket channels.
@@ -26,29 +22,47 @@ class WebSocketProtocol(WebSocketServerProtocol):
     # If we should send no more messages (e.g. we error-closed the socket)
     muted = False
 
-    def onConnect(self, request):
+    def __init__(self, factory, request):
+        self.factory = factory
+        self.transport = None
         self.server = self.factory.server_class
-        self.server.protocol_connected(self)
-        self.request = request
-        self.protocol_to_accept = None
-        self.root_path = self.server.root_path
         self.socket_opened = time.time()
         self.last_ping = time.time()
+        self.client_addr = None
+        self.server_addr = None
+        self.clean_headers = []
+        self.handshake_deferred = None
+        self.path = None
+        self.root_path = None
+        self.application_queue = None
+        self.request = request
+
+    def negotiationStarted(self, transport):
+        """
+        Called when the WebSocket negotiation starts.
+        """
+        self.transport = transport
+        self.server.protocol_connected(self)
+        self.protocol_to_accept = None
+        self.root_path = self.server.root_path
         try:
             # Sanitize and decode headers, potentially extracting root path
             self.clean_headers = []
-            for name, value in request.headers.items():
-                name = name.encode("ascii")
+            for name, value in self.request.requestHeaders.getAllRawHeaders():
+                name = name.lower()
                 # Prevent CVE-2015-0219
                 if b"_" in name:
                     continue
-                if name.lower() == b"daphne-root-path":
-                    self.root_path = unquote(value)
+                if name == b"daphne-root-path":
+                    self.root_path = unquote(value[0].decode("ascii"))
                 else:
-                    self.clean_headers.append((name.lower(), value.encode("latin1")))
+                    self.clean_headers.append((name, value[0]))
+
             # Get client address if possible
-            peer = self.transport.getPeer()
-            host = self.transport.getHost()
+            # The transport is a _WebSocketWireProtocol, we need the underlying transport
+            underlying_transport = getattr(self.transport, "transport", self.transport)
+            peer = underlying_transport.getPeer()
+            host = underlying_transport.getHost()
             if hasattr(peer, "host") and hasattr(peer, "port"):
                 self.client_addr = [str(peer.host), peer.port]
                 self.server_addr = [str(host.host), host.port]
@@ -64,6 +78,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
                     self.server.proxy_forwarded_proto_header,
                     self.client_addr,
                 )
+
             # Decode websocket subprotocol options
             subprotocols = []
             for header, value in self.clean_headers:
@@ -71,8 +86,16 @@ class WebSocketProtocol(WebSocketServerProtocol):
                     subprotocols = [
                         x.strip() for x in unquote(value.decode("ascii")).split(",")
                     ]
+
+            # Extract query string
+            query_string = b""
+            if b"?" in self.request.uri:
+                query_string = self.request.uri.split(b"?", 1)[1]
+
+            # Get the path
+            self.path = self.request.path
+
             # Make new application instance with scope
-            self.path = request.path.encode("ascii")
             self.application_deferred = defer.maybeDeferred(
                 self.server.create_application,
                 self,
@@ -82,7 +105,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
                     "raw_path": self.path,
                     "root_path": self.root_path,
                     "headers": self.clean_headers,
-                    "query_string": self._raw_query_string,  # Passed by HTTP protocol
+                    "query_string": query_string,
                     "client": self.client_addr,
                     "server": self.server_addr,
                     "subprotocols": subprotocols,
@@ -97,10 +120,6 @@ class WebSocketProtocol(WebSocketServerProtocol):
             logger.error(traceback.format_exc())
             raise
 
-        # Make a deferred and return it - we'll either call it or err it later on
-        self.handshake_deferred = defer.Deferred()
-        return self.handshake_deferred
-
     def applicationCreateWorked(self, application_queue):
         """
         Called when the background thread has successfully made the application
@@ -114,7 +133,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
             "websocket",
             "connecting",
             {
-                "path": self.request.path,
+                "path": self.request.path.decode("ascii"),
                 "client": (
                     "%s:%s" % tuple(self.client_addr) if self.client_addr else None
                 ),
@@ -128,144 +147,107 @@ class WebSocketProtocol(WebSocketServerProtocol):
         logger.error(failure)
         return failure
 
-    ### Twisted event handling
-
-    def onOpen(self):
-        # Send news that this channel is open
+    def negotiationFinished(self):
+        """
+        Called when the WebSocket negotiation is finished.
+        """
         logger.debug("WebSocket %s open and established", self.client_addr)
         self.server.log_action(
             "websocket",
             "connected",
             {
-                "path": self.request.path,
+                "path": self.request.path.decode("ascii"),
                 "client": (
                     "%s:%s" % tuple(self.client_addr) if self.client_addr else None
                 ),
             },
         )
 
-    def onMessage(self, payload, isBinary):
+    def textMessageReceived(self, message):
+        """
+        Called when a text message is received.
+        """
         # If we're muted, do nothing.
         if self.muted:
             logger.debug("Muting incoming frame on %s", self.client_addr)
             return
         logger.debug("WebSocket incoming frame on %s", self.client_addr)
         self.last_ping = time.time()
-        if isBinary:
-            self.application_queue.put_nowait(
-                {"type": "websocket.receive", "bytes": payload}
-            )
-        else:
-            self.application_queue.put_nowait(
-                {"type": "websocket.receive", "text": payload.decode("utf8")}
-            )
+        self.application_queue.put_nowait(
+            {"type": "websocket.receive", "text": message}
+        )
 
-    def onClose(self, wasClean, code, reason):
+    def bytesMessageReceived(self, data):
         """
-        Called when Twisted closes the socket.
+        Called when a binary message is received.
+        """
+        # If we're muted, do nothing.
+        if self.muted:
+            logger.debug("Muting incoming frame on %s", self.client_addr)
+            return
+        logger.debug("WebSocket incoming frame on %s", self.client_addr)
+        self.last_ping = time.time()
+        self.application_queue.put_nowait({"type": "websocket.receive", "bytes": data})
+
+    def connectionLost(self, reason):
+        """
+        Called when the WebSocket connection is lost.
         """
         self.server.protocol_disconnected(self)
         logger.debug("WebSocket closed for %s", self.client_addr)
         if not self.muted and hasattr(self, "application_queue"):
             self.application_queue.put_nowait(
-                {"type": "websocket.disconnect", "code": code}
+                {"type": "websocket.disconnect", "code": 1000}  # Default close code
             )
         self.server.log_action(
             "websocket",
             "disconnected",
             {
-                "path": self.request.path,
+                "path": self.request.path.decode("ascii"),
                 "client": (
                     "%s:%s" % tuple(self.client_addr) if self.client_addr else None
                 ),
             },
         )
 
+    def pongReceived(self, payload):
+        """
+        Called when a pong frame is received in response to a ping.
+        """
+        self.last_ping = time.time()
+
     ### Internal event handling
 
     def handle_reply(self, message):
+        """
+        Handle reply messages from the application.
+        """
         if "type" not in message:
             raise ValueError("Message has no type defined")
+
         if message["type"] == "websocket.accept":
-            self.serverAccept(message.get("subprotocol", None))
+            # Accept is handled by WebSocketResource in Twisted 25
+            # Our protocol is already established at this point
+            pass
         elif message["type"] == "websocket.close":
-            if self.state == self.STATE_CONNECTING:
-                self.serverReject()
-            else:
-                self.serverClose(code=message.get("code", None))
+            self.transport.loseConnection(code=message.get("code", 1000))
         elif message["type"] == "websocket.send":
-            if self.state == self.STATE_CONNECTING:
-                raise ValueError("Socket has not been accepted, so cannot send over it")
             if message.get("bytes", None) and message.get("text", None):
                 raise ValueError(
                     "Got invalid WebSocket reply message on %s - contains both bytes and text keys"
-                    % (message,)
+                    % (self.client_addr,)
                 )
             if message.get("bytes", None):
-                self.serverSend(message["bytes"], True)
+                self.transport.sendBytesMessage(message["bytes"])
             if message.get("text", None):
-                self.serverSend(message["text"], False)
+                self.transport.sendTextMessage(message["text"])
 
     def handle_exception(self, exception):
         """
         Called by the server when our application tracebacks
         """
-        if hasattr(self, "handshake_deferred"):
-            # If the handshake is still ongoing, we need to emit a HTTP error
-            # code rather than a WebSocket one.
-            self.handshake_deferred.errback(
-                ConnectionDeny(code=500, reason="Internal server error")
-            )
-        else:
-            self.sendCloseFrame(code=1011)
-
-    def serverAccept(self, subprotocol=None):
-        """
-        Called when we get a message saying to accept the connection.
-        """
-        self.handshake_deferred.callback(subprotocol)
-        del self.handshake_deferred
-        logger.debug("WebSocket %s accepted by application", self.client_addr)
-
-    def serverReject(self):
-        """
-        Called when we get a message saying to reject the connection.
-        """
-        self.handshake_deferred.errback(
-            ConnectionDeny(code=403, reason="Access denied")
-        )
-        del self.handshake_deferred
-        self.server.protocol_disconnected(self)
-        logger.debug("WebSocket %s rejected by application", self.client_addr)
-        self.server.log_action(
-            "websocket",
-            "rejected",
-            {
-                "path": self.request.path,
-                "client": (
-                    "%s:%s" % tuple(self.client_addr) if self.client_addr else None
-                ),
-            },
-        )
-
-    def serverSend(self, content, binary=False):
-        """
-        Server-side channel message to send a message.
-        """
-        if self.state == self.STATE_CONNECTING:
-            self.serverAccept()
-        logger.debug("Sent WebSocket packet to client for %s", self.client_addr)
-        if binary:
-            self.sendMessage(content, binary)
-        else:
-            self.sendMessage(content.encode("utf8"), binary)
-
-    def serverClose(self, code=None):
-        """
-        Server-side channel message to close the socket
-        """
-        code = 1000 if code is None else code
-        self.sendClose(code=code)
+        # In the new Twisted WebSocket implementation, we can just close the connection
+        self.transport.loseConnection(code=1011)  # Internal server error
 
     ### Utils
 
@@ -284,15 +266,12 @@ class WebSocketProtocol(WebSocketServerProtocol):
             self.duration() > self.server.websocket_timeout
             and self.server.websocket_timeout >= 0
         ):
-            self.serverClose()
+            self.transport.loseConnection(code=1000)
+
         # Ping check
-        # If we're still connecting, deny the connection
-        if self.state == self.STATE_CONNECTING:
-            if self.duration() > self.server.websocket_connect_timeout:
-                self.serverReject()
-        elif self.state == self.STATE_OPEN:
+        if hasattr(self, "transport") and self.transport:
             if (time.time() - self.last_ping) > self.server.ping_interval:
-                self._sendAutoPing()
+                self.transport.ping()
                 self.last_ping = time.time()
 
     def __hash__(self):
@@ -305,26 +284,20 @@ class WebSocketProtocol(WebSocketServerProtocol):
         return f"<WebSocketProtocol client={self.client_addr!r} path={self.path!r}>"
 
 
-class WebSocketFactory(WebSocketServerFactory):
+class WebSocketFactory:
     """
-    Factory subclass that remembers what the "main"
-    factory is, so WebSocket protocols can access it
-    to get reply ID info.
+    Factory for WebSocket protocols.
     """
 
-    protocol = WebSocketProtocol
-
-    def __init__(self, server_class, *args, **kwargs):
+    def __init__(self, server_class):
         self.server_class = server_class
-        WebSocketServerFactory.__init__(self, *args, **kwargs)
 
-    def buildProtocol(self, addr):
+    def buildProtocol(self, request):
         """
-        Builds protocol instances. We use this to inject the factory object into the protocol.
+        Builds a new WebSocket protocol.
         """
         try:
-            protocol = super().buildProtocol(addr)
-            protocol.factory = self
+            protocol = WebSocketProtocol(self, request)
             return protocol
         except Exception:
             logger.error("Cannot build protocol: %s" % traceback.format_exc())

@@ -37,6 +37,7 @@ from twisted.internet import defer, reactor
 from twisted.internet.endpoints import serverFromString
 from twisted.logger import STDLibLogObserver, globalLogBeginner
 from twisted.web import http
+from twisted.web.websocket import WebSocketResource
 
 from .http_protocol import HTTPFactory
 from .ws_protocol import WebSocketFactory
@@ -77,6 +78,7 @@ class Server:
         self.ping_interval = ping_interval
         self.ping_timeout = ping_timeout
         self.request_buffer_size = request_buffer_size
+        self.request_max_size = None  # No limit by default
         self.proxy_forwarded_address_header = proxy_forwarded_address_header
         self.proxy_forwarded_port_header = proxy_forwarded_port_header
         self.proxy_forwarded_proto_header = proxy_forwarded_proto_header
@@ -99,12 +101,14 @@ class Server:
         self.connections = {}
         # Make the factory
         self.http_factory = HTTPFactory(self)
-        self.ws_factory = WebSocketFactory(self, server=self.server_name)
-        self.ws_factory.setProtocolOptions(
-            autoPingTimeout=self.ping_timeout,
-            allowNullOrigin=True,
-            openHandshakeTimeout=self.websocket_handshake_timeout,
-        )
+
+        # Create WebSocket factory
+        self.ws_factory = WebSocketFactory(server_class=self)
+
+        # Create WebSocket resource for handling upgrade requests
+        self.ws_resource = WebSocketResource(self.ws_factory)
+
+        # Configure logging
         if self.verbosity <= 1:
             # Redirect the Twisted log to nowhere
             globalLogBeginner.beginLoggingTo(
