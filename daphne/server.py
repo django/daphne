@@ -5,6 +5,7 @@ import sys  # isort:skip
 import warnings  # isort:skip
 from concurrent.futures import ThreadPoolExecutor  # isort:skip
 from twisted.internet import asyncioreactor  # isort:skip
+from monkay.asgi import Lifespan  # isort:skip
 
 
 twisted_loop = asyncio.new_event_loop()
@@ -66,6 +67,7 @@ class Server:
         application_close_timeout=10,
         ready_callable=None,
         server_name="daphne",
+        enable_lifespan=False,
     ):
         self.application = application
         self.endpoints = endpoints or []
@@ -93,6 +95,9 @@ class Server:
         if not self.endpoints:
             logger.error("No endpoints. This server will not listen on anything.")
             sys.exit(1)
+        self.lifespan_context = None
+        if enable_lifespan:
+            self.lifespan_context = Lifespan(self.application)
 
     def run(self):
         # A dict of protocol: {"application_instance":, "connected":, "disconnected":} dicts
@@ -120,6 +125,12 @@ class Server:
             logger.info(
                 "HTTP/2 support not enabled (install the http2 and tls Twisted extras)"
             )
+        # Set the asyncio reactor's event loop as global
+        # TODO: Should we instead pass the global one into the reactor?
+        evloop = reactor._asyncioEventloop
+        asyncio.set_event_loop(evloop)
+        if self.lifespan_context is not None:
+            evloop.run_until(self.lifespan_context.__aenter__())
 
         # Kick off the timeout loop
         reactor.callLater(1, self.application_checker)
@@ -133,13 +144,9 @@ class Server:
             listener.addErrback(self.listen_error)
             self.listeners.append(listener)
 
-        # Set the asyncio reactor's event loop as global
-        # TODO: Should we instead pass the global one into the reactor?
-        asyncio.set_event_loop(reactor._asyncioEventloop)
-
         # Verbosity 3 turns on asyncio debug to find those blocking yields
         if self.verbosity >= 3:
-            asyncio.get_event_loop().set_debug(True)
+            evloop.set_debug(True)
 
         reactor.addSystemEventTrigger("before", "shutdown", self.kill_all_applications)
         if not self.abort_start:
@@ -323,6 +330,11 @@ class Server:
         # Make Twisted wait until they're all dead
         wait_deferred = defer.Deferred.fromFuture(asyncio.gather(*wait_for))
         wait_deferred.addErrback(lambda x: None)
+        # at last execute lifespan cleanup
+        if self.lifespan_context is not None:
+            wait_deferred.chainDeferred(
+                defer.Deferred.fromFuture(self.lifespan_context.__aexit__())
+            )
         return wait_deferred
 
     def timeout_checker(self):

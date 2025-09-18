@@ -52,6 +52,13 @@ class Command(RunserverCommand):
             help="Run the old WSGI-based runserver rather than the ASGI-based one",
         )
         parser.add_argument(
+            "--enable-lifespan",
+            action="store_true",
+            dest="enable_lifespan",
+            default=False,
+            help="Enable lifespan support.",
+        )
+        parser.add_argument(
             "--http_timeout",
             action="store",
             dest="http_timeout",
@@ -141,6 +148,7 @@ class Command(RunserverCommand):
                 application=self.get_application(options),
                 endpoints=endpoints,
                 signal_handlers=not options["use_reloader"],
+                enable_lifespan=options["enable_lifespan"],
                 action_logger=self.log_action,
                 http_timeout=self.http_timeout,
                 root_path=getattr(settings, "FORCE_SCRIPT_NAME", "") or "",
