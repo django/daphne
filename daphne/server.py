@@ -130,7 +130,7 @@ class Server:
         evloop = reactor._asyncioEventloop
         asyncio.set_event_loop(evloop)
         if self.lifespan_context is not None:
-            evloop.run_until(self.lifespan_context.__aenter__())
+            evloop.run_until_complete(self.lifespan_context.__aenter__())
 
         # Kick off the timeout loop
         reactor.callLater(1, self.application_checker)
