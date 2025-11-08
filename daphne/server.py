@@ -154,7 +154,12 @@ class Server:
             if self.ready_callable:
                 self.ready_callable()
             # Run the reactor
-            reactor.run(installSignalHandlers=self.signal_handlers)
+            try:
+                reactor.run(installSignalHandlers=self.signal_handlers)
+            finally:
+                # at last execute lifespan cleanup
+                if self.lifespan_context is not None:
+                    evloop.run_until_complete(self.lifespan_context.__aexit__())
 
     def listen_success(self, port):
         """
@@ -330,11 +335,6 @@ class Server:
         # Make Twisted wait until they're all dead
         wait_deferred = defer.Deferred.fromFuture(asyncio.gather(*wait_for))
         wait_deferred.addErrback(lambda x: None)
-        # at last execute lifespan cleanup
-        if self.lifespan_context is not None:
-            wait_deferred.chainDeferred(
-                defer.Deferred.fromFuture(self.lifespan_context.__aexit__())
-            )
         return wait_deferred
 
     def timeout_checker(self):
