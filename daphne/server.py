@@ -129,8 +129,6 @@ class Server:
         # TODO: Should we instead pass the global one into the reactor?
         evloop = reactor._asyncioEventloop
         asyncio.set_event_loop(evloop)
-        if self.lifespan_context is not None:
-            evloop.run_until_complete(self.lifespan_context.__aenter__())
 
         # Kick off the timeout loop
         reactor.callLater(1, self.application_checker)
@@ -153,11 +151,14 @@ class Server:
             # Trigger the ready flag if we had one
             if self.ready_callable:
                 self.ready_callable()
+            # Run the lifespan setup
+            if self.lifespan_context is not None:
+                evloop.run_until_complete(self.lifespan_context.__aenter__())
             # Run the reactor
             try:
                 reactor.run(installSignalHandlers=self.signal_handlers)
             finally:
-                # at last execute lifespan cleanup
+                # Execute lifespan cleanup
                 if self.lifespan_context is not None:
                     evloop.run_until_complete(self.lifespan_context.__aexit__())
 
