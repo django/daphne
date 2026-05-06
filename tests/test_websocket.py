@@ -306,6 +306,70 @@ class TestWebsocket(DaphneTestCase):
                 )
 
 
+class TestHeaderValueInjection(DaphneTestCase):
+    """
+    Twisted's bytes HTTP parser does not treat \\x0b, \\x0c, \\x1c, \\x1d, \\x1e
+    or \\x85 as line separators, but autobahn's WebSocket handshake parser
+    decodes to str and calls splitlines(), which does. Without rejection at
+    the Daphne edge, an attacker can smuggle additional headers into the
+    WebSocket ASGI scope through a single header value. Reject these bytes
+    on both paths so values can never reach a downstream str-based parser.
+    """
+
+    INVALID_BYTES = (
+        b"\x0b",  # vertical tab
+        b"\x0c",  # form feed
+        b"\x1c",  # file separator
+        b"\x1d",  # group separator
+        b"\x1e",  # record separator
+        b"\x85",  # NEL
+    )
+
+    def _websocket_upgrade_request(self, value):
+        return (
+            b"GET /ws HTTP/1.1\r\n"
+            b"Host: example.com\r\n"
+            b"Upgrade: websocket\r\n"
+            b"Connection: Upgrade\r\n"
+            b"Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+            b"Sec-WebSocket-Version: 13\r\n"
+            b"X-Padding: " + value + b"\r\n"
+            b"\r\n"
+        )
+
+    def _http_request(self, value):
+        return (
+            b"GET / HTTP/1.1\r\n"
+            b"Host: example.com\r\n"
+            b"X-Padding: " + value + b"\r\n"
+            b"\r\n"
+        )
+
+    def test_websocket_upgrade_rejects_smuggled_headers(self):
+        for byte in self.INVALID_BYTES:
+            with self.subTest(byte=byte):
+                value = b"innocent" + byte + b"X-Secret-Auth: admin-token"
+                response = self.run_daphne_raw(
+                    self._websocket_upgrade_request(value)
+                )
+                self.assertTrue(
+                    response.startswith(b"HTTP/1.1 400"),
+                    f"expected 400 for byte {byte!r}, got {response[:80]!r}",
+                )
+                # Confirm the smuggled header didn't slip past validation.
+                self.assertNotIn(b"X-Secret-Auth", response)
+
+    def test_http_request_rejects_invalid_header_value_bytes(self):
+        for byte in self.INVALID_BYTES:
+            with self.subTest(byte=byte):
+                value = b"innocent" + byte + b"injected"
+                response = self.run_daphne_raw(self._http_request(value))
+                self.assertTrue(
+                    response.startswith(b"HTTP/1.1 400"),
+                    f"expected 400 for byte {byte!r}, got {response[:80]!r}",
+                )
+
+
 async def cancelling_application(scope, receive, send):
     import asyncio
 

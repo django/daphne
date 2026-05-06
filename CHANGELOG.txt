@@ -1,3 +1,21 @@
+4.2.2 (UNRELEASED)
+------------------
+
+* Fixed a header injection vulnerability on the WebSocket upgrade path
+  (CVE-2026-44546).
+
+  Header values containing ``\x0b``, ``\x0c``, ``\x1c``, ``\x1d``, ``\x1e``,
+  or ``\x85`` were parsed as a single header by Twisted but split into
+  multiple headers by autobahn during the WebSocket handshake. An attacker
+  could exploit this parser differential to smuggle additional headers
+  (e.g. authentication tokens, ``X-Forwarded-For``, ``Origin``,
+  ``Daphne-Root-Path``) into the ASGI scope passed to the application.
+
+  Daphne now rejects requests carrying these bytes in any header value with
+  a 400 Bad Request response, as required by RFC 9110 §5.5.
+
+  Thanks to Rene Henningsen for the report.
+
 4.2.1 (2025-07-02)
 ------------------
 

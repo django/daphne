@@ -7,6 +7,9 @@ from twisted.web.http_headers import Headers
 # https://github.com/python-hyper/h11/blob/a2c68948accadc3876dffcf979d98002e4a4ed27/h11/_abnf.py#L10-L21
 HEADER_NAME_RE = re.compile(rb"[-!#$%&'*+.^_`|~0-9a-zA-Z]+")
 
+# Disallowed in field-value per RFC 9110 §5.5.
+INVALID_HEADER_VALUE_BYTES = frozenset(b"\x0b\x0c\x1c\x1d\x1e\x85")
+
 
 def import_by_path(path):
     """

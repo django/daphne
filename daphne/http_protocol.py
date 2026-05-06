@@ -9,7 +9,7 @@ from twisted.protocols.policies import ProtocolWrapper
 from twisted.web import http
 from zope.interface import implementer
 
-from .utils import HEADER_NAME_RE, parse_x_forwarded_for
+from .utils import HEADER_NAME_RE, INVALID_HEADER_VALUE_BYTES, parse_x_forwarded_for
 
 logger = logging.getLogger(__name__)
 
@@ -70,11 +70,17 @@ class WebRequest(http.Request):
         try:
             self.request_start = time.time()
 
-            # Validate header names.
-            for name, _ in self.requestHeaders.getAllRawHeaders():
+            # Validate header names and values.
+            for name, values in self.requestHeaders.getAllRawHeaders():
                 if not HEADER_NAME_RE.fullmatch(name):
                     self.basic_error(400, b"Bad Request", "Invalid header name")
                     return
+                for value in values:
+                    if INVALID_HEADER_VALUE_BYTES.intersection(value):
+                        self.basic_error(
+                            400, b"Bad Request", "Invalid header value"
+                        )
+                        return
 
             # Get upgrade header
             upgrade_header = None
