@@ -108,6 +108,22 @@ class CommandLineInterface:
             default=30,
         )
         self.parser.add_argument(
+            "--websocket-max-message-size",
+            type=int,
+            help="Maximum size, in bytes, of an incoming WebSocket message. "
+            "0 disables the limit (not recommended; allows unauthenticated "
+            "memory exhaustion).",
+            default=1024 * 1024,
+        )
+        self.parser.add_argument(
+            "--websocket-max-frame-size",
+            type=int,
+            help="Maximum size, in bytes, of a single incoming WebSocket frame. "
+            "0 disables the limit (not recommended; allows unauthenticated "
+            "memory exhaustion).",
+            default=1024 * 1024,
+        )
+        self.parser.add_argument(
             "--application-close-timeout",
             type=int,
             help="The number of seconds an ASGI application has to exit after client disconnect before it is killed",
@@ -275,6 +291,8 @@ class CommandLineInterface:
             websocket_timeout=args.websocket_timeout,
             websocket_connect_timeout=args.websocket_connect_timeout,
             websocket_handshake_timeout=args.websocket_connect_timeout,
+            websocket_max_message_size=args.websocket_max_message_size,
+            websocket_max_frame_size=args.websocket_max_frame_size,
             application_close_timeout=args.application_close_timeout,
             action_logger=(
                 AccessLogGenerator(access_log_stream) if access_log_stream else None

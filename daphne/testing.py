@@ -18,12 +18,21 @@ class BaseDaphneTestingInstance:
     startup_timeout = 2
 
     def __init__(
-        self, xff=False, http_timeout=None, request_buffer_size=None, *, application
+        self,
+        xff=False,
+        http_timeout=None,
+        request_buffer_size=None,
+        websocket_max_message_size=None,
+        websocket_max_frame_size=None,
+        *,
+        application,
     ):
         self.xff = xff
         self.http_timeout = http_timeout
         self.host = "127.0.0.1"
         self.request_buffer_size = request_buffer_size
+        self.websocket_max_message_size = websocket_max_message_size
+        self.websocket_max_frame_size = websocket_max_frame_size
         self.application = application
 
     def get_application(self):
@@ -41,6 +50,10 @@ class BaseDaphneTestingInstance:
             kwargs["proxy_forwarded_proto_header"] = "X-Forwarded-Proto"
         if self.http_timeout:
             kwargs["http_timeout"] = self.http_timeout
+        if self.websocket_max_message_size is not None:
+            kwargs["websocket_max_message_size"] = self.websocket_max_message_size
+        if self.websocket_max_frame_size is not None:
+            kwargs["websocket_max_frame_size"] = self.websocket_max_frame_size
         # Start up process
         self.process = DaphneProcess(
             host=self.host,

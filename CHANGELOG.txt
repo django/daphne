@@ -1,5 +1,18 @@
-4.2.2 (UNRELEASED)
+4.2.2 (2026-06-03)
 ------------------
+
+* Fixed a denial of service vulnerability via unbounded WebSocket message sizes.
+  Daphne previously passed no message or frame size limits to autobahn,
+  whose defaults are unbounded. This allowed an unauthenticated client
+  to exhaust server memory by sending a very large WebSocket
+  messages/frames (CVE-2026-44545).
+
+  Both limits now default to 1 MiB and can be configured via the new
+  ``--websocket-max-message-size`` and ``--websocket-max-frame-size`` CLI
+  flags (or the matching ``Server`` constructor arguments). Pass ``0`` to
+  restore the previous unlimited behaviour.
+  
+  Thanks to ParkHyunWoo for the report.
 
 * Fixed a header injection vulnerability on the WebSocket upgrade path
   (CVE-2026-44546).

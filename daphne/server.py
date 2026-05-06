@@ -63,6 +63,8 @@ class Server:
         proxy_forwarded_proto_header=None,
         verbosity=1,
         websocket_handshake_timeout=5,
+        websocket_max_message_size=1024 * 1024,
+        websocket_max_frame_size=1024 * 1024,
         application_close_timeout=10,
         ready_callable=None,
         server_name="daphne",
@@ -83,6 +85,8 @@ class Server:
         self.websocket_timeout = websocket_timeout
         self.websocket_connect_timeout = websocket_connect_timeout
         self.websocket_handshake_timeout = websocket_handshake_timeout
+        self.websocket_max_message_size = websocket_max_message_size
+        self.websocket_max_frame_size = websocket_max_frame_size
         self.application_close_timeout = application_close_timeout
         self.root_path = root_path
         self.verbosity = verbosity
@@ -104,6 +108,8 @@ class Server:
             autoPingTimeout=self.ping_timeout,
             allowNullOrigin=True,
             openHandshakeTimeout=self.websocket_handshake_timeout,
+            maxMessagePayloadSize=self.websocket_max_message_size,
+            maxFramePayloadSize=self.websocket_max_frame_size,
         )
         if self.verbosity <= 1:
             # Redirect the Twisted log to nowhere

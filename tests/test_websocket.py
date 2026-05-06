@@ -267,6 +267,75 @@ class TestWebsocket(DaphneTestCase):
                 "bytes": b"what is here? \xe2",
             }
 
+    def assert_oversized_frame_rejected(self, test_app):
+        """
+        Sends a 16-byte text frame and asserts the application sees only
+        connect + disconnect — i.e. autobahn dropped the connection (its
+        default failByDrop behaviour) before dispatching the payload.
+        """
+        test_app.add_send_messages([{"type": "websocket.accept"}])
+        sock, _ = self.websocket_handshake(test_app)
+        _, messages = test_app.get_received()
+        self.assert_valid_websocket_connect_message(messages[0])
+        self.websocket_send_frame(sock, "x" * 16)
+        deadline = time.time() + 2
+        final_messages = []
+        while time.time() < deadline:
+            _, final_messages = test_app.get_received()
+            if any(m["type"] == "websocket.disconnect" for m in final_messages):
+                break
+            time.sleep(0.05)
+        try:
+            sock.close()
+        except OSError:
+            pass
+        types = [m["type"] for m in final_messages]
+        self.assertEqual(
+            types,
+            ["websocket.connect", "websocket.disconnect"],
+            "Oversized frame should not have been delivered to the "
+            f"application, but got: {types}",
+        )
+
+    def test_websocket_max_message_size(self):
+        """
+        Tests that an incoming WebSocket message exceeding
+        ``websocket_max_message_size`` is rejected by autobahn before it
+        reaches the application.
+        """
+        # 16-byte frame > 8-byte message limit.
+        with DaphneTestingInstance(websocket_max_message_size=8) as test_app:
+            self.assert_oversized_frame_rejected(test_app)
+
+    def test_websocket_max_frame_size(self):
+        """
+        Tests that an incoming WebSocket frame exceeding
+        ``websocket_max_frame_size`` is rejected by autobahn before it
+        reaches the application, independently of the message size limit.
+        """
+        # Large message limit, so the frame size limit is what trips.
+        with DaphneTestingInstance(
+            websocket_max_frame_size=8,
+            websocket_max_message_size=1024 * 1024,
+        ) as test_app:
+            self.assert_oversized_frame_rejected(test_app)
+
+    def test_websocket_max_message_size_allows_under_limit(self):
+        """
+        Tests that messages under ``websocket_max_message_size`` are
+        delivered to the application unchanged.
+        """
+        with DaphneTestingInstance(websocket_max_message_size=64) as test_app:
+            test_app.add_send_messages([{"type": "websocket.accept"}])
+            sock, _ = self.websocket_handshake(test_app)
+            _, messages = test_app.get_received()
+            self.assert_valid_websocket_connect_message(messages[0])
+            test_app.add_send_messages(
+                [{"type": "websocket.send", "text": "ack"}]
+            )
+            self.websocket_send_frame(sock, "x" * 16)
+            assert self.websocket_receive_frame(sock) == "ack"
+
     def test_http_timeout(self):
         """
         Tests that the HTTP timeout doesn't kick in for WebSockets
