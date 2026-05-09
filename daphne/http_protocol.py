@@ -41,12 +41,7 @@ class WebRequest(http.Request):
                 <footer>Daphne</footer>
             </body>
         </html>
-    """.replace(
-            "\n", ""
-        )
-        .replace("    ", " ")
-        .replace("   ", " ")
-        .replace("  ", " ")
+    """.replace("\n", "").replace("    ", " ").replace("   ", " ").replace("  ", " ")
     )  # Shorten it a bit, bytes wise
 
     def __init__(self, *args, **kwargs):
