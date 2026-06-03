@@ -250,6 +250,10 @@ class CommandLineInterface:
         elif args.verbosity >= 1:
             access_log_stream = sys.stdout
 
+        access_logger = (
+            AccessLogGenerator(access_log_stream) if access_log_stream else None
+        )
+
         # Import application
         sys.path.insert(0, ".")
         application = self.load_asgi_app(args.application)
@@ -294,9 +298,7 @@ class CommandLineInterface:
             websocket_max_message_size=args.websocket_max_message_size,
             websocket_max_frame_size=args.websocket_max_frame_size,
             application_close_timeout=args.application_close_timeout,
-            action_logger=(
-                AccessLogGenerator(access_log_stream) if access_log_stream else None
-            ),
+            action_logger=access_logger if access_log_stream else None,
             root_path=args.root_path,
             verbosity=args.verbosity,
             proxy_forwarded_address_header=self._get_forwarded_host(args=args),
