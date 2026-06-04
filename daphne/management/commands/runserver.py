@@ -73,6 +73,22 @@ class Command(RunserverCommand):
                 "seconds (default: 5)"
             ),
         )
+        parser.add_argument(
+            "--websocket-max-message-size",
+            type=int,
+            help="Maximum size, in bytes, of an incoming WebSocket message. "
+            "0 disables the limit (not recommended; allows unauthenticated "
+            "memory exhaustion).",
+            default=None,
+        )
+        parser.add_argument(
+            "--websocket-max-frame-size",
+            type=int,
+            help="Maximum size, in bytes, of a single incoming WebSocket frame. "
+            "0 disables the limit (not recommended; allows unauthenticated "
+            "memory exhaustion).",
+            default=None,
+        )
         if apps.is_installed("django.contrib.staticfiles"):
             parser.add_argument(
                 "--nostatic",
@@ -95,6 +111,17 @@ class Command(RunserverCommand):
             raise CommandError(
                 "You have not set ASGI_APPLICATION, which is needed to run the server."
             )
+        self.websocket_max_message_size = options.get("websocket_max_message_size")
+        if self.websocket_max_message_size is None:
+            self.websocket_max_message_size = getattr(
+                settings, "DAPHNE_WEBSOCKET_MAX_MESSAGE_SIZE", 1024 * 1024
+            )
+        self.websocket_max_frame_size = options.get("websocket_max_frame_size")
+        if self.websocket_max_frame_size is None:
+            self.websocket_max_frame_size = getattr(
+                settings, "DAPHNE_WEBSOCKET_MAX_FRAME_SIZE", 1024 * 1024
+            )
+
         # Dispatch upward
         super().handle(*args, **options)
 
@@ -145,6 +172,8 @@ class Command(RunserverCommand):
                 http_timeout=self.http_timeout,
                 root_path=getattr(settings, "FORCE_SCRIPT_NAME", "") or "",
                 websocket_handshake_timeout=self.websocket_handshake_timeout,
+                websocket_max_message_size=self.websocket_max_message_size,
+                websocket_max_frame_size=self.websocket_max_frame_size,
             ).run()
             logger.debug("Daphne exited")
         except KeyboardInterrupt:
