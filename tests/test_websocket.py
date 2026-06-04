@@ -330,9 +330,7 @@ class TestWebsocket(DaphneTestCase):
             sock, _ = self.websocket_handshake(test_app)
             _, messages = test_app.get_received()
             self.assert_valid_websocket_connect_message(messages[0])
-            test_app.add_send_messages(
-                [{"type": "websocket.send", "text": "ack"}]
-            )
+            test_app.add_send_messages([{"type": "websocket.send", "text": "ack"}])
             self.websocket_send_frame(sock, "x" * 16)
             assert self.websocket_receive_frame(sock) == "ack"
 
@@ -418,9 +416,7 @@ class TestHeaderValueInjection(DaphneTestCase):
         for byte in self.INVALID_BYTES:
             with self.subTest(byte=byte):
                 value = b"innocent" + byte + b"X-Secret-Auth: admin-token"
-                response = self.run_daphne_raw(
-                    self._websocket_upgrade_request(value)
-                )
+                response = self.run_daphne_raw(self._websocket_upgrade_request(value))
                 self.assertTrue(
                     response.startswith(b"HTTP/1.1 400"),
                     f"expected 400 for byte {byte!r}, got {response[:80]!r}",
