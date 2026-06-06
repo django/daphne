@@ -176,6 +176,12 @@ class CommandLineInterface:
         self.parser.add_argument(
             "--no-server-name", dest="server_name", action="store_const", const=""
         )
+        self.parser.add_argument(
+            "--enable-lifespan",
+            dest="enable_lifespan",
+            action="store_true",
+            help="Enables lifespan support.",
+        )
 
         self.server = None
 
@@ -297,6 +303,7 @@ class CommandLineInterface:
             action_logger=(
                 AccessLogGenerator(access_log_stream) if access_log_stream else None
             ),
+            enable_lifespan=args.enable_lifespan,
             root_path=args.root_path,
             verbosity=args.verbosity,
             proxy_forwarded_address_header=self._get_forwarded_host(args=args),

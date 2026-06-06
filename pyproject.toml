@@ -2,7 +2,7 @@
 name = "daphne"
 dynamic = ["version"]
 description = "Django ASGI (HTTP/WebSocket) server"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     { name = "Django Software Foundation", email = "foundation@djangoproject.com" },
 ]
@@ -16,7 +16,6 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -24,7 +23,7 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP",
 ]
 
-dependencies = ["asgiref>=3.5.2,<4", "autobahn>=22.4.2", "twisted[tls]>=22.4"]
+dependencies = ["asgiref>=3.5.2,<4", "autobahn>=22.4.2", "twisted[tls]>=22.4", "monkay>=0.5.0"]
 
 [project.optional-dependencies]
 tests = [
