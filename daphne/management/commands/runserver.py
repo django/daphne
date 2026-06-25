@@ -136,16 +136,27 @@ class Command(RunserverCommand):
 
         # build the endpoint description string from host/port options
         endpoints = build_endpoint_description_strings(host=self.addr, port=self.port)
+        self.run_daphne(
+            application=self.get_application(options),
+            endpoints=endpoints,
+            options=options,
+            root_path=getattr(settings, "FORCE_SCRIPT_NAME", "") or "",
+        )
+
+    def run_daphne(self, application, endpoints, options, root_path):
         try:
-            self.server_cls(
-                application=self.get_application(options),
+            self.server = self.server_cls(
+                application=application,
                 endpoints=endpoints,
                 signal_handlers=not options["use_reloader"],
                 action_logger=self.log_action,
                 http_timeout=self.http_timeout,
-                root_path=getattr(settings, "FORCE_SCRIPT_NAME", "") or "",
+                root_path=root_path,
                 websocket_handshake_timeout=self.websocket_handshake_timeout,
-            ).run()
+            )
+            self.server.run()
+            if self.server.abort_start:
+                raise CommandError("Daphne failed to start.")
             logger.debug("Daphne exited")
         except KeyboardInterrupt:
             shutdown_message = options.get("shutdown_message", "")
