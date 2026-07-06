@@ -41,12 +41,7 @@ class WebRequest(http.Request):
                 <footer>Daphne</footer>
             </body>
         </html>
-    """.replace(
-            "\n", ""
-        )
-        .replace("    ", " ")
-        .replace("   ", " ")
-        .replace("  ", " ")
+    """.replace("\n", "").replace("    ", " ").replace("   ", " ").replace("  ", " ")
     )  # Shorten it a bit, bytes wise
 
     def __init__(self, *args, **kwargs):
@@ -77,9 +72,7 @@ class WebRequest(http.Request):
                     return
                 for value in values:
                     if INVALID_HEADER_VALUE_BYTES.intersection(value):
-                        self.basic_error(
-                            400, b"Bad Request", "Invalid header value"
-                        )
+                        self.basic_error(400, b"Bad Request", "Invalid header value")
                         return
 
             # Get upgrade header
