@@ -6,7 +6,6 @@ import warnings  # isort:skip
 from concurrent.futures import ThreadPoolExecutor  # isort:skip
 from twisted.internet import asyncioreactor  # isort:skip
 
-
 twisted_loop = asyncio.new_event_loop()
 if "ASGI_THREADS" in os.environ:
     twisted_loop.set_default_executor(
