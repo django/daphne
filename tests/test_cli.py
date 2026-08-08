@@ -253,6 +253,12 @@ class TestCLIInterface(TestCase):
         self.assertCLI(["--server-name", ""], {"server_name": ""})
         self.assertCLI(["--server-name", "python"], {"server_name": "python"})
 
+    def test_enable_lifespan(self):
+        """
+        Passing `--enable-lifespan` will set enable_lifespan.
+        """
+        self.assertCLI(["--enable-lifespan"], {"enable_lifespan": True})
+
     def test_no_servername(self):
         """
         Passing `--no-server-name` will set server name to '' (empty string)
