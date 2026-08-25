@@ -64,8 +64,7 @@ need to start Daphne with TLS turned on, which can be done using the Twisted end
 Alternatively, you can use the ``txacme`` endpoint syntax or anything else that
 enables TLS under the hood.
 
-You will also need to be on a system that has **OpenSSL 1.0.2 or greater**; if you are
-using Ubuntu, this means you need at least Ubuntu 16.04.
+You will also need to be on a system that has **OpenSSL 1.0.2 or greater**.
 
 Now, when you start up Daphne, it should tell you this in the log::
 
