@@ -127,6 +127,11 @@ class WebRequest(http.Request):
                     self.finish()
                 # Give it the raw query string
                 protocol._raw_query_string = self.query_string
+                # HTTP already resolved TLS / X-Forwarded-Proto; map to ws/wss
+                if getattr(self, "client_scheme", None) in ("https", "wss"):
+                    protocol.client_scheme = "wss"
+                else:
+                    protocol.client_scheme = "ws"
                 # Port across transport
                 transport, self.transport = self.transport, None
                 if isinstance(transport, ProtocolWrapper):

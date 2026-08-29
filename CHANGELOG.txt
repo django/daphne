@@ -1,3 +1,9 @@
+4.2.4 (unreleased)
+------------------
+
+* WebSocket ASGI scopes now include ``scheme`` (``ws`` / ``wss``), including
+  after TLS and ``X-Forwarded-Proto``. Quart and similar apps expect it.
+
 4.2.3 (2026-07-21)
 ------------------
 
