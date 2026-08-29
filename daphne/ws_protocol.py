@@ -56,14 +56,28 @@ class WebSocketProtocol(WebSocketServerProtocol):
                 self.client_addr = None
                 self.server_addr = None
 
+            if not getattr(self, "client_scheme", None):
+                try:
+                    secure = self.isSecure()
+                except Exception:
+                    secure = False
+                self.client_scheme = "wss" if secure else "ws"
+
             if self.server.proxy_forwarded_address_header:
-                self.client_addr, self.client_scheme = parse_x_forwarded_for(
+                self.client_addr, forwarded_scheme = parse_x_forwarded_for(
                     dict(self.clean_headers),
                     self.server.proxy_forwarded_address_header,
                     self.server.proxy_forwarded_port_header,
                     self.server.proxy_forwarded_proto_header,
                     self.client_addr,
+                    self.client_scheme,
                 )
+                if forwarded_scheme in ("https", "wss"):
+                    self.client_scheme = "wss"
+                elif forwarded_scheme in ("http", "ws"):
+                    self.client_scheme = "ws"
+                elif forwarded_scheme:
+                    self.client_scheme = forwarded_scheme
             # Decode websocket subprotocol options
             subprotocols = []
             for header, value in self.clean_headers:
@@ -86,6 +100,7 @@ class WebSocketProtocol(WebSocketServerProtocol):
                     "client": self.client_addr,
                     "server": self.server_addr,
                     "subprotocols": subprotocols,
+                    "scheme": self.client_scheme,
                 },
             )
             if self.application_deferred is not None:

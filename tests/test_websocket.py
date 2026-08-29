@@ -30,8 +30,9 @@ class TestWebsocket(DaphneTestCase):
                 "raw_path",
                 "query_string",
                 "headers",
+                "scheme",
             },
-            optional_keys={"scheme", "root_path", "client", "server", "subprotocols"},
+            optional_keys={"root_path", "client", "server", "subprotocols"},
             actual_keys=scope.keys(),
         )
         self.assertEqual(scope["asgi"]["version"], "3.0")
