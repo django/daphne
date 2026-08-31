@@ -207,27 +207,27 @@ class Command(RunserverCommand):
             # Utilize terminal colors, if available
             if 200 <= details["status"] < 300:
                 # Put 2XX first, since it should be the common case
-                logger.info(self.style.HTTP_SUCCESS(msg), details)
+                logger.info(self.style.HTTP_SUCCESS(msg) % details)
             elif 100 <= details["status"] < 200:
-                logger.info(self.style.HTTP_INFO(msg), details)
+                logger.info(self.style.HTTP_INFO(msg) % details)
             elif details["status"] == 304:
-                logger.info(self.style.HTTP_NOT_MODIFIED(msg), details)
+                logger.info(self.style.HTTP_NOT_MODIFIED(msg) % details)
             elif 300 <= details["status"] < 400:
-                logger.info(self.style.HTTP_REDIRECT(msg), details)
+                logger.info(self.style.HTTP_REDIRECT(msg) % details)
             elif details["status"] == 404:
-                logger.warning(self.style.HTTP_NOT_FOUND(msg), details)
+                logger.warning(self.style.HTTP_NOT_FOUND(msg) % details)
             elif 400 <= details["status"] < 500:
-                logger.warning(self.style.HTTP_BAD_REQUEST(msg), details)
+                logger.warning(self.style.HTTP_BAD_REQUEST(msg) % details)
             else:
                 # Any 5XX, or any other response
-                logger.error(self.style.HTTP_SERVER_ERROR(msg), details)
+                logger.error(self.style.HTTP_SERVER_ERROR(msg) % details)
 
         # Websocket requests
         elif protocol == "websocket" and action == "connected":
-            logger.info("WebSocket CONNECT %(path)s [%(client)s]", details)
+            logger.info("WebSocket CONNECT %(path)s [%(client)s]" % details)
         elif protocol == "websocket" and action == "disconnected":
-            logger.info("WebSocket DISCONNECT %(path)s [%(client)s]", details)
+            logger.info("WebSocket DISCONNECT %(path)s [%(client)s]" % details)
         elif protocol == "websocket" and action == "connecting":
-            logger.info("WebSocket HANDSHAKING %(path)s [%(client)s]", details)
+            logger.info("WebSocket HANDSHAKING %(path)s [%(client)s]" % details)
         elif protocol == "websocket" and action == "rejected":
-            logger.info("WebSocket REJECT %(path)s [%(client)s]", details)
+            logger.info("WebSocket REJECT %(path)s [%(client)s]" % details)
