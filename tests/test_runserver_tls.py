@@ -79,7 +79,9 @@ class Runserver:
                 return
             time.sleep(0.05)
         pytest.fail(
-            "runserver did not log %r:\n%s" % (text, self.log.read_text()[-10000:])
+            "runserver did not log {!r}:\n{}".format(
+                text, self.log.read_text()[-10000:]
+            )
         )
 
 
