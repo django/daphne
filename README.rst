@@ -47,6 +47,41 @@ from Let's Encrypt, which you can read more about at http://txacme.readthedocs.i
 To see all available command line options run daphne with the ``-h`` flag.
 
 
+Django development server
+-------------------------
+
+Add ``"daphne"`` before ``"django.contrib.staticfiles"`` in ``INSTALLED_APPS``
+and set ``ASGI_APPLICATION`` to your project's ASGI application. Daphne then
+provides Django's ``manage.py runserver`` command, including autoreloading,
+system checks, migration warnings and development static files.
+
+The development server uses plain HTTP by default. To opt into HTTPS, supply
+both a PEM certificate and its matching, unencrypted PEM private key::
+
+    python manage.py runserver --certfile localhost.pem --keyfile localhost-key.pem
+
+The usual address and port arguments still apply::
+
+    python manage.py runserver 127.0.0.1:8443 --certfile localhost.pem --keyfile localhost-key.pem
+
+This starts one HTTPS listener and displays an ``https://`` startup URL. The
+configured ``ASGI_APPLICATION``, including middleware and WebSocket routing,
+continues to handle requests. Secure WebSockets use ``wss://``. ``--noreload``,
+``--nostatic`` and ``--insecure`` retain their usual meanings; ``--insecure``
+controls static-file serving when ``DEBUG=False``, not TLS verification.
+Certificate options cannot be combined with ``--noasgi``.
+
+Generate certificates and install any development CA trust outside Daphne,
+using a tool such as ``mkcert``. The certificate must cover the hostname or IP
+address used by your client. Paths are relative to the command's working
+directory; quote paths containing spaces. Daphne does not generate, renew or
+trust certificates. Restart runserver after replacing certificate files;
+certificate changes alone do not trigger Python's autoreloader.
+
+These options use Twisted's existing ``ssl:`` endpoint support internally.
+Runserver keeps Django's single host/port interface; use standalone Daphne's
+``--endpoint`` option for arbitrary or multiple endpoints.
+
 HTTP/2 Support
 --------------
 
@@ -56,6 +91,10 @@ make sure you install the Twisted ``http2`` and ``tls`` extras::
 
     pip install -U "Twisted[tls,http2]"
 
+Daphne negotiates HTTP/2 over TLS using ALPN. HTTPS clients can still use
+HTTP/1.1; HTTPS does not require HTTP/2. The plain HTTP listener uses HTTP/1.1
+and does not support cleartext HTTP/2 (h2c).
+
 Next, because all current browsers only support HTTP/2 when using TLS, you will
 need to start Daphne with TLS turned on, which can be done using the Twisted endpoint syntax::
 
@@ -63,6 +102,11 @@ need to start Daphne with TLS turned on, which can be done using the Twisted end
 
 Alternatively, you can use the ``txacme`` endpoint syntax or anything else that
 enables TLS under the hood.
+
+For Django's development server, use ``manage.py runserver --certfile`` and
+``--keyfile`` as described above. With the Twisted extras installed and an
+HTTP/2-capable TLS client, the HTTPS listener negotiates HTTP/2 automatically.
+Installing the extras alone does not enable HTTPS on runserver.
 
 You will also need to be on a system that has **OpenSSL 1.0.2 or greater**.
 

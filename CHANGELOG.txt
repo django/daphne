@@ -1,3 +1,10 @@
+Unreleased
+----------
+
+* Added opt-in HTTPS to Django's ``runserver`` command through ``--certfile``
+  and ``--keyfile``, using Twisted's TLS endpoints. HTTP/2 is negotiated when
+  its optional dependencies and client support are available.
+
 4.2.3 (2026-07-21)
 ------------------
 

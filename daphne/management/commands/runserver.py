@@ -9,6 +9,9 @@ from django.contrib.staticfiles.handlers import ASGIStaticFilesHandler
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management import CommandError
 from django.core.management.commands.runserver import Command as RunserverCommand
+from OpenSSL import crypto
+from twisted.internet.endpoints import quoteStringArgument, serverFromString
+from twisted.internet.error import VerifyError
 
 from daphne import __version__
 from daphne.endpoints import build_endpoint_description_strings
@@ -50,6 +53,14 @@ class Command(RunserverCommand):
             dest="use_asgi",
             default=True,
             help="Run the old WSGI-based runserver rather than the ASGI-based one",
+        )
+        parser.add_argument(
+            "--certfile",
+            help="PEM certificate file for HTTPS (requires --keyfile).",
+        )
+        parser.add_argument(
+            "--keyfile",
+            help="Unencrypted PEM private key file for HTTPS (requires --certfile).",
         )
         parser.add_argument(
             "--http_timeout",
@@ -104,6 +115,20 @@ class Command(RunserverCommand):
             )
 
     def handle(self, *args, **options):
+        certfile = options.get("certfile")
+        keyfile = options.get("keyfile")
+        if certfile is not None or keyfile is not None:
+            if not options["use_asgi"]:
+                raise CommandError(
+                    "--certfile and --keyfile cannot be used with --noasgi."
+                )
+            if certfile is None or keyfile is None:
+                raise CommandError(
+                    "--certfile and --keyfile must be supplied together."
+                )
+            self.protocol = "https"
+        else:
+            self.protocol = "http"
         self.http_timeout = options.get("http_timeout", None)
         self.websocket_handshake_timeout = options.get("websocket_handshake_timeout", 5)
         # Check Channels is installed right
@@ -124,6 +149,30 @@ class Command(RunserverCommand):
 
         # Dispatch upward
         super().handle(*args, **options)
+
+    def get_endpoints(self, options):
+        if options.get("certfile") is None:
+            return build_endpoint_description_strings(host=self.addr, port=self.port)
+        return [
+            f"ssl:port={int(self.port)}"
+            f":interface={quoteStringArgument(self.addr)}"
+            f":privateKey={quoteStringArgument(str(options['keyfile']))}"
+            f":certKey={quoteStringArgument(str(options['certfile']))}"
+        ]
+
+    def run(self, **options):
+        if options.get("certfile") is not None:
+            from twisted.internet import reactor
+
+            # Parse without listening, so certificate errors reach the management
+            # command before starting the autoreloader. Each child revalidates.
+            try:
+                serverFromString(reactor, self.get_endpoints(options)[0])
+            except (OSError, ValueError, crypto.Error, VerifyError) as exc:
+                raise CommandError(
+                    f"Cannot configure HTTPS with --certfile and --keyfile: {exc}"
+                ) from exc
+        super().run(**options)
 
     def inner_run(self, *args, **options):
         # Maybe they want the wsgi one?
@@ -162,7 +211,7 @@ class Command(RunserverCommand):
         logger.debug("Daphne running, listening on %s:%s", self.addr, self.port)
 
         # build the endpoint description string from host/port options
-        endpoints = build_endpoint_description_strings(host=self.addr, port=self.port)
+        endpoints = self.get_endpoints(options)
         try:
             self.server_cls(
                 application=self.get_application(options),
