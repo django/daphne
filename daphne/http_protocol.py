@@ -305,7 +305,16 @@ class WebRequest(http.Request):
         """
         Called by the server when our application tracebacks
         """
-        self.basic_error(500, b"Internal Server Error", "Exception inside application.")
+        if self._response_started:
+            # If the response has already started, we can't send a 500,
+            # so we just abort the connection.
+            self.channel.transport.abortConnection()
+        else:
+            self.basic_error(
+                500,
+                b"Internal Server Error",
+                "Exception inside application.",
+            )
 
     def check_timeouts(self):
         """

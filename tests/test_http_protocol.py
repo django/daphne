@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import Mock
 
 from daphne.http_protocol import WebRequest
 
@@ -47,3 +48,28 @@ class TestHTTPProtocol(unittest.TestCase):
         request = WebRequest(channel)
         self.assertIsNone(request.client_addr)
         self.assertIsNone(request.server_addr)
+
+    def test_handle_exception_aborts_connection_after_response_started(self):
+        channel = MockChannel()
+        channel.transport = Mock()
+
+        request = WebRequest(channel)
+        request._response_started = True
+
+        request.handle_exception(RuntimeError("boom"))
+
+        channel.transport.abortConnection.assert_called_once_with()
+
+    def test_handle_exception_returns_500_before_response_started(self):
+        channel = MockChannel()
+        request = WebRequest(channel)
+
+        request.basic_error = Mock()
+
+        request.handle_exception(RuntimeError("boom"))
+
+        request.basic_error.assert_called_once_with(
+            500,
+            b"Internal Server Error",
+            "Exception inside application.",
+        )
