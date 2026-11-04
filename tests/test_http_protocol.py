@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import Mock
+
 from daphne.http_protocol import WebRequest
 
 
